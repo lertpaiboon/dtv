@@ -79,6 +79,7 @@ d:/WebApp/Deethavorn/
 ├── DEPLOYMENT.md                   # คู่มือการติดตั้งบน VPS, Nginx, Plesk Obsidian, Vesta CP
 ├── package.json                    # รายการ Dependencies และ Scripts
 ├── server.js                       # Entry point สำหรับรันบน Plesk Node.js / Passenger
+├── SDLC_STATUS.md                  # รายงานสถานะการพัฒนา บทเรียน และแผนงานตามวงจร SDLC
 ├── tsconfig.json                   # การตั้งค่า TypeScript Compiler
 └── README.md                       # เอกสารอธิบายโครงการฉบับสมบูรณ์
 ```
