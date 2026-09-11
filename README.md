@@ -78,6 +78,7 @@ d:/WebApp/Deethavorn/
 ├── .gitignore                      # กำหนดไฟล์ที่ไม่ต้องส่งขึ้น Git (เช่น .next, node_modules, .env)
 ├── DEPLOYMENT.md                   # คู่มือการติดตั้งบน VPS, Nginx, Plesk Obsidian, Vesta CP
 ├── package.json                    # รายการ Dependencies และ Scripts
+├── server.js                       # Entry point สำหรับรันบน Plesk Node.js / Passenger
 ├── tsconfig.json                   # การตั้งค่า TypeScript Compiler
 └── README.md                       # เอกสารอธิบายโครงการฉบับสมบูรณ์
 ```
