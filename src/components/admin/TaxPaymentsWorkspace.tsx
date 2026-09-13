@@ -61,12 +61,12 @@ type Payment = {
 };
 
 const statusLabels: Record<string, string> = {
-  UNBILLED: 'รอวางบิล',
-  BILLED: 'วางบิลแล้ว',
-  WAITING_TRANSFER: 'รอโอน',
+  ADVANCED: 'สำรองจ่าย',
+  UNBILLED: 'สำรองจ่าย',
+  WAITING_TRANSFER: 'รอโอนเงิน',
+  BILLED: 'รอโอนเงิน',
   PAID: 'จ่ายแล้ว',
   PENDING: 'รอดำเนินการ',
-  ADVANCED: 'รอวางบิล',
 };
 
 const taxTypeDisplayMap: Record<string, string> = {
@@ -78,19 +78,19 @@ const taxTypeDisplayMap: Record<string, string> = {
 };
 
 const statusClassMap: Record<string, string> = {
-  UNBILLED: 'tax-status--unbilled',
-  BILLED: 'tax-status--waiting_transfer',
+  ADVANCED: 'tax-status--advanced',
+  UNBILLED: 'tax-status--advanced',
   WAITING_TRANSFER: 'tax-status--waiting_transfer',
+  BILLED: 'tax-status--waiting_transfer',
   PAID: 'tax-status--paid',
   PENDING: 'tax-status--pending',
-  ADVANCED: 'tax-status--unbilled',
 };
 
 const quickStatusOptions = [
-  { value: 'UNBILLED', label: 'รอวางบิล (สนง. จ่ายแทน)', className: 'tax-status--unbilled' },
-  { value: 'BILLED', label: 'วางบิลแล้ว (รอลูกค้าโอน)', className: 'tax-status--waiting_transfer' },
-  { value: 'PAID', label: 'จ่ายแล้ว (เคลียร์ยอดแล้ว)', className: 'tax-status--paid' },
-  { value: 'PENDING', label: 'รอดำเนินการ/มีปัญหา', className: 'tax-status--pending' },
+  { value: 'ADVANCED', label: 'สำรองจ่าย', className: 'tax-status--advanced' },
+  { value: 'WAITING_TRANSFER', label: 'รอโอนเงิน', className: 'tax-status--waiting_transfer' },
+  { value: 'PAID', label: 'จ่ายแล้ว', className: 'tax-status--paid' },
+  { value: 'PENDING', label: 'รอดำเนินการ', className: 'tax-status--pending' },
 ] as const;
 
 const monthLabels = [
@@ -236,7 +236,7 @@ function matchBillingStatus(str: string, fallbackStatus: string): string {
   const q = str.trim();
   if (q.includes('จ่าย') || q.toUpperCase() === 'PAID') return 'PAID';
   if (q.includes('รอโอน') || q.toUpperCase() === 'WAITING_TRANSFER') return 'WAITING_TRANSFER';
-  if (q.includes('สำรอง') || q.includes('วางบิล') || q.toUpperCase() === 'UNBILLED' || q.toUpperCase() === 'ADVANCED') return 'UNBILLED';
+  if (q.includes('สำรอง') || q.includes('วางบิล') || q.toUpperCase() === 'UNBILLED' || q.toUpperCase() === 'ADVANCED') return 'ADVANCED';
   if (q.includes('ดำเนิน') || q.toUpperCase() === 'PENDING') return 'PENDING';
   return fallbackStatus;
 }
@@ -289,7 +289,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
   const [batchDefaults, setBatchDefaults] = useState({
     paymentDate: bangkokDate(),
     paymentMethodId: 0,
-    billingStatus: 'UNBILLED',
+    billingStatus: 'ADVANCED',
   });
   const [importRows, setImportRows] = useState<CsvPreviewRow[]>([]);
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -574,7 +574,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
     return { count: selectedIds.size, totalAmount: amt };
   }, [payments, selectedIds]);
 
-  async function handleBulkStatus(targetStatus: 'BILLED' | 'PAID' | 'UNBILLED') {
+  async function handleBulkStatus(targetStatus: 'ADVANCED' | 'WAITING_TRANSFER' | 'PAID' | 'PENDING' | 'BILLED' | 'UNBILLED') {
     if (selectedIds.size === 0) return;
     setBulkUpdating(true);
     try {
@@ -952,10 +952,10 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
     for (const payment of payments) {
       const amount = Number(payment.amount);
       result.total += amount;
-      if (payment.billingStatus === 'ADVANCED' || payment.billingStatus === 'UNBILLED' || payment.billingStatus === 'BILLED') {
+      if (payment.billingStatus === 'ADVANCED' || payment.billingStatus === 'UNBILLED') {
         result.advanced += amount;
         result.advancedCount += 1;
-      } else if (payment.billingStatus === 'WAITING_TRANSFER') {
+      } else if (payment.billingStatus === 'WAITING_TRANSFER' || payment.billingStatus === 'BILLED') {
         result.waiting += amount;
         result.waitingCount += 1;
       } else if (payment.billingStatus === 'PAID') {
@@ -1171,7 +1171,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
           onClick={() => setStatus(status === 'ADVANCED' ? '' : 'ADVANCED')}
           title="คลิกเพื่อกรองเฉพาะรายการสำรองจ่าย"
         >
-          <span>สำรองจ่าย (สนง. จ่ายแทน)</span>
+          <span>สำรองจ่าย</span>
           <strong style={{ color: '#e11d48' }}>{money(totals.advanced)}</strong>
           <small>{totals.advancedCount} รายการ (ต้องตามเก็บ)</small>
           <div className="kpi-indicator kpi-indicator--advanced" />
@@ -1180,9 +1180,9 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
         <button type="button"
           className={`is-clickable ${status === 'WAITING_TRANSFER' ? 'is-active-waiting' : ''}`}
           onClick={() => setStatus(status === 'WAITING_TRANSFER' ? '' : 'WAITING_TRANSFER')}
-          title="คลิกเพื่อกรองเฉพาะรายการรอโอน"
+          title="คลิกเพื่อกรองเฉพาะรายการรอโอนเงิน"
         >
-          <span>รอโอน (ลูกค้ารอโอน)</span>
+          <span>รอโอนเงิน</span>
           <strong style={{ color: '#d97706' }}>{money(totals.waiting)}</strong>
           <small>{totals.waitingCount} รายการ</small>
           <div className="kpi-indicator kpi-indicator--waiting" />
@@ -1191,9 +1191,9 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
         <button type="button"
           className={`is-clickable ${status === 'PAID' ? 'is-active-paid' : ''}`}
           onClick={() => setStatus(status === 'PAID' ? '' : 'PAID')}
-          title="คลิกเพื่อกรองเฉพาะรายการที่จ่ายแล้ว"
+          title="คลิกเพื่อกรองเฉพาะรายการจ่ายแล้ว"
         >
-          <span>จ่ายแล้ว (เคลียร์ยอดแล้ว)</span>
+          <span>จ่ายแล้ว</span>
           <strong style={{ color: '#16a34a' }}>{money(totals.paid)}</strong>
           <small>{totals.paidCount} รายการ</small>
           <div className="kpi-indicator kpi-indicator--paid" />
@@ -1213,12 +1213,10 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
             </select>}
             <select aria-label="สถานะเรียกเก็บ" value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="">ทุกสถานะ</option>
-              <option value="ADVANCED">สำรอง (สนง. จ่ายแทน)</option>
-              <option value="WAITING_TRANSFER">รอโอน (ลูกค้ารอโอน)</option>
-              <option value="PAID">จ่ายแล้ว (เคลียร์ยอดแล้ว)</option>
+              <option value="ADVANCED">สำรองจ่าย</option>
+              <option value="WAITING_TRANSFER">รอโอนเงิน</option>
+              <option value="PAID">จ่ายแล้ว</option>
               <option value="PENDING">รอดำเนินการ</option>
-              <option value="UNBILLED">สำรอง (รอวางบิล - เดิม)</option>
-              <option value="BILLED">สำรอง (วางบิลแล้ว - เดิม)</option>
             </select>
           </div>
           <form className="tax-search" onSubmit={(event) => { event.preventDefault(); setSearch(searchDraft.trim()); }}>
@@ -1234,14 +1232,14 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
         <div className="tax-table-wrap" aria-busy={loading}>
           <table className={`tax-table ${config.monthly ? 'has-monthly' : ''}`}>
             <colgroup>
-              <col style={{ width: '40px' }} />
+              <col style={{ width: '38px' }} />
               <col />
-              {config.monthly && <col style={{ width: '85px' }} />}
-              <col style={{ width: '105px' }} />
+              {config.monthly && <col style={{ width: '80px' }} />}
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '110px' }} />
               <col style={{ width: '120px' }} />
               <col style={{ width: '110px' }} />
-              <col style={{ width: '125px' }} />
-              <col style={{ width: '190px' }} />
+              <col style={{ width: '175px' }} />
             </colgroup>
             <thead>
               <tr>
@@ -1353,7 +1351,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                           onClick={() => setSlipViewerData({ url: payment.slipUrl!, title: payment.company.name, ref: payment.reimbursementRef || payment.referenceNo })}
                           title="คลิกเพื่อดูหลักฐานสลิปการโอนเงิน"
                         >
-                          <FileText size={13} />
+                          <FileText size={12} />
                           <span>สลิป</span>
                         </button>
                       )}
@@ -1364,37 +1362,37 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                           onClick={() => openPaidModalForSingle(payment)}
                           title="บันทึกการรับเงินคืนและแนบสลิป"
                         >
-                          <Check size={13} />
+                          <Check size={12} />
                           <span>รับเงิน</span>
                         </button>
                       )}
-                      {canEdit && <button
+                      <button
                         type="button"
                         className="admin-action-btn admin-action-btn--icon admin-action-btn--view"
                         onClick={() => setSelected(payment)}
                         title="ดูรายละเอียดรายการ"
                         aria-label="ดูรายละเอียดรายการ"
                       >
-                        <Eye size={15} aria-hidden="true" />
-                      </button>}
-                      {canDelete && <button
+                        <Eye size={14} aria-hidden="true" />
+                      </button>
+                      {canEdit && <button
                         type="button"
                         className="admin-action-btn admin-action-btn--icon admin-action-btn--edit"
                         onClick={() => openEdit(payment)}
-                        title="แก้ไขข้อมูล / วันที่ชำระ"
-                        aria-label="แก้ไขข้อมูล / วันที่ชำระ"
+                        title="แก้ไขข้อมูล"
+                        aria-label="แก้ไขข้อมูล"
                       >
-                        <Pencil size={14} aria-hidden="true" />
+                        <Pencil size={13} aria-hidden="true" />
                       </button>}
-                      <button
+                      {canDelete && <button
                         type="button"
                         className="admin-action-btn admin-action-btn--icon admin-action-btn--delete"
                         onClick={() => handleDeletePayment(payment)}
                         title="ลบรายการ"
                         aria-label="ลบรายการ"
                       >
-                        <Trash2 size={14} aria-hidden="true" />
-                      </button>
+                        <Trash2 size={13} aria-hidden="true" />
+                      </button>}
                     </div>
                   </td>
                 </tr>
@@ -1422,9 +1420,9 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
               type="button"
               className="bulk-btn bulk-btn--billed"
               disabled={bulkUpdating}
-              onClick={() => handleBulkStatus('BILLED')}
+              onClick={() => handleBulkStatus('WAITING_TRANSFER')}
             >
-              <Clock size={14} /> วางบิลแล้ว
+              <Clock size={14} /> รอโอนเงิน
             </button>
             <button
               type="button"
@@ -1432,7 +1430,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
               disabled={bulkUpdating}
               onClick={openPaidModalForBulk}
             >
-              <Check size={14} /> เคลียร์ยอดแล้ว (PAID) / แนบสลิป
+              <Check size={14} /> จ่ายแล้ว / แนบสลิป
             </button>
             <button
               type="button"
@@ -1521,9 +1519,9 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                 <div className="admin-field">
                   <label htmlFor="payment-status">สถานะ</label>
                   <select id="payment-status" name="billingStatus" defaultValue="ADVANCED">
-                    <option value="ADVANCED">สำรอง (สนง. จ่ายแทน)</option>
-                    <option value="WAITING_TRANSFER">รอโอน (ลูกค้ารอโอน)</option>
-                    <option value="PAID">จ่ายแล้ว (เคลียร์ยอดแล้ว)</option>
+                    <option value="ADVANCED">สำรองจ่าย</option>
+                    <option value="WAITING_TRANSFER">รอโอนเงิน</option>
+                    <option value="PAID">จ่ายแล้ว</option>
                     <option value="PENDING">รอดำเนินการ</option>
                   </select>
                 </div>
@@ -1644,13 +1642,11 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                 </div>
                 <div className="admin-field">
                   <label htmlFor="edit-billing-status">สถานะ</label>
-                  <select id="edit-billing-status" name="billingStatus" required defaultValue={editingPayment.billingStatus}>
-                    <option value="ADVANCED">สำรอง (สนง. จ่ายแทน)</option>
-                    <option value="WAITING_TRANSFER">รอโอน (ลูกค้ารอโอน)</option>
-                    <option value="PAID">จ่ายแล้ว (เคลียร์ยอดแล้ว)</option>
+                  <select id="edit-billing-status" name="billingStatus" required defaultValue={editingPayment.billingStatus === 'UNBILLED' ? 'ADVANCED' : editingPayment.billingStatus === 'BILLED' ? 'WAITING_TRANSFER' : editingPayment.billingStatus}>
+                    <option value="ADVANCED">สำรองจ่าย</option>
+                    <option value="WAITING_TRANSFER">รอโอนเงิน</option>
+                    <option value="PAID">จ่ายแล้ว</option>
                     <option value="PENDING">รอดำเนินการ</option>
-                    <option value="UNBILLED">สำรอง (รอวางบิล - เดิม)</option>
-                    <option value="BILLED">สำรอง (วางบิลแล้ว - เดิม)</option>
                   </select>
                 </div>
                 <div className="admin-field admin-field--wide">
@@ -1774,27 +1770,32 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                 </div>
                 {canEdit ? <div className="tax-status-actions">
                   {[
-                    { value: 'ADVANCED', label: 'สำรอง', cls: 'is-advanced' },
-                    { value: 'WAITING_TRANSFER', label: 'รอโอน', cls: 'is-waiting' },
+                    { value: 'ADVANCED', label: 'สำรองจ่าย', cls: 'is-advanced' },
+                    { value: 'WAITING_TRANSFER', label: 'รอโอนเงิน', cls: 'is-waiting' },
                     { value: 'PAID', label: 'จ่ายแล้ว', cls: 'is-paid' },
                     { value: 'PENDING', label: 'รอดำเนินการ', cls: 'is-pending' },
-                  ].map((item) => (
-                    <button
-                      key={item.value}
-                      type="button"
-                      disabled={saving}
-                      className={`${selected.billingStatus === item.value ? `is-active ${item.cls}` : ''}`}
-                      onClick={() => {
-                        if (item.value === 'PAID') {
-                          openPaidModalForSingle(selected);
-                        } else {
-                          void updateStatus(selected, item.value);
-                        }
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  ].map((item) => {
+                    const isCurrentActive = selected.billingStatus === item.value ||
+                      (item.value === 'ADVANCED' && selected.billingStatus === 'UNBILLED') ||
+                      (item.value === 'WAITING_TRANSFER' && selected.billingStatus === 'BILLED');
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        disabled={saving}
+                        className={`${isCurrentActive ? `is-active ${item.cls}` : ''}`}
+                        onClick={() => {
+                          if (item.value === 'PAID') {
+                            openPaidModalForSingle(selected);
+                          } else {
+                            void updateStatus(selected, item.value);
+                          }
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
                 </div> : <div className="admin-readonly-note">สิทธิ์ของคุณดูสถานะได้อย่างเดียว</div>}
 
                 {canEdit && <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

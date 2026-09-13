@@ -11,12 +11,12 @@ import {
 } from '@/lib/admin-domain';
 
 const statusLabels: Record<string, string> = {
-  UNBILLED: 'รอวางบิล',
-  BILLED: 'วางบิลแล้ว',
-  WAITING_TRANSFER: 'รอโอน',
+  ADVANCED: 'สำรองจ่าย',
+  UNBILLED: 'สำรองจ่าย',
+  WAITING_TRANSFER: 'รอโอนเงิน',
+  BILLED: 'รอโอนเงิน',
   PAID: 'จ่ายแล้ว',
   PENDING: 'รอดำเนินการ',
-  ADVANCED: 'สำรองจ่าย',
 };
 
 export async function POST(req: Request) {

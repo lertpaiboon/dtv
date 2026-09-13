@@ -128,7 +128,7 @@ export async function POST(req: Request) {
       const rowTaxYear = normalizeTaxYear(row.taxYear) || taxYear;
       const rowTaxMonth = rowTaxType === 'PND51' ? null : (normalizeTaxMonth(row.taxMonth) || taxMonth);
 
-      const billingStatus = isOneOf(row.billingStatus, BILLING_STATUSES) ? row.billingStatus : 'UNBILLED';
+      const billingStatus = isOneOf(row.billingStatus, BILLING_STATUSES) ? row.billingStatus : 'ADVANCED';
       const referenceNo = asTrimmedText(row.referenceNo, 100);
       const note = asTrimmedText(row.note, 2000);
 

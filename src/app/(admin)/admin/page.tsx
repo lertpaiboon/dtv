@@ -17,12 +17,12 @@ function displayDate(value: Date) {
 }
 
 const statusLabels: Record<string, string> = {
-  ADVANCED: 'สำรอง',
-  WAITING_TRANSFER: 'รอโอน',
+  ADVANCED: 'สำรองจ่าย',
+  WAITING_TRANSFER: 'รอโอนเงิน',
   PAID: 'จ่ายแล้ว',
   PENDING: 'รอดำเนินการ',
-  UNBILLED: 'รอวางบิล',
-  BILLED: 'วางบิลแล้ว',
+  UNBILLED: 'สำรองจ่าย',
+  BILLED: 'รอโอนเงิน',
 };
 
 export default async function AdminDashboardPage() {

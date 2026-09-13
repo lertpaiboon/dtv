@@ -50,7 +50,15 @@ export async function GET(req: Request) {
     const where: Prisma.TaxPaymentWhereInput = { taxType: rawTaxType };
     if (taxYear) where.taxYear = taxYear;
     if (taxMonth) where.taxMonth = taxMonth;
-    if (billingStatus) where.billingStatus = billingStatus;
+    if (billingStatus) {
+      if (billingStatus === 'ADVANCED') {
+        where.billingStatus = { in: ['ADVANCED', 'UNBILLED'] };
+      } else if (billingStatus === 'WAITING_TRANSFER') {
+        where.billingStatus = { in: ['WAITING_TRANSFER', 'BILLED'] };
+      } else {
+        where.billingStatus = billingStatus;
+      }
+    }
     if (paymentMethodId) {
       const methodId = parsePositiveId(paymentMethodId);
       if (!methodId) return NextResponse.json({ success: false, error: 'ช่องทางชำระไม่ถูกต้อง' }, { status: 400 });
@@ -124,7 +132,7 @@ export async function POST(req: Request) {
     const paymentMethodId = parsePositiveId(body.paymentMethodId);
     const paymentDate = parseDateOnly(body.paymentDate);
     const amount = normalizeMoney(body.amount);
-    const billingStatus = isOneOf(body.billingStatus, BILLING_STATUSES) ? body.billingStatus : 'UNBILLED';
+    const billingStatus = isOneOf(body.billingStatus, BILLING_STATUSES) ? body.billingStatus : 'ADVANCED';
 
     if (!taxYear) return NextResponse.json({ success: false, error: 'ปีภาษีไม่ถูกต้อง' }, { status: 400 });
     if (body.taxType !== 'PND51' && !taxMonth) {
