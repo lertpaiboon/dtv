@@ -28,7 +28,7 @@ export default function Header() {
       <div className="utility-bar">
         <div className="container utility-bar__inner">
           <div className="utility-bar__details">
-            <span><Clock3 aria-hidden="true" /> จันทร์–ศุกร์ 08:30–18:00 น.</span>
+            <span><Clock3 aria-hidden="true" /> จันทร์–ศุกร์ 08:30–17:30 น.</span>
             <span><MapPin aria-hidden="true" /> ใกล้ MRT เพชรบุรี ทางออก 1</span>
           </div>
           <div className="utility-bar__phones">

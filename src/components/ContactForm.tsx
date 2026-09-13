@@ -57,7 +57,7 @@ export default function ContactForm() {
           <div className="contact__details">
             <div><Phone aria-hidden="true" /><span><small>โทรปรึกษา</small><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
             <div><Mail aria-hidden="true" /><span><small>อีเมล</small><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-            <div><Clock3 aria-hidden="true" /><span><small>เวลาทำการ</small>จันทร์–ศุกร์ 08:30–18:00 น.</span></div>
+            <div><Clock3 aria-hidden="true" /><span><small>เวลาทำการ</small>จันทร์–ศุกร์ 08:30–17:30 น.</span></div>
             <div><MapPin aria-hidden="true" /><span><small>สำนักงาน</small>อโศก–ดินแดง ใกล้ MRT เพชรบุรี</span></div>
           </div>
 

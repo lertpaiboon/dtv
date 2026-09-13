@@ -49,7 +49,7 @@ export default function Footer() {
           <h3>ติดต่อสำนักงาน</h3>
           <div className="footer__contact-group"><Phone aria-hidden="true" /><span><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
           <div className="footer__contact-group"><Mail aria-hidden="true" /><span><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-          <span><Clock3 aria-hidden="true" />จันทร์–ศุกร์ 08:30–18:00 น.</span>
+          <span><Clock3 aria-hidden="true" />จันทร์–ศุกร์ 08:30–17:30 น.</span>
           <span><MapPin aria-hidden="true" /><span>234/116 ถ.อโศก–ดินแดง<br />แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310</span></span>
 
           <a

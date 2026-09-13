@@ -89,7 +89,7 @@ export default function RootLayout({
       'addressCountry': 'TH'
     },
     'priceRange': '1,500 - 15,000 THB',
-    'openingHours': 'Mo-Fr 08:30-18:00',
+    'openingHours': 'Mo-Fr 08:30-17:30',
     'sameAs': [
       'https://pitchayakarnpa.wixstudio.com/deethavorndesign4'
     ]
