@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendAdminContactNotification, sendClientConfirmation } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,25 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. Optional LINE Notify Webhook
+    // 3. Optional SMTP Email Notifications
+    const leadData = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? phone.trim() : null,
+      message: message.trim(),
+    };
+
+    try {
+      await Promise.allSettled([
+        sendAdminContactNotification(leadData),
+        sendClientConfirmation(leadData),
+      ]);
+    } catch (mailError) {
+      console.error('Email dispatch error:', mailError);
+    }
+
+    // 4. Optional LINE Notify Webhook
     const lineNotifyToken = process.env.LINE_NOTIFY_TOKEN;
     if (lineNotifyToken) {
       try {
