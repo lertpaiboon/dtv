@@ -115,6 +115,10 @@ function displayDate(value: string) {
   return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value));
 }
 
+function displayBangkokDate(value: string | Date) {
+  return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(new Date(value));
+}
+
 async function readJson(response: Response) {
   const data = await response.json().catch(() => null);
   if (!response.ok || !data?.success) throw new Error(data?.error || 'ไม่สามารถโหลดข้อมูลได้');
@@ -1757,7 +1761,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                 <div><dt>ช่องทาง</dt><dd>{selected.paymentMethod.name}</dd></div>
                 <div><dt>เลขอ้างอิง</dt><dd>{selected.referenceNo || '—'}</dd></div>
                 {selected.reimbursedAt && (
-                  <div><dt>วันที่รับเงินคืน</dt><dd>{displayDate(selected.reimbursedAt)}</dd></div>
+                  <div><dt>วันที่รับเงินคืน</dt><dd>{displayBangkokDate(selected.reimbursedAt)}</dd></div>
                 )}
                 {selected.reimbursementRef && (
                   <div><dt>อ้างอิงรับเงิน</dt><dd>{selected.reimbursementRef}</dd></div>
