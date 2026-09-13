@@ -30,7 +30,7 @@ nano .env   # หรือใช้ Text Editor ปรับแต่งค่�
 ### ตัวอย่างการกำหนดค่าภายใน `.env`:
 ```env
 # 1. การเชื่อมต่อฐานข้อมูล MySQL (รูปแบบ: mysql://USER:PASSWORD@HOST:PORT/DATABASE)
-DATABASE_URL="mysql://deethavorn_user:YourStrongPassword@127.0.0.1:3306/deethavorn_db"
+DATABASE_URL="mysql://deethavorn_user:YourStrongPassword@127.0.0.1:3306/wealthi1_deethavorn"
 
 # 2. ตั้งค่า Node Environment
 NODE_ENV="production"
@@ -59,9 +59,9 @@ sudo mysql -u root -p
 ```
 รันคำสั่ง SQL สร้างฐานข้อมูลและกำหนดสิทธิ์:
 ```sql
-CREATE DATABASE deethavorn_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE wealthi1_deethavorn CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'deethavorn_user'@'localhost' IDENTIFIED BY 'YourStrongPassword';
-GRANT ALL PRIVILEGES ON deethavorn_db.* TO 'deethavorn_user'@'localhost';
+GRANT ALL PRIVILEGES ON wealthi1_deethavorn.* TO 'deethavorn_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```

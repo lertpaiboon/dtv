@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import { Prompt, Outfit } from 'next/font/google';
 import './globals.css';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import ScrollObserver from '@/components/ScrollObserver';
+import AppShell from '@/components/AppShell';
 
 const prompt = Prompt({
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -23,7 +21,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://deethavorn.com'),
   title: 'ดีถาวรการบัญชี | รับทำบัญชี วางแผนภาษี ตรวจสอบบัญชี จดทะเบียนธุรกิจ',
   description:
-    'บริษัท ดีถาวรการบัญชี จำกัด ให้บริการด้านบัญชีและภาษีครบวงจร ตรวจสอบบัญชีโดยผู้สอบบัญชีรับอนุญาต (CPA) จดทะเบียนธุรกิจ บริหารบุคคล เริ่มต้น 1,000 บาท/เดือน ติดต่อ 091-941-5656 หรือ 099-149-5656 (ใกล้ MRT เพชรบุรี)',
+    'บริษัท ดีถาวรการบัญชี จำกัด ให้บริการด้านบัญชีและภาษีครบวงจร ตรวจสอบบัญชีโดยผู้สอบบัญชีรับอนุญาต (CPA) จดทะเบียนธุรกิจ บริหารบุคคล เริ่มต้น 1,500 บาท/เดือน ติดต่อ 099-149-5656 หรือ 091-941-5656 (ใกล้ MRT เพชรบุรี)',
   keywords: [
     'ดีถาวรการบัญชี',
     'รับทำบัญชี',
@@ -64,7 +62,7 @@ export const metadata: Metadata = {
     card: 'summary',
     title: 'ดีถาวรการบัญชี | รับทำบัญชี วางแผนภาษี ตรวจสอบบัญชี จดทะเบียนธุรกิจ',
     description:
-      'ยกระดับธุรกิจของคุณด้วยบริการมาตรฐานวิชาชีพในราคายุติธรรมและโปร่งใส เริ่มต้น 1,000 บาท/เดือน',
+      'ยกระดับธุรกิจของคุณด้วยบริการมาตรฐานวิชาชีพในราคายุติธรรมและโปร่งใส เริ่มต้น 1,500 บาท/เดือน',
     images: ['/images/logo.png'],
   },
 };
@@ -79,7 +77,7 @@ export default function RootLayout({
     '@type': 'AccountingService',
     'name': 'บริษัท ดีถาวรการบัญชี จำกัด (Deethavorn Accounting Co., Ltd.)',
     'image': 'https://deethavorn.com/images/logo.png',
-    'telephone': ['091-941-5656', '099-149-5656'],
+    'telephone': ['099-149-5656', '091-941-5656'],
     'email': ['dtv_accounting@hotmail.com', 'c.pimmphisa@gmail.com'],
     'url': 'https://deethavorn.com',
     'address': {
@@ -90,8 +88,8 @@ export default function RootLayout({
       'postalCode': '10310',
       'addressCountry': 'TH'
     },
-    'priceRange': '1,000 - 15,000 THB',
-    'openingHours': 'Mo-Sa 08:30-18:00',
+    'priceRange': '1,500 - 15,000 THB',
+    'openingHours': 'Mo-Fr 08:30-18:00',
     'sameAs': [
       'https://pitchayakarnpa.wixstudio.com/deethavorndesign4'
     ]
@@ -106,13 +104,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <a href="#main-content" className="skip-link">
-          ข้ามไปยังเนื้อหาหลัก
-        </a>
-        <ScrollObserver />
-        <Header />
-        <main id="main-content">{children}</main>
-        <Footer />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

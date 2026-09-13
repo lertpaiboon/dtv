@@ -21,9 +21,9 @@ export default function Hero() {
               <span>
                 <small>ปรึกษาโดยตรง</small>
                 <span className="hero__phone-numbers">
-                  <a href="tel:0919415656">091-941-5656</a>
-                  <span aria-hidden="true">/</span>
                   <a href="tel:0991495656">099-149-5656</a>
+                  <span aria-hidden="true">/</span>
+                  <a href="tel:0919415656">091-941-5656</a>
                 </span>
               </span>
             </div>
@@ -66,7 +66,7 @@ export default function Hero() {
       </div>
 
       <div className="container hero__facts" aria-label="ราคาเริ่มต้นและบริการ">
-        <div><strong>1,000</strong><span>บาท/เดือน<br />ค่าทำบัญชีเริ่มต้น</span></div>
+        <div><strong>1,500</strong><span>บาท/เดือน<br />ค่าทำบัญชีเริ่มต้น</span></div>
         <div><strong>1,500</strong><span>บาท<br />ค่าจดทะเบียนเริ่มต้น</span></div>
         <div><strong>4</strong><span>บริการหลัก<br />ครบในสำนักงานเดียว</span></div>
         <p>แจ้งขอบเขตงานและราคาให้ทราบก่อนเริ่มเสมอ</p>

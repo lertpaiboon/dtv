@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock3, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { Clock3, Mail, MapPin, MessageCircle, Phone, ShieldCheck } from 'lucide-react';
 import ScrollToTopButton from './ScrollToTopButton';
 
 const serviceLinks = [
@@ -47,10 +47,30 @@ export default function Footer() {
 
         <div className="footer__column footer__contact">
           <h3>ติดต่อสำนักงาน</h3>
-          <div className="footer__contact-group"><Phone aria-hidden="true" /><span><a href="tel:0919415656">091-941-5656</a><a href="tel:0991495656">099-149-5656</a></span></div>
+          <div className="footer__contact-group"><Phone aria-hidden="true" /><span><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
           <div className="footer__contact-group"><Mail aria-hidden="true" /><span><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-          <span><Clock3 aria-hidden="true" />จันทร์–เสาร์ 08:30–18:00 น.</span>
-          <span><MapPin aria-hidden="true" />234/116 ถ.อโศก–ดินแดง<br />กรุงเทพฯ 10310</span>
+          <span><Clock3 aria-hidden="true" />จันทร์–ศุกร์ 08:30–18:00 น.</span>
+          <span><MapPin aria-hidden="true" /><span>234/116 ถ.อโศก–ดินแดง<br />แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310</span></span>
+
+          <a
+            href="https://line.me/ti/p/DliAyJfUXd"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer__line-qr"
+            title="คลิกหรือสแกนเพื่อแอด LINE"
+          >
+            <Image
+              src="/images/line-qr.png"
+              alt="LINE QR Code ดีถาวรการบัญชี"
+              width={76}
+              height={76}
+              className="footer__line-qr-img"
+            />
+            <div className="footer__line-qr-info">
+              <span>สแกน QR คุย LINE</span>
+              <small>ปรึกษาทีมงานได้ทันที</small>
+            </div>
+          </a>
         </div>
       </div>
 

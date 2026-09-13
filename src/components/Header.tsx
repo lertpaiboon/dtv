@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock3, MapPin, Menu, Phone, X } from 'lucide-react';
+import { Clock3, MapPin, Menu, MessageCircle, Phone, X } from 'lucide-react';
 
 const navLinks = [
   { label: 'บริการ', href: '/#services' },
@@ -28,14 +28,14 @@ export default function Header() {
       <div className="utility-bar">
         <div className="container utility-bar__inner">
           <div className="utility-bar__details">
-            <span><Clock3 aria-hidden="true" /> จันทร์–เสาร์ 08:30–18:00 น.</span>
+            <span><Clock3 aria-hidden="true" /> จันทร์–ศุกร์ 08:30–18:00 น.</span>
             <span><MapPin aria-hidden="true" /> ใกล้ MRT เพชรบุรี ทางออก 1</span>
           </div>
           <div className="utility-bar__phones">
             <Phone aria-hidden="true" />
-            <a href="tel:0919415656">091-941-5656</a>
-            <span aria-hidden="true">/</span>
             <a href="tel:0991495656">099-149-5656</a>
+            <span aria-hidden="true">/</span>
+            <a href="tel:0919415656">091-941-5656</a>
           </div>
         </div>
       </div>
@@ -93,11 +93,19 @@ export default function Header() {
             <Link className="mobile-nav__contact" href="/#contact" onClick={() => setMobileMenuOpen(false)}>
               ส่งรายละเอียดให้เราประเมินราคา
             </Link>
-            <a className="mobile-nav__phone" href="tel:0919415656">
-              <Phone aria-hidden="true" /> โทร 091-941-5656
+            <a
+              className="mobile-nav__phone mobile-nav__line-link"
+              href="https://line.me/ti/p/DliAyJfUXd"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle aria-hidden="true" /> แอด LINE คุยกับเรา
             </a>
             <a className="mobile-nav__phone" href="tel:0991495656">
               <Phone aria-hidden="true" /> โทร 099-149-5656
+            </a>
+            <a className="mobile-nav__phone" href="tel:0919415656">
+              <Phone aria-hidden="true" /> โทร 091-941-5656
             </a>
           </nav>
         </div>

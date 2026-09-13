@@ -44,9 +44,9 @@ graph TD
 * **Zero External Library**: ใช้ความสามารถของ Native Browser `IntersectionObserver` ผ่านคอมโพเนนต์แยกส่วน [src/components/ScrollObserver.tsx](file:///d:/WebApp/Deethavorn/src/components/ScrollObserver.tsx) ทำให้ Section ต่างๆ ยังคงเป็น RSC ได้ 100%
 * **CSS Performance Discipline**: ยกเลิกการใช้ `transition: all` เปลี่ยนมาระบุเฉพาะ `transform` และ `opacity` ร่วมกับ Easing `cubic-bezier(0.16, 1, 0.3, 1)` และรองรับ `@media (prefers-reduced-motion: reduce)`
 
-### 3. วินัยการแก้ปัญหาตามหลัก 4-Step Debug Mantra
-* **บทเรียนเรื่อง Cache Collision**: การรันคำสั่ง `npx next build` ในขณะที่คำสั่ง `npm run dev` ยังรันค้างอยู่ จะส่งผลให้ไฟล์แคชในโฟลเดอร์ `.next` ทับซ้อนกัน นำไปสู่การเกิด HTTP 404 บนไฟล์ CSS และหน้าจอแสดงผล HTML ดิบ
-* **การแก้ไขอย่างมีแบบแผน**: ใช้การสังเกตหลักฐาน (Breadcrumbs) จากสถานะ HTTP 404 และ Error Stack แทนการเดาสุ่ม สั่งปิดโปรเซสเก่า ล้างแคช และรีสตาร์ตใหม่อย่างเด็ดขาด
+### 3. วินัยการแก้ปัญหาตามหลัก 4-Step Debug Mantra & Windows Concurrency
+* **บทเรียนเรื่อง Cache Collision & File Locking**: บนระบบปฏิบัติการ Windows การรันคำสั่ง `npx next build` หรือ `npm run build` ในขณะที่คำสั่ง `npm run dev` กำลังรันค้างอยู่ จะส่งผลให้ไฟล์ Manifest และ Chunks ในโฟลเดอร์ `.next` ถูกเขียนทับ ทำให้ `dev` process เสีย In-memory references ส่งผลให้เกิด HTTP 500 (`Internal Server Error`) หรือ HTTP 404
+* **การบันทึกกฎระเบียบถาวร**: ได้กำหนดกฎข้อบังคับไว้ใน [README.md](file:///d:/WebApp/Deethavorn/README.md) และ [.agents/rules/windows-dev-workflow.md](file:///d:/WebApp/Deethavorn/.agents/rules/windows-dev-workflow.md) โดยห้ามรัน Build ระหว่างรัน Dev โดยเด็ดขาด ให้ใช้ `npx tsc --noEmit && npm run lint` แทน และหากเกิดปัญหาให้ใช้ 3-Step Recovery Protocol (Stop -> Remove `.next` -> Restart dev)
 
 ### 4. การจัดการ Git และสิทธิ์บน Windows Credential Manager
 * **Multi-Account Conflict**: เมื่อเครื่องมีการใช้งานหลายบัญชี GitHub (เช่น `lertpaiboonait` ชนกับ `lertpaiboon`) Git จะปฏิเสธสิทธิ์ (403 Forbidden)

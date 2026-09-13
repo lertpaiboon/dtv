@@ -1,7 +1,8 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { AlertCircle, CheckCircle2, Clock3, Mail, MapPin, Phone, Send } from 'lucide-react';
+import Image from 'next/image';
+import { AlertCircle, CheckCircle2, Clock3, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 
 const initialForm = { firstName: '', lastName: '', email: '', phone: '', message: '' };
 
@@ -38,7 +39,7 @@ export default function ContactForm() {
     } catch (error) {
       setStatus({
         type: 'error',
-        message: error instanceof Error ? error.message : 'ส่งข้อความไม่สำเร็จ กรุณาโทร 091-941-5656 หรือ 099-149-5656',
+        message: error instanceof Error ? error.message : 'ส่งข้อความไม่สำเร็จ กรุณาโทร 099-149-5656 หรือ 091-941-5656',
       });
     } finally {
       setLoading(false);
@@ -54,10 +55,39 @@ export default function ContactForm() {
           <p>ส่งข้อมูลเบื้องต้นเพื่อให้ทีมงานประเมินขอบเขตและราคา ไม่มีค่าใช้จ่ายและไม่มีข้อผูกมัด</p>
 
           <div className="contact__details">
-            <div><Phone aria-hidden="true" /><span><small>โทรปรึกษา</small><a href="tel:0919415656">091-941-5656</a><a href="tel:0991495656">099-149-5656</a></span></div>
+            <div><Phone aria-hidden="true" /><span><small>โทรปรึกษา</small><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
             <div><Mail aria-hidden="true" /><span><small>อีเมล</small><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-            <div><Clock3 aria-hidden="true" /><span><small>เวลาทำการ</small>จันทร์–เสาร์ 08:30–18:00 น.</span></div>
+            <div><Clock3 aria-hidden="true" /><span><small>เวลาทำการ</small>จันทร์–ศุกร์ 08:30–18:00 น.</span></div>
             <div><MapPin aria-hidden="true" /><span><small>สำนักงาน</small>อโศก–ดินแดง ใกล้ MRT เพชรบุรี</span></div>
+          </div>
+
+          <div className="contact__line-card">
+            <div className="contact__line-qr-wrap">
+              <Image
+                src="/images/line-qr.png"
+                alt="LINE QR Code ดีถาวรการบัญชี"
+                width={120}
+                height={120}
+                className="contact__line-qr-img"
+              />
+            </div>
+            <div className="contact__line-content">
+              <span className="contact__line-badge">
+                <MessageCircle aria-hidden="true" size={14} /> LINE
+              </span>
+              <h4>ปรึกษาด่วนผ่าน LINE</h4>
+              <p>สแกน QR Code ด้วยมือถือ หรือคลิกปุ่มเพื่อเพิ่มเพื่อน</p>
+              <div className="contact__line-actions">
+                <a
+                  href="https://line.me/ti/p/DliAyJfUXd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact__line-button"
+                >
+                  <MessageCircle aria-hidden="true" size={15} /> แอด LINE คุยกับเรา
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 

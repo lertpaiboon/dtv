@@ -100,7 +100,7 @@ cp .env.example .env
 ```
 เปิดไฟล์ `.env` และระบุการเชื่อมต่อ MySQL:
 ```env
-DATABASE_URL="mysql://deethavorn_user:YourStrongPassword@localhost:3306/deethavorn_db"
+DATABASE_URL="mysql://deethavorn_user:YourStrongPassword@localhost:3306/wealthi1_deethavorn"
 ```
 
 ### ขั้นตอนที่ 3: ซิงค์ฐานข้อมูล (Prisma Migration)
@@ -115,16 +115,47 @@ npm run dev
 ```
 เปิดเบราว์เซอร์เข้าใช้งานที่: [http://localhost:3000](http://localhost:3000)
 
-### ขั้นตอนที่ 5: ตรวจสอบความถูกต้อง (Linting & Build Test)
+### ขั้นตอนที่ 5: ตรวจสอบความถูกต้อง (Type Check & Linting)
 ```bash
-# ตรวจสอบมาตรฐานโค้ดด้วย ESLint (ต้องได้ 0 errors)
-npm run lint
-
-# ทดสอบ Compile Production Bundle
-npm run build
+# แนะนำ: ตรวจสอบ Type และมาตรฐานโค้ดแบบปลอดภัย (รันขณะที่ npm run dev ทำงานอยู่ได้ ไม่กระทบ .next)
+npx tsc --noEmit && npm run lint
 
 # รันชุดทดสอบ End-to-End ด้วยสคริปต์อัตโนมัติ
 node scripts/verify-webapp.mjs
+```
+
+---
+
+### ⚠️ ข้อควรระวังสำคัญสำหรับ Developer (Windows & Next.js File Locking)
+
+> [!CAUTION]
+> **ห้ามรัน `npm run build` หรือ `next build` ในขณะที่ `npm run dev` กำลังรันอยู่บนพอร์ต 3000 โดยเด็ดขาด!**
+
+1. **สาเหตุของ `Internal Server Error` (500):**
+   - บน Windows โฟลเดอร์แคช `.next/` จะถูกโปรเซส `npm run dev` จับจองและอ่านเขียนแบบ In-memory
+   - หากมีการรัน `npm run build` ในอีกหน้าต่างพร้อมกัน ไฟล์ Manifest และ Chunk references จะถูกเขียนทับ ทำให้ `dev` เซิร์ฟเวอร์เดิมหาไฟล์คอมไพล์ไม่เจอ และพังกลายเป็น HTTP 500
+2. **การรัน `npx prisma generate`:**
+   - ควรหยุด (`Ctrl + C`) โปรเซส `npm run dev` ก่อนเสมอ เพื่อป้องกันข้อผิดพลาด `EPERM: operation not permitted` จากการที่ Windows ล็อกไฟล์ `query_engine-windows.dll.node`
+3. **การตรวจสอบโค้ดอย่างปลอดภัยระหว่าง Dev:**
+   - ใช้ `npx tsc --noEmit` เพื่อตรวจ Type-checking
+   - ใช้ `npm run lint` เพื่อตรวจ ESLint
+   - คำสั่งเหล่านี้จะไม่แตะต้องไฟล์ใน `.next/` และสามารถรันควบคู่กับ `npm run dev` ได้อย่างปลอดภัย 100%
+
+---
+
+### 🚨 วิธีแก้ไขด่วนเมื่อเกิด Internal Server Error (500) หรือ `.next` เสียหาย
+
+หากเผลอรันคำสั่งทับซ้อนหรือพบหน้าเว็บขึ้น `Internal Server Error` ให้แก้ไขตาม 3 ขั้นตอนนี้ทันที:
+
+```powershell
+# 1. ปิด Dev Server และ Kill โปรเซส Node ที่ค้างอยู่ (ใน PowerShell)
+Get-Process -Name node | Stop-Process -Force
+
+# 2. ล้างโฟลเดอร์แคช .next ทิ้ง
+Remove-Item -Path '.next' -Recurse -Force
+
+# 3. สตาร์ต Dev Server ใหม่อีกครั้ง
+npm run dev
 ```
 
 ---
@@ -221,6 +252,7 @@ git push -u origin main
 เลขที่ 234/116 ถนนอโศก-ดินแดง แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310  
 *(เดินทางสะดวก ใกล้ MRT เพชรบุรี ทางออก 1 เพียง 350 เมตร)*  
 
-* 📞 เบอร์โทรศัพท์: 091-941-5656, 099-149-5656, 02-247-4111
-* 💬 LINE Official: `@deethavorn`
+* 📞 เบอร์โทรศัพท์: 099-149-5656, 091-941-5656, 02-247-4111
+* 💬 LINE: [เปิดแชท LINE คุยกับเรา](https://line.me/ti/p/DliAyJfUXd)
+* 🕒 เวลาทำการ: จันทร์–ศุกร์ 08:30–18:00 น.
 * 🌐 เว็บไซต์: [https://www.deethavorn.com](https://www.deethavorn.com)
