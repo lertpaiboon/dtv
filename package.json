@@ -7,7 +7,10 @@
     "postinstall": "prisma generate",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:setup": "prisma db push && prisma db seed"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -15,8 +18,10 @@
     "jose": "^6.2.12",
     "lucide-react": "^1.16.0",
     "next": "^15.2.1",
+    "prisma": "^6.4.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tsx": "^4.23.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
@@ -26,8 +31,6 @@
     "@types/react-dom": "^19.0.4",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.2.1",
-    "prisma": "^6.4.1",
-    "tsx": "^4.23.13",
     "typescript": "^5.8.2"
   },
   "prisma": {
