@@ -657,7 +657,7 @@ export default async function AdminDashboardPage() {
                       </div>
 
                       {item.notes && (
-                        <p className="action-item-notes">"{item.notes}"</p>
+                        <p className="action-item-notes">&ldquo;{item.notes}&rdquo;</p>
                       )}
 
                       <div className="action-item-card__footer">
