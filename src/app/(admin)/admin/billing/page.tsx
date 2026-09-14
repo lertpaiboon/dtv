@@ -935,14 +935,14 @@ export default function ConsolidatedBillingPage() {
             <table className="billing-table">
               <colgroup>
                 <col style={{ width: '38px' }} />
-                <col style={{ minWidth: '180px' }} />
-                <col style={{ width: '82px' }} />
-                <col style={{ width: '78px' }} />
-                <col style={{ width: '78px' }} />
-                <col style={{ width: '78px' }} />
-                <col style={{ width: '84px' }} />
-                <col style={{ width: '105px' }} />
-                <col style={{ width: '95px' }} />
+                <col style={{ minWidth: '200px' }} />
+                <col style={{ width: '115px' }} />
+                <col style={{ width: '115px' }} />
+                <col style={{ width: '115px' }} />
+                <col style={{ width: '115px' }} />
+                <col style={{ width: '115px' }} />
+                <col style={{ width: '135px' }} />
+                <col style={{ width: '100px' }} />
                 <col style={{ width: '185px' }} />
               </colgroup>
               <thead>
@@ -958,12 +958,12 @@ export default function ConsolidatedBillingPage() {
                   <th className="col-company">
                     บริษัทลูกค้า & ผู้ติดต่อ
                   </th>
-                  <th>ภ.พ. 30</th>
-                  <th>ภ.ง.ด. 1</th>
-                  <th>ภ.ง.ด. 3</th>
-                  <th>ภ.ง.ด. 53</th>
-                  <th>ภ.ง.ด. 51</th>
-                  <th>ยอดรวมทั้งสิ้น</th>
+                  <th className="col-number">ภ.พ. 30</th>
+                  <th className="col-number">ภ.ง.ด. 1</th>
+                  <th className="col-number">ภ.ง.ด. 3</th>
+                  <th className="col-number">ภ.ง.ด. 53</th>
+                  <th className="col-number">ภ.ง.ด. 51</th>
+                  <th className="col-number">ยอดรวมทั้งสิ้น</th>
                   <th>สถานะ</th>
                   <th className="col-actions">ดำเนินการ</th>
                 </tr>
@@ -1015,7 +1015,7 @@ export default function ConsolidatedBillingPage() {
                           )}
                         </div>
                       </td>
-                      <td>
+                      <td className="col-number">
                         {stmt.taxes.vat ? (
                           <span className={`tax-amount-tag ${stmt.taxes.vat.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.vat.status === 'BILLED' || stmt.taxes.vat.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.vat.amount)}
@@ -1024,7 +1024,7 @@ export default function ConsolidatedBillingPage() {
                           <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td className="col-number">
                         {stmt.taxes.pnd1 ? (
                           <span className={`tax-amount-tag ${stmt.taxes.pnd1.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd1.status === 'BILLED' || stmt.taxes.pnd1.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd1.amount)}
@@ -1033,7 +1033,7 @@ export default function ConsolidatedBillingPage() {
                           <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td className="col-number">
                         {stmt.taxes.pnd3 ? (
                           <span className={`tax-amount-tag ${stmt.taxes.pnd3.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd3.status === 'BILLED' || stmt.taxes.pnd3.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd3.amount)}
@@ -1042,7 +1042,7 @@ export default function ConsolidatedBillingPage() {
                           <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td className="col-number">
                         {stmt.taxes.pnd53 ? (
                           <span className={`tax-amount-tag ${stmt.taxes.pnd53.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd53.status === 'BILLED' || stmt.taxes.pnd53.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd53.amount)}
@@ -1051,7 +1051,7 @@ export default function ConsolidatedBillingPage() {
                           <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td className="col-number">
                         {stmt.taxes.pnd51 ? (
                           <span className={`tax-amount-tag ${stmt.taxes.pnd51.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd51.status === 'BILLED' || stmt.taxes.pnd51.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd51.amount)}
@@ -1060,7 +1060,7 @@ export default function ConsolidatedBillingPage() {
                           <span style={{ color: '#cbd5e1' }}>-</span>
                         )}
                       </td>
-                      <td>
+                      <td className="col-number">
                         <strong className="grand-total-amount">
                           {money(stmt.totalAmount)}
                         </strong>
@@ -1122,42 +1122,42 @@ export default function ConsolidatedBillingPage() {
                   <td className="col-company">
                     <strong>รวมทั้งหมด ({statements.length} บริษัท)</strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong>
                       {statements.reduce((acc, s) => acc + (s.taxes.vat?.amount || 0), 0) > 0
                         ? money(statements.reduce((acc, s) => acc + (s.taxes.vat?.amount || 0), 0))
                         : '-'}
                     </strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong>
                       {statements.reduce((acc, s) => acc + (s.taxes.pnd1?.amount || 0), 0) > 0
                         ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd1?.amount || 0), 0))
                         : '-'}
                     </strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong>
                       {statements.reduce((acc, s) => acc + (s.taxes.pnd3?.amount || 0), 0) > 0
                         ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd3?.amount || 0), 0))
                         : '-'}
                     </strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong>
                       {statements.reduce((acc, s) => acc + (s.taxes.pnd53?.amount || 0), 0) > 0
                         ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd53?.amount || 0), 0))
                         : '-'}
                     </strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong>
                       {statements.reduce((acc, s) => acc + (s.taxes.pnd51?.amount || 0), 0) > 0
                         ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd51?.amount || 0), 0))
                         : '-'}
                     </strong>
                   </td>
-                  <td>
+                  <td className="col-number">
                     <strong className="grand-total-amount">
                       {money(statements.reduce((acc, s) => acc + s.totalAmount, 0))}
                     </strong>
