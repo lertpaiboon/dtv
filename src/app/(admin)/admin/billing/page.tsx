@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Download,
   ExternalLink,
   Eye,
   FileText,
@@ -57,7 +58,8 @@ interface BillingStatement {
     pnd51: TaxItem | null;
   };
   totalAmount: number;
-  overallStatus: 'UNBILLED' | 'BILLED' | 'PAID' | 'PENDING';
+  overallStatus: 'UNBILLED' | 'BILLED' | 'PAID' | 'PENDING' | 'ADVANCED' | 'WAITING_TRANSFER';
+  agingDays?: number;
   slipUrl?: string | null;
   reimbursementRef?: string | null;
   paymentIds: number[];
@@ -90,8 +92,11 @@ interface BillingStatement {
 interface BillingMeta {
   taxYear: string;
   taxMonth: string;
+  isAllOutstanding?: boolean;
   totalCompanies: number;
   grandTotal: number;
+  advanced?: { count: number; amount: number };
+  waiting?: { count: number; amount: number };
   unbilled: { count: number; amount: number };
   billed: { count: number; amount: number };
   paid: { count: number; amount: number };
@@ -99,12 +104,12 @@ interface BillingMeta {
 }
 
 const statusDisplayMap: Record<string, { label: string; className: string }> = {
-  UNBILLED: { label: 'รอวางบิล', className: 'tax-status--unbilled' },
-  BILLED: { label: 'วางบิลแล้ว', className: 'tax-status--waiting_transfer' },
-  WAITING_TRANSFER: { label: 'รอโอน', className: 'tax-status--waiting_transfer' },
-  PAID: { label: 'เคลียร์ยอดแล้ว', className: 'tax-status--paid' },
+  ADVANCED: { label: 'สำรองจ่าย', className: 'tax-status--unbilled' },
+  WAITING_TRANSFER: { label: 'รอโอนเงิน', className: 'tax-status--waiting_transfer' },
+  PAID: { label: 'จ่ายแล้ว', className: 'tax-status--paid' },
   PENDING: { label: 'รอดำเนินการ', className: 'tax-status--pending' },
-  ADVANCED: { label: 'รอวางบิล', className: 'tax-status--unbilled' },
+  UNBILLED: { label: 'สำรองจ่าย', className: 'tax-status--unbilled' },
+  BILLED: { label: 'รอโอนเงิน', className: 'tax-status--waiting_transfer' },
 };
 
 const taxTypeNames: Record<string, string> = {
@@ -166,8 +171,10 @@ export default function ConsolidatedBillingPage() {
     const requestedStatus = params.get('status');
     const requestedSearch = params.get('q') || '';
     if (requestedYear && /^\d{4}$/.test(requestedYear)) setTaxYear(requestedYear);
-    if (requestedMonth && monthLabels.some(([value]) => value === requestedMonth)) setTaxMonth(requestedMonth);
-    if (requestedStatus && ['UNBILLED', 'BILLED', 'PAID', 'PENDING'].includes(requestedStatus)) {
+    if (requestedMonth && (requestedMonth === 'ALL_OUTSTANDING' || monthLabels.some(([value]) => value === requestedMonth))) {
+      setTaxMonth(requestedMonth);
+    }
+    if (requestedStatus && ['UNBILLED', 'BILLED', 'PAID', 'PENDING', 'ADVANCED', 'WAITING_TRANSFER'].includes(requestedStatus)) {
       setStatusFilter(requestedStatus);
     }
     setSearch(requestedSearch);
@@ -509,8 +516,8 @@ export default function ConsolidatedBillingPage() {
     }
   }
 
-  // Bulk status update for BILLED or UNBILLED
-  async function handleBulkStatus(targetStatus: 'BILLED' | 'UNBILLED') {
+  // Bulk status update for WAITING_TRANSFER or ADVANCED
+  async function handleBulkStatus(targetStatus: 'WAITING_TRANSFER' | 'ADVANCED' | 'BILLED' | 'UNBILLED') {
     if (selectedInfo.paymentIds.length === 0) return;
     setBulkUpdating(true);
     try {
@@ -537,9 +544,95 @@ export default function ConsolidatedBillingPage() {
     }
   }
 
+  // Export Table Data to Excel / CSV with UTF-8 BOM
+  function handleExportCsv() {
+    if (statements.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับส่งออก CSV');
+      return;
+    }
+
+    const csvRows: string[] = [];
+    csvRows.push([
+      'ลำดับ',
+      'บริษัทลูกค้า',
+      'เลขประจำตัวผู้เสียภาษี',
+      'ผู้ติดต่อ',
+      'เบอร์โทรศัพท์',
+      'LINE ID',
+      'ภ.พ. 30',
+      'ภ.ง.ด. 1',
+      'ภ.ง.ด. 3',
+      'ภ.ง.ด. 53',
+      'ภ.ง.ด. 51',
+      'ยอดรวมทั้งสิ้น (บาท)',
+      'สถานะ',
+      'ค้างชำระ (วัน)',
+    ].map((header) => `"${header}"`).join(','));
+
+    statements.forEach((stmt, idx) => {
+      const contact = stmt.company.primaryContact;
+      const statusText = statusDisplayMap[stmt.overallStatus]?.label || stmt.overallStatus;
+      const row = [
+        idx + 1,
+        `"${(stmt.company.name || '').replace(/"/g, '""')}"`,
+        `"${stmt.company.taxId || ''}"`,
+        `"${(contact?.name ? `${contact.name}${contact.roleTitle ? ` (${contact.roleTitle})` : ''}` : '').replace(/"/g, '""')}"`,
+        `"${contact?.phone || stmt.company.phone || ''}"`,
+        `"${contact?.lineId || ''}"`,
+        stmt.taxes.vat ? stmt.taxes.vat.amount.toFixed(2) : '0.00',
+        stmt.taxes.pnd1 ? stmt.taxes.pnd1.amount.toFixed(2) : '0.00',
+        stmt.taxes.pnd3 ? stmt.taxes.pnd3.amount.toFixed(2) : '0.00',
+        stmt.taxes.pnd53 ? stmt.taxes.pnd53.amount.toFixed(2) : '0.00',
+        stmt.taxes.pnd51 ? stmt.taxes.pnd51.amount.toFixed(2) : '0.00',
+        stmt.totalAmount.toFixed(2),
+        `"${statusText}"`,
+        stmt.agingDays !== undefined && stmt.agingDays > 0 ? stmt.agingDays : '0',
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    // Summary row
+    const sumVat = statements.reduce((acc, s) => acc + (s.taxes.vat?.amount || 0), 0);
+    const sumPnd1 = statements.reduce((acc, s) => acc + (s.taxes.pnd1?.amount || 0), 0);
+    const sumPnd3 = statements.reduce((acc, s) => acc + (s.taxes.pnd3?.amount || 0), 0);
+    const sumPnd53 = statements.reduce((acc, s) => acc + (s.taxes.pnd53?.amount || 0), 0);
+    const sumPnd51 = statements.reduce((acc, s) => acc + (s.taxes.pnd51?.amount || 0), 0);
+    const sumGrand = statements.reduce((acc, s) => acc + s.totalAmount, 0);
+
+    csvRows.push([
+      '""',
+      '"รวมทั้งสิ้น"',
+      '""',
+      '""',
+      '""',
+      '""',
+      sumVat.toFixed(2),
+      sumPnd1.toFixed(2),
+      sumPnd3.toFixed(2),
+      sumPnd53.toFixed(2),
+      sumPnd51.toFixed(2),
+      sumGrand.toFixed(2),
+      '""',
+      '""',
+    ].join(','));
+
+    // Prepend UTF-8 BOM so Excel displays Thai characters correctly
+    const blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const periodLabel = taxMonth === 'ALL_OUTSTANDING' ? 'หนี้ค้างรับทั้งหมด_สะสมทุกงวด' : `งวด_${taxMonth}_${taxYear}`;
+    link.setAttribute('download', `รายงานยอดวางบิล_${periodLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // Copy LINE Message Generator with Dynamic Template
   function handleCopyLineMessage(stmt: BillingStatement) {
     const monthName = monthLabels.find(([m]) => m === taxMonth)?.[1] || taxMonth;
+    const periodString = taxMonth === 'ALL_OUTSTANDING' ? 'ยอดหนี้ค้างรับสะสมทุกงวด' : `${monthName} ${taxYear}`;
     const contactName = stmt.company.primaryContact?.name;
     const contactRole = stmt.company.primaryContact?.roleTitle;
     const contactHeader = contactName
@@ -582,7 +675,7 @@ export default function ConsolidatedBillingPage() {
     const message = templateToUse
       .replace(/\{companyName\}/g, stmt.company.name)
       .replace(/\{contactHeader\}/g, contactHeader)
-      .replace(/\{monthYear\}/g, `${monthName} ${taxYear}`)
+      .replace(/\{monthYear\}/g, periodString)
       .replace(/\{taxList\}/g, taxListStr)
       .replace(/\{totalAmount\}/g, money(stmt.totalAmount))
       .replace(/\{bankAccount\}/g, bankStr);
@@ -697,47 +790,51 @@ export default function ConsolidatedBillingPage() {
 
       {/* Summary KPI Cards */}
       <section className="tax-summary" aria-label="สรุปยอดวางบิล">
-        <button type="button"
+        <button
+          type="button"
           className={`is-clickable ${statusFilter === '' ? 'is-active-total' : ''}`}
           onClick={() => setStatusFilter('')}
           title="คลิกเพื่อแสดงทุกบริษัท"
         >
-          <span>ยอดรวมทั้งสิ้นในงวดนี้</span>
+          <span>{meta?.isAllOutstanding ? 'ยอดหนี้ค้างรับสะสมทุกงวด' : 'ยอดรวมทั้งสิ้นในงวดนี้'}</span>
           <strong>{money(meta?.grandTotal || 0)}</strong>
-          <small>{meta?.totalCompanies || 0} บริษัทที่มียอดภาษี</small>
+          <small>{meta?.totalCompanies || 0} บริษัท{meta?.isAllOutstanding ? ' ที่มียอดค้างรับ' : ' ที่มียอดภาษี'}</small>
           <div className="kpi-indicator kpi-indicator--total" />
         </button>
 
-        <button type="button"
-          className={`is-clickable ${statusFilter === 'UNBILLED' ? 'is-active-advanced' : ''}`}
-          onClick={() => setStatusFilter(statusFilter === 'UNBILLED' ? '' : 'UNBILLED')}
-          title="คลิกเพื่อกรองเฉพาะยอดรอวางบิล"
+        <button
+          type="button"
+          className={`is-clickable ${statusFilter === 'ADVANCED' || statusFilter === 'UNBILLED' ? 'is-active-advanced' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'ADVANCED' || statusFilter === 'UNBILLED' ? '' : 'ADVANCED')}
+          title="คลิกเพื่อกรองเฉพาะยอดสำรองจ่าย"
         >
-          <span>รอวางบิล (สนง. จ่ายแทนแล้ว)</span>
-          <strong style={{ color: '#0284c7' }}>{money(meta?.unbilled.amount || 0)}</strong>
-          <small>{meta?.unbilled.count || 0} บริษัท (ยังไม่ได้แจ้งยอด)</small>
+          <span>สำรองจ่าย (สนง. จ่ายแทนแล้ว)</span>
+          <strong style={{ color: '#0284c7' }}>{money(meta?.advanced?.amount ?? meta?.unbilled?.amount ?? 0)}</strong>
+          <small>{(meta?.advanced?.count ?? meta?.unbilled?.count ?? 0)} บริษัท (รอเรียกเก็บ)</small>
           <div className="kpi-indicator" style={{ background: '#0284c7' }} />
         </button>
 
-        <button type="button"
-          className={`is-clickable ${statusFilter === 'BILLED' ? 'is-active-waiting' : ''}`}
-          onClick={() => setStatusFilter(statusFilter === 'BILLED' ? '' : 'BILLED')}
-          title="คลิกเพื่อกรองเฉพาะยอดที่วางบิลแล้ว/รอโอน"
+        <button
+          type="button"
+          className={`is-clickable ${statusFilter === 'WAITING_TRANSFER' || statusFilter === 'BILLED' ? 'is-active-waiting' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'WAITING_TRANSFER' || statusFilter === 'BILLED' ? '' : 'WAITING_TRANSFER')}
+          title="คลิกเพื่อกรองเฉพาะยอดรอโอนเงิน"
         >
-          <span>วางบิลแล้ว (รอลูกค้าโอน)</span>
-          <strong style={{ color: '#d97706' }}>{money(meta?.billed.amount || 0)}</strong>
-          <small>{meta?.billed.count || 0} บริษัท (ต้องตามเก็บ)</small>
+          <span>รอโอนเงิน (แจ้งยอดแล้ว)</span>
+          <strong style={{ color: '#d97706' }}>{money(meta?.waiting?.amount ?? meta?.billed?.amount ?? 0)}</strong>
+          <small>{(meta?.waiting?.count ?? meta?.billed?.count ?? 0)} บริษัท (ติดตามเงินคืน)</small>
           <div className="kpi-indicator kpi-indicator--waiting" />
         </button>
 
-        <button type="button"
+        <button
+          type="button"
           className={`is-clickable ${statusFilter === 'PAID' ? 'is-active-paid' : ''}`}
           onClick={() => setStatusFilter(statusFilter === 'PAID' ? '' : 'PAID')}
-          title="คลิกเพื่อกรองเฉพาะยอดที่เคลียร์แล้ว"
+          title="คลิกเพื่อกรองเฉพาะยอดจ่ายแล้ว"
         >
-          <span>เคลียร์ยอดแล้ว (ได้รับเงินคืน)</span>
-          <strong style={{ color: '#16a34a' }}>{money(meta?.paid.amount || 0)}</strong>
-          <small>{meta?.paid.count || 0} บริษัท (เคลียร์ครบแล้ว)</small>
+          <span>จ่ายแล้ว (ได้รับเงินคืน)</span>
+          <strong style={{ color: '#16a34a' }}>{money(meta?.paid?.amount ?? 0)}</strong>
+          <small>{meta?.paid?.count || 0} บริษัท (เคลียร์ครบแล้ว)</small>
           <div className="kpi-indicator kpi-indicator--paid" />
         </button>
       </section>
@@ -749,30 +846,48 @@ export default function ConsolidatedBillingPage() {
             <label>
               <CalendarDays aria-hidden="true" size={16} />
               <span className="sr-only">ปีภาษี</span>
-              <select value={taxYear} onChange={(e) => setTaxYear(e.target.value)}>
-                {[0, 1, 2, 3].map((offset) => (
-                  <option key={offset} value={currentGregorianYear + 543 - offset}>
-                    {currentGregorianYear + 543 - offset}
-                  </option>
-                ))}
+              <select
+                value={taxYear}
+                disabled={taxMonth === 'ALL_OUTSTANDING'}
+                onChange={(e) => setTaxYear(e.target.value)}
+                title={taxMonth === 'ALL_OUTSTANDING' ? 'โหมดค้างรับทุกงวดครอบคลุมทุกปีภาษี' : 'เลือกปีภาษี'}
+              >
+                {taxMonth === 'ALL_OUTSTANDING' ? (
+                  <option value="ทุกปี">ทุกปีภาษี</option>
+                ) : (
+                  [0, 1, 2, 3].map((offset) => (
+                    <option key={offset} value={currentGregorianYear + 543 - offset}>
+                      {currentGregorianYear + 543 - offset}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
 
-              <select aria-label="เดือนภาษี" value={taxMonth} onChange={(e) => setTaxMonth(e.target.value)}>
-              {monthLabels.map(([num, name]) => (
-                <option key={num} value={num}>
-                  {num} - {name}
-                </option>
-              ))}
+            <select
+              aria-label="เดือนภาษี"
+              value={taxMonth}
+              onChange={(e) => setTaxMonth(e.target.value)}
+            >
+              <optgroup label="มุมมองผู้บริหาร (Executive)">
+                <option value="ALL_OUTSTANDING">🔥 หนี้ค้างรับทั้งหมด (สะสมทุกงวด)</option>
+              </optgroup>
+              <optgroup label="เลือกตามงวดรายเดือน">
+                {monthLabels.map(([num, name]) => (
+                  <option key={num} value={num}>
+                    {num} - {name}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
           <div className="tax-search">
             <Search aria-hidden="true" size={16} />
-              <input
-                type="search"
-                name="billingSearch"
-                aria-label="ค้นหาบริษัทหรือผู้ติดต่อ"
+            <input
+              type="search"
+              name="billingSearch"
+              aria-label="ค้นหาบริษัทหรือผู้ติดต่อ"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
@@ -784,6 +899,16 @@ export default function ConsolidatedBillingPage() {
               ค้นหา
             </button>
           </div>
+
+          <button
+            type="button"
+            className="btn-export-csv"
+            onClick={handleExportCsv}
+            title="ดาวน์โหลดรายงานสรุปยอดเป็นไฟล์ Excel / CSV พร้อมตัวกรองปัจจุบัน"
+          >
+            <Download size={15} />
+            <span>ดาวน์โหลด Excel</span>
+          </button>
         </div>
 
         {/* Statements Table */}
@@ -803,21 +928,22 @@ export default function ConsolidatedBillingPage() {
           ) : statements.length === 0 ? (
             <div style={{ display: 'grid', placeItems: 'center', minHeight: '300px', gap: '8px', color: 'var(--dtv-muted)' }}>
               <WalletCards size={40} strokeWidth={1.5} />
-              <strong>ไม่พบรายการภาษีในงวดนี้</strong>
-              <small>สามารถนำเข้าหรือบันทึกรายการภาษีในหน้า ภ.พ. 30 หรือ ภ.ง.ด. 1, 3, 53 ได้</small>
+              <strong>{meta?.isAllOutstanding ? 'ไม่พบหนี้ค้างรับสะสมในระบบ (ยอดค้างเป็น 0)' : 'ไม่พบรายการภาษีในงวดนี้'}</strong>
+              <small>{meta?.isAllOutstanding ? 'ทุกบริษัทชำระเงินคืนสำนักงานบัญชีครบถ้วนแล้ว' : 'สามารถนำเข้าหรือบันทึกรายการภาษีในหน้า ภ.พ. 30 หรือ ภ.ง.ด. 1, 3, 53, 51 ได้'}</small>
             </div>
           ) : (
             <table className="billing-table">
               <colgroup>
-                <col style={{ width: '40px' }} />
+                <col style={{ width: '38px' }} />
                 <col style={{ minWidth: '180px' }} />
-                <col style={{ width: '92px' }} />
-                <col style={{ width: '88px' }} />
-                <col style={{ width: '88px' }} />
-                <col style={{ width: '88px' }} />
-                <col style={{ width: '120px' }} />
-                <col style={{ width: '108px' }} />
-                <col style={{ width: '208px' }} />
+                <col style={{ width: '82px' }} />
+                <col style={{ width: '78px' }} />
+                <col style={{ width: '78px' }} />
+                <col style={{ width: '78px' }} />
+                <col style={{ width: '84px' }} />
+                <col style={{ width: '105px' }} />
+                <col style={{ width: '95px' }} />
+                <col style={{ width: '185px' }} />
               </colgroup>
               <thead>
                 <tr>
@@ -836,6 +962,7 @@ export default function ConsolidatedBillingPage() {
                   <th>ภ.ง.ด. 1</th>
                   <th>ภ.ง.ด. 3</th>
                   <th>ภ.ง.ด. 53</th>
+                  <th>ภ.ง.ด. 51</th>
                   <th>ยอดรวมทั้งสิ้น</th>
                   <th>สถานะ</th>
                   <th className="col-actions">ดำเนินการ</th>
@@ -857,9 +984,25 @@ export default function ConsolidatedBillingPage() {
                         />}
                       </td>
                       <td className="col-company">
-                        <strong style={{ color: 'var(--dtv-navy-900)', fontSize: '15px' }}>
-                          {stmt.company.name}
-                        </strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <strong style={{ color: 'var(--dtv-navy-900)', fontSize: '15px' }}>
+                            {stmt.company.name}
+                          </strong>
+                          {stmt.agingDays !== undefined && stmt.agingDays > 0 && stmt.overallStatus !== 'PAID' && (
+                            <span
+                              className={`aging-badge ${
+                                stmt.agingDays > 30
+                                  ? 'aging-badge--danger'
+                                  : stmt.agingDays >= 15
+                                  ? 'aging-badge--warning'
+                                  : 'aging-badge--normal'
+                              }`}
+                              title={`ค้างชำระมาแล้ว ${stmt.agingDays} วัน นับจากวันที่สำรองจ่าย`}
+                            >
+                              ค้าง {stmt.agingDays} วัน
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', color: '#475569', fontSize: '13px' }}>
                           {stmt.company.primaryContact ? (
                             <span>
@@ -874,7 +1017,7 @@ export default function ConsolidatedBillingPage() {
                       </td>
                       <td>
                         {stmt.taxes.vat ? (
-                          <span className={`tax-amount-tag ${stmt.taxes.vat.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.vat.status === 'BILLED' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
+                          <span className={`tax-amount-tag ${stmt.taxes.vat.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.vat.status === 'BILLED' || stmt.taxes.vat.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.vat.amount)}
                           </span>
                         ) : (
@@ -883,7 +1026,7 @@ export default function ConsolidatedBillingPage() {
                       </td>
                       <td>
                         {stmt.taxes.pnd1 ? (
-                          <span className={`tax-amount-tag ${stmt.taxes.pnd1.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd1.status === 'BILLED' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
+                          <span className={`tax-amount-tag ${stmt.taxes.pnd1.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd1.status === 'BILLED' || stmt.taxes.pnd1.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd1.amount)}
                           </span>
                         ) : (
@@ -892,7 +1035,7 @@ export default function ConsolidatedBillingPage() {
                       </td>
                       <td>
                         {stmt.taxes.pnd3 ? (
-                          <span className={`tax-amount-tag ${stmt.taxes.pnd3.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd3.status === 'BILLED' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
+                          <span className={`tax-amount-tag ${stmt.taxes.pnd3.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd3.status === 'BILLED' || stmt.taxes.pnd3.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd3.amount)}
                           </span>
                         ) : (
@@ -901,8 +1044,17 @@ export default function ConsolidatedBillingPage() {
                       </td>
                       <td>
                         {stmt.taxes.pnd53 ? (
-                          <span className={`tax-amount-tag ${stmt.taxes.pnd53.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd53.status === 'BILLED' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
+                          <span className={`tax-amount-tag ${stmt.taxes.pnd53.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd53.status === 'BILLED' || stmt.taxes.pnd53.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
                             {money(stmt.taxes.pnd53.amount)}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#cbd5e1' }}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        {stmt.taxes.pnd51 ? (
+                          <span className={`tax-amount-tag ${stmt.taxes.pnd51.status === 'PAID' ? 'tax-amount-tag--paid' : stmt.taxes.pnd51.status === 'BILLED' || stmt.taxes.pnd51.status === 'WAITING_TRANSFER' ? 'tax-amount-tag--billed' : 'tax-amount-tag--unbilled'}`}>
+                            {money(stmt.taxes.pnd51.amount)}
                           </span>
                         ) : (
                           <span style={{ color: '#cbd5e1' }}>-</span>
@@ -964,6 +1116,56 @@ export default function ConsolidatedBillingPage() {
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr className="billing-table__total-row">
+                  <td></td>
+                  <td className="col-company">
+                    <strong>รวมทั้งหมด ({statements.length} บริษัท)</strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {statements.reduce((acc, s) => acc + (s.taxes.vat?.amount || 0), 0) > 0
+                        ? money(statements.reduce((acc, s) => acc + (s.taxes.vat?.amount || 0), 0))
+                        : '-'}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {statements.reduce((acc, s) => acc + (s.taxes.pnd1?.amount || 0), 0) > 0
+                        ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd1?.amount || 0), 0))
+                        : '-'}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {statements.reduce((acc, s) => acc + (s.taxes.pnd3?.amount || 0), 0) > 0
+                        ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd3?.amount || 0), 0))
+                        : '-'}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {statements.reduce((acc, s) => acc + (s.taxes.pnd53?.amount || 0), 0) > 0
+                        ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd53?.amount || 0), 0))
+                        : '-'}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong>
+                      {statements.reduce((acc, s) => acc + (s.taxes.pnd51?.amount || 0), 0) > 0
+                        ? money(statements.reduce((acc, s) => acc + (s.taxes.pnd51?.amount || 0), 0))
+                        : '-'}
+                    </strong>
+                  </td>
+                  <td>
+                    <strong className="grand-total-amount">
+                      {money(statements.reduce((acc, s) => acc + s.totalAmount, 0))}
+                    </strong>
+                  </td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           )}
         </div>
@@ -983,9 +1185,9 @@ export default function ConsolidatedBillingPage() {
               type="button"
               className="bulk-btn bulk-btn--billed"
               disabled={bulkUpdating}
-              onClick={() => handleBulkStatus('BILLED')}
+              onClick={() => handleBulkStatus('WAITING_TRANSFER')}
             >
-              <Clock size={14} /> วางบิลแล้ว
+              <Clock size={14} /> รอโอนเงิน (แจ้งแล้ว)
             </button>
             <button
               type="button"
@@ -993,7 +1195,7 @@ export default function ConsolidatedBillingPage() {
               disabled={bulkUpdating}
               onClick={openPaidModalForBulk}
             >
-              <Check size={14} /> เคลียร์ยอดแล้ว (PAID)
+              <Check size={14} /> จ่ายแล้ว (PAID)
             </button>
             <button
               type="button"

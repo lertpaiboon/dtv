@@ -23,20 +23,26 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const currentGregorianYear = new Date().getUTCFullYear();
+  const rawTaxMonth = searchParams.get('taxMonth');
+  const isAllOutstanding = rawTaxMonth === 'ALL_OUTSTANDING';
   const taxYear = normalizeTaxYear(searchParams.get('taxYear')) || String(currentGregorianYear + 543);
-  const taxMonth = normalizeTaxMonth(searchParams.get('taxMonth')) || String(new Date().getUTCMonth() + 1).padStart(2, '0');
+  const taxMonth = isAllOutstanding ? 'ALL_OUTSTANDING' : (normalizeTaxMonth(rawTaxMonth) || String(new Date().getUTCMonth() + 1).padStart(2, '0'));
   const statusFilter = searchParams.get('status') || '';
   const search = searchParams.get('search')?.trim().toLowerCase() || '';
 
   try {
-    // 1. Find all tax payments for the given year and month (and PND51 for the year if requested)
-    const paymentWhere: Prisma.TaxPaymentWhereInput = {
-      taxYear,
-      OR: [
-        { taxMonth },
-        { taxType: 'PND51' }, // PND51 is annual half-year
-      ],
-    };
+    // 1. Find all tax payments: If all-outstanding, query all unpaid records across years/months; otherwise for current period
+    const paymentWhere: Prisma.TaxPaymentWhereInput = isAllOutstanding
+      ? {
+          billingStatus: { in: ['ADVANCED', 'WAITING_TRANSFER', 'PENDING', 'UNBILLED', 'BILLED'] },
+        }
+      : {
+          taxYear,
+          OR: [
+            { taxMonth },
+            { taxType: 'PND51' }, // PND51 is annual half-year
+          ],
+        };
 
     const allPaymentsInPeriod = await prisma.taxPayment.findMany({
       where: paymentWhere,
@@ -156,7 +162,7 @@ export async function GET(req: Request) {
       }
 
       // Determine overall company status for this period
-      let overallStatus: 'UNBILLED' | 'BILLED' | 'PAID' | 'PENDING' = 'UNBILLED';
+      let overallStatus: 'ADVANCED' | 'WAITING_TRANSFER' | 'PAID' | 'PENDING' = 'ADVANCED';
       if (Array.from(paymentStatuses).every((s) => s === 'PAID')) {
         overallStatus = 'PAID';
         totalPaid += companyTotal;
@@ -166,11 +172,11 @@ export async function GET(req: Request) {
         totalPending += companyTotal;
         pendingCount++;
       } else if (paymentStatuses.has('BILLED') || paymentStatuses.has('WAITING_TRANSFER')) {
-        overallStatus = 'BILLED';
+        overallStatus = 'WAITING_TRANSFER';
         totalBilled += companyTotal;
         billedCount++;
       } else {
-        overallStatus = 'UNBILLED'; // ADVANCED or UNBILLED
+        overallStatus = 'ADVANCED'; // ADVANCED or UNBILLED
         totalUnbilled += companyTotal;
         unbilledCount++;
       }
@@ -185,12 +191,25 @@ export async function GET(req: Request) {
         if (!matchName && !matchTaxId && !matchContact) continue;
       }
 
-      // Filter by status if present
+      // Filter by status if present (compatible with both legacy and unified status keys)
       if (statusFilter) {
-        if (statusFilter === 'UNBILLED' && overallStatus !== 'UNBILLED') continue;
-        if (statusFilter === 'BILLED' && overallStatus !== 'BILLED') continue;
+        if ((statusFilter === 'ADVANCED' || statusFilter === 'UNBILLED') && overallStatus !== 'ADVANCED') continue;
+        if ((statusFilter === 'WAITING_TRANSFER' || statusFilter === 'BILLED') && overallStatus !== 'WAITING_TRANSFER') continue;
         if (statusFilter === 'PAID' && overallStatus !== 'PAID') continue;
         if (statusFilter === 'PENDING' && overallStatus !== 'PENDING') continue;
+      }
+
+      // Calculate Aging (Days since oldest unpaid payment)
+      const unpaidPayments = payments.filter((p) => p.billingStatus !== 'PAID');
+      let agingDays = 0;
+      if (unpaidPayments.length > 0) {
+        const oldestDate = unpaidPayments.reduce(
+          (min, p) => (new Date(p.paymentDate).getTime() < new Date(min).getTime() ? p.paymentDate : min),
+          unpaidPayments[0].paymentDate
+        );
+        const now = new Date();
+        const diffTime = Math.max(0, now.getTime() - new Date(oldestDate).getTime());
+        agingDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
       const lastLog = followUpMapByCompany[company.id];
@@ -206,6 +225,7 @@ export async function GET(req: Request) {
         },
         totalAmount: companyTotal,
         overallStatus,
+        agingDays,
         slipUrl: payments.find((p) => p.slipUrl)?.slipUrl || null,
         reimbursementRef: payments.find((p) => p.reimbursementRef)?.reimbursementRef || null,
         paymentIds,
@@ -238,12 +258,15 @@ export async function GET(req: Request) {
       });
     }
 
-    // Sort: Unbilled first, then Billed, then Pending, then Paid; then by totalAmount desc
-    const statusOrder: Record<string, number> = { UNBILLED: 1, BILLED: 2, PENDING: 3, PAID: 4 };
+    // Sort: Advanced first, then Waiting, then Pending, then Paid; then by totalAmount desc
+    const statusOrder: Record<string, number> = { ADVANCED: 1, WAITING_TRANSFER: 2, PENDING: 3, PAID: 4, UNBILLED: 1, BILLED: 2 };
     billingStatements.sort((a, b) => {
       const orderA = statusOrder[a.overallStatus] || 99;
       const orderB = statusOrder[b.overallStatus] || 99;
       if (orderA !== orderB) return orderA - orderB;
+      if (isAllOutstanding && b.agingDays !== a.agingDays) {
+        return b.agingDays - a.agingDays;
+      }
       return b.totalAmount - a.totalAmount;
     });
 
@@ -251,14 +274,18 @@ export async function GET(req: Request) {
       success: true,
       data: billingStatements,
       meta: {
-        taxYear,
+        taxYear: isAllOutstanding ? 'สะสมทุกงวด' : taxYear,
         taxMonth,
+        isAllOutstanding,
         totalCompanies: billingStatements.length,
         grandTotal,
-        unbilled: { count: unbilledCount, amount: totalUnbilled },
-        billed: { count: billedCount, amount: totalBilled },
+        advanced: { count: unbilledCount, amount: totalUnbilled },
+        waiting: { count: billedCount, amount: totalBilled },
         paid: { count: paidCount, amount: totalPaid },
         pending: { count: pendingCount, amount: totalPending },
+        // Keep legacy fields for backward compatibility
+        unbilled: { count: unbilledCount, amount: totalUnbilled },
+        billed: { count: billedCount, amount: totalBilled },
       },
     });
   } catch (error) {
