@@ -18,6 +18,8 @@ interface ArticlePageProps {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://deethavorn.com';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * 1. Dynamic Metadata for SEO, AEO, and Social Sharing
  */

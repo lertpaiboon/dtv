@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
@@ -222,6 +223,16 @@ export async function PUT(
       });
     });
 
+    try {
+      revalidatePath('/knowledge');
+      revalidatePath(`/knowledge/${updated.slug}`);
+      if (oldSlugToRedirect) {
+        revalidatePath(`/knowledge/${oldSlugToRedirect}`);
+      }
+    } catch (e) {
+      console.warn('Revalidation warning:', e);
+    }
+
     return NextResponse.json({
       success: true,
       data: updated,
@@ -270,6 +281,11 @@ export async function DELETE(
       }
 
       await prisma.article.delete({ where: { id: articleId } });
+      try {
+        revalidatePath('/knowledge');
+      } catch (e) {
+        console.warn('Revalidation warning:', e);
+      }
       return NextResponse.json({
         success: true,
         message: `ลบบทความ "${article.title}" ถาวรเรียบร้อยแล้ว`,
@@ -285,6 +301,12 @@ export async function DELETE(
       where: { id: articleId },
       data: { status: ArticleStatus.ARCHIVED },
     });
+
+    try {
+      revalidatePath('/knowledge');
+    } catch (e) {
+      console.warn('Revalidation warning:', e);
+    }
 
     return NextResponse.json({
       success: true,

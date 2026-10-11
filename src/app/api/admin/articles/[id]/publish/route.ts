@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
@@ -43,6 +44,12 @@ export async function POST(
         where: { id: articleId },
         data: { status: ArticleStatus.DRAFT },
       });
+      try {
+        revalidatePath('/knowledge');
+        revalidatePath(`/knowledge/${article.slug}`);
+      } catch (e) {
+        console.warn('Revalidation warning:', e);
+      }
       return NextResponse.json({
         success: true,
         data: updated,
@@ -55,6 +62,12 @@ export async function POST(
         where: { id: articleId },
         data: { status: ArticleStatus.ARCHIVED },
       });
+      try {
+        revalidatePath('/knowledge');
+        revalidatePath(`/knowledge/${article.slug}`);
+      } catch (e) {
+        console.warn('Revalidation warning:', e);
+      }
       return NextResponse.json({
         success: true,
         data: updated,
@@ -109,6 +122,13 @@ export async function POST(
     submitToIndexNow([`/knowledge/${article.slug}`]).catch((err) =>
       console.error('Async IndexNow publish notification failed:', err)
     );
+
+    try {
+      revalidatePath('/knowledge');
+      revalidatePath(`/knowledge/${article.slug}`);
+    } catch (e) {
+      console.warn('Revalidation warning:', e);
+    }
 
     return NextResponse.json({
       success: true,
