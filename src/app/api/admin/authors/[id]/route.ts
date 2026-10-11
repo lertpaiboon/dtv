@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
@@ -122,6 +123,17 @@ export async function PUT(
         },
       },
     });
+
+    try {
+      revalidatePath(`/authors/${updated.slug}`);
+      if (existing.slug !== updated.slug) {
+        revalidatePath(`/authors/${existing.slug}`);
+      }
+      revalidatePath('/knowledge');
+      revalidatePath('/sitemap.xml');
+    } catch (e) {
+      console.warn('Revalidate error:', e);
+    }
 
     return NextResponse.json({
       success: true,

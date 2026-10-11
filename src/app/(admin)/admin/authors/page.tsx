@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -17,6 +17,7 @@ import {
   X,
   Save,
   User,
+  Upload,
 } from 'lucide-react';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 import { slugify } from '@/lib/articles/validation';
@@ -59,9 +60,40 @@ export default function AdminAuthorsPage() {
   const [formIsActive, setFormIsActive] = useState(true);
   const [isSlugCustomized, setIsSlugCustomized] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canEdit = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:edit') || user?.permissions.includes('article:create'));
   const canDelete = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:delete'));
+
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/admin/uploads/author-photo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'อัปโหลดภาพไม่สำเร็จ');
+
+      setFormProfileImage(json.data.url);
+      setSuccessMsg('อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
+      alert(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const fetchAuthors = useCallback(async () => {
     setLoading(true);
@@ -344,7 +376,15 @@ export default function AdminAuthorsPage() {
                             {author.name}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                            slug: {author.slug}
+                            slug:{' '}
+                            <Link
+                              href={`/authors/${author.slug}`}
+                              target="_blank"
+                              style={{ color: '#2563eb', textDecoration: 'underline' }}
+                              title="คลิกเพื่อเปิดหน้าโปรไฟล์สาธารณะ"
+                            >
+                              /authors/{author.slug}
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -394,6 +434,29 @@ export default function AdminAuthorsPage() {
                     {/* Actions */}
                     <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <Link
+                          href={`/authors/${author.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="เปิดดูหน้าโปรไฟล์สาธารณะ (แท็บใหม่)"
+                          style={{
+                            padding: '6px 12px',
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '6px',
+                            color: '#1d4ed8',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <ExternalLink size={13} />
+                          <span>ดูหน้าเว็บ</span>
+                        </Link>
+
                         {canEdit && (
                           <button
                             type="button"
@@ -636,9 +699,82 @@ export default function AdminAuthorsPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                  รูปโปรไฟล์ (URL ภาพ หรือ /images/...)
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '8px' }}>
+                  รูปโปรไฟล์ผู้เขียน (Profile Photo)
                 </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                  <div
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: '#eff6ff',
+                      border: '2px solid #bfdbfe',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {formProfileImage ? (
+                      <Image src={formProfileImage} alt="" fill style={{ objectFit: 'cover' }} unoptimized />
+                    ) : (
+                      <User size={30} color="#3b82f6" />
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleUploadPhoto}
+                      accept="image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadingImage}
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        padding: '7px 14px',
+                        background: '#f8fafc',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: 'var(--dtv-navy-900)',
+                        cursor: uploadingImage ? 'wait' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Upload size={14} />
+                      <span>{uploadingImage ? 'กำลังอัปโหลด...' : 'เลือกรูปภาพจากเครื่อง'}</span>
+                    </button>
+
+                    {formProfileImage && (
+                      <button
+                        type="button"
+                        onClick={() => setFormProfileImage('')}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc2626',
+                          fontSize: '0.78rem',
+                          textAlign: 'left',
+                          padding: 0,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ลบรูปภาพนี้ออก
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <input
                   type="text"
                   placeholder="/images/DTV LOGO.png หรือ URL รูปถ่าย"
@@ -646,12 +782,16 @@ export default function AdminAuthorsPage() {
                   onChange={(e) => setFormProfileImage(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
                     border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
+                    fontSize: '0.85rem',
+                    color: '#64748b',
                   }}
                 />
+                <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>
+                  รองรับไฟล์ JPG, PNG, WebP (สูงสุด 5 MB) หรือใส่ Path / URL รูปภาพ
+                </p>
               </div>
 
               <div>

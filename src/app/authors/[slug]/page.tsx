@@ -6,7 +6,6 @@ import {
   ChevronRight,
   ShieldCheck,
   UserCheck,
-  Award,
   ExternalLink,
   BookOpen,
   ArrowRight,
@@ -196,7 +195,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
               alignItems: 'flex-start',
             }}
           >
-            {/* Author Avatar / Badge */}
+            {/* Author Avatar / Photo */}
             <div
               style={{
                 width: '120px',
@@ -210,32 +209,26 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                 flexShrink: 0,
                 boxShadow: '0 8px 24px rgba(11, 25, 44, 0.15)',
                 border: '4px solid #ffffff',
+                overflow: 'hidden',
+                position: 'relative',
               }}
             >
-              <UserCheck size={60} aria-hidden="true" />
+              {author.profileImage &&
+              !author.profileImage.includes('DTV') &&
+              !author.profileImage.includes('LOGO') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={author.profileImage}
+                  alt={author.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <UserCheck size={60} aria-hidden="true" />
+              )}
             </div>
 
             {/* Author Information */}
             <div style={{ flex: 1, minWidth: '280px' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'rgba(197, 160, 89, 0.12)',
-                  color: 'var(--accent-dark)',
-                  padding: '4px 12px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  marginBottom: '10px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <Award size={14} aria-hidden="true" />
-                <span>E-E-A-T Certified Expert Profile</span>
-              </div>
-
               <h1
                 style={{
                   fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)',
