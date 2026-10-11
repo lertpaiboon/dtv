@@ -1108,12 +1108,12 @@ export default function ArticleEditorForm({
                 <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px', alignItems: 'center' }}>
                   <div>
                     {formData.coverImage ? (
-                      <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                        <Image
+                      <div style={{ position: 'relative', width: '100%', height: '140px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#0f172a' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                           src={formData.coverImage}
                           alt={formData.coverImageAlt || 'Cover image'}
-                          fill
-                          style={{ objectFit: 'cover' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                       </div>
                     ) : (
