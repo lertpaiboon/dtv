@@ -87,6 +87,20 @@ const MODULES: ModuleDef[] = [
       { code: 'followup:delete', label: 'ลบบันทึก (Delete)', icon: Trash2 },
     ],
   },
+  {
+    key: 'article',
+    name: 'คลังความรู้และบทความ (Knowledge Hub)',
+    description: 'จัดการบทความ, ส่งตรวจ, อนุมัติ, เผยแพร่ และตั้งค่า SEO/AEO',
+    actions: [
+      { code: 'article:view', label: 'ดูบทความ (View)', icon: Eye },
+      { code: 'article:create', label: 'สร้างบทความ (Create)', icon: Plus },
+      { code: 'article:edit', label: 'แก้ไขบทความ (Edit)', icon: Edit },
+      { code: 'article:review', label: 'ตรวจ/อนุมัติ (Review/Approve)', icon: ShieldCheck },
+      { code: 'article:publish', label: 'เผยแพร่สู่สาธารณะ (Publish)', icon: CheckCircle2 },
+      { code: 'article:archive', label: 'จัดเก็บ/ระงับ (Archive)', icon: Lock },
+      { code: 'article:delete', label: 'ลบถาวร (Delete)', icon: Trash2 },
+    ],
+  },
 ];
 
 export default function RolesPage() {

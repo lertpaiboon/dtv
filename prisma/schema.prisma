@@ -25,21 +25,109 @@ model ContactLead {
   @@map("contact_leads")
 }
 
-// คลังความรู้และบทความบัญชี/ภาษี (Knowledge Hub / Blog)
-model Article {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(255)
-  slug        String   @unique @db.VarChar(255)
-  summary     String?  @db.VarChar(500)
-  content     String   @db.LongText
-  category    String   @db.VarChar(50) // ภาษี, บัญชี, จดทะเบียนธุรกิจ, ทรัพยากรบุคคล
-  coverImage  String?  @map("cover_image") @db.VarChar(255)
-  isPublished Boolean  @default(true) @map("is_published")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+// ------------------------------------------------------------------------------
+// คลังความรู้และบทความบัญชี/ภาษี (Knowledge Hub / E-E-A-T Editorial)
+// ------------------------------------------------------------------------------
 
+enum ArticleStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Author {
+  id               Int       @id @default(autoincrement())
+  name             String    @db.VarChar(120)
+  slug             String    @unique @db.VarChar(160)
+  role             String?   @db.VarChar(160)
+  bio              String?   @db.Text
+  credentials      String?   @db.Text
+  profileImage     String?   @map("profile_image") @db.VarChar(255)
+  sameAs           Json?     @map("same_as")
+  isActive         Boolean   @default(true) @map("is_active")
+  authoredArticles Article[] @relation("ArticleAuthor")
+  reviewedArticles Article[] @relation("ArticleReviewer")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("authors")
+}
+
+model Article {
+  id               Int               @id @default(autoincrement())
+  title            String            @db.VarChar(255)
+  slug             String            @unique @db.VarChar(255)
+  summary          String            @db.VarChar(500)
+  contentMarkdown  String            @map("content_markdown") @db.LongText
+  category         String            @db.VarChar(80)
+  coverImage       String?           @map("cover_image") @db.VarChar(255)
+  coverImageAlt    String?           @map("cover_image_alt") @db.VarChar(255)
+  quickAnswer      String?           @map("quick_answer") @db.Text
+  status           ArticleStatus     @default(DRAFT)
+  focusKeyword     String?           @map("focus_keyword") @db.VarChar(120)
+  seoScore         Int               @default(0) @map("seo_score")
+  isNoIndex        Boolean           @default(false) @map("is_no_index")
+  canonicalUrl     String?           @map("canonical_url") @db.VarChar(500)
+  ogImage          String?           @map("og_image") @db.VarChar(255)
+  authorId         Int?              @map("author_id")
+  author           Author?           @relation("ArticleAuthor", fields: [authorId], references: [id])
+  reviewerId       Int?              @map("reviewer_id")
+  reviewer         Author?           @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  reviewedAt       DateTime?         @map("reviewed_at")
+  publishedAt      DateTime?         @map("published_at")
+  contentUpdatedAt DateTime?         @map("content_updated_at")
+  nextReviewAt     DateTime?         @map("next_review_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  faqs             ArticleFaq[]
+  citations        ArticleCitation[]
+  redirects        ArticleRedirect[]
+
+  @@index([status, publishedAt])
+  @@index([category, status])
   @@map("articles")
 }
+
+model ArticleFaq {
+  id        Int     @id @default(autoincrement())
+  articleId Int     @map("article_id")
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  question  String  @db.VarChar(255)
+  answer    String  @db.Text
+  sortOrder Int     @default(0) @map("sort_order")
+
+  @@index([articleId, sortOrder])
+  @@map("article_faqs")
+}
+
+model ArticleCitation {
+  id            Int       @id @default(autoincrement())
+  articleId     Int       @map("article_id")
+  article       Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  title         String    @db.VarChar(255)
+  publisher     String?   @db.VarChar(160)
+  url           String    @db.VarChar(1000)
+  referenceDate DateTime? @map("reference_date") @db.Date
+  accessedAt    DateTime? @map("accessed_at") @db.Date
+  sortOrder     Int       @default(0) @map("sort_order")
+
+  @@index([articleId, sortOrder])
+  @@map("article_citations")
+}
+
+model ArticleRedirect {
+  id        Int      @id @default(autoincrement())
+  fromSlug  String   @unique @map("from_slug") @db.VarChar(255)
+  articleId Int      @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("article_redirects")
+}
+
 
 // คำถามที่พบบ่อย (FAQs)
 model Faq {
@@ -220,3 +308,52 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+// ------------------------------------------------------------------------------
+// 6. ศูนย์ควบคุม SEO Suite (Rank Math Architecture for Next.js)
+// ------------------------------------------------------------------------------
+
+// ตารางบันทึกการส่งคำขอ Instant Indexing (IndexNow API)
+model IndexingLog {
+  id        Int      @id @default(autoincrement())
+  url       String   @db.VarChar(500)
+  engine    String   @default("IndexNow") @db.VarChar(50) // IndexNow, Google
+  status    String   @db.VarChar(50) // SUCCESS, FAILED
+  response  String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("indexing_logs")
+}
+
+// ตารางบันทึก 404 Errors เพื่อนำมาตรวจจับลิงก์เสียและทำ 301 Redirects
+model ErrorLog404 {
+  id        Int      @id @default(autoincrement())
+  url       String   @unique @db.VarChar(500)
+  referrer  String?  @db.VarChar(500)
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  ipAddress String?  @map("ip_address") @db.VarChar(50)
+  hits      Int      @default(1)
+  isResolved Boolean @default(false) @map("is_resolved")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hits])
+  @@map("error_logs_404")
+}
+
+// ตารางจัดการ Custom Redirects (301 Permanent / 302 Temporary)
+model CustomRedirect {
+  id          Int       @id @default(autoincrement())
+  sourcePath  String    @unique @map("source_path") @db.VarChar(500)
+  targetPath  String    @map("target_path") @db.VarChar(500)
+  statusCode  Int       @default(301) @map("status_code") // 301 or 302
+  isActive    Boolean   @default(true) @map("is_active")
+  hits        Int       @default(0)
+  lastHitAt   DateTime? @map("last_hit_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("custom_redirects")
+}
+

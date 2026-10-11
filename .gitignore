@@ -59,4 +59,5 @@ Thumbs.db
 
 # Optional Agent/Claude Local Caches
 .claude/
+.obsidian/
 scratch/

@@ -5,9 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  BookOpen,
   Building2,
   ChevronRight,
   FileSpreadsheet,
+  Globe,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -16,6 +18,8 @@ import {
   ReceiptText,
   Settings,
   ShieldCheck,
+  UserCheck,
+  Users,
   WalletCards,
   X,
 } from 'lucide-react';
@@ -31,8 +35,12 @@ const navItems = [
   { title: 'ภาษีมูลค่าเพิ่ม', href: '/admin/tax-vat', icon: Percent, permission: 'vat:view', group: 'รายการภาษี' },
   { title: 'สรุปยอดวางบิล', href: '/admin/billing', icon: WalletCards, permissionAny: ['vat:view', 'wht:view', 'pnd51:view'], group: 'ติดตามลูกหนี้' },
   { title: 'ประวัติการติดตาม', href: '/admin/follow-ups', icon: PhoneCall, permission: 'followup:view', group: 'ติดตามลูกหนี้' },
-  { title: 'ตั้งค่าระบบ', href: '/admin/settings', icon: Settings, permission: '*', group: 'ดูแลระบบ' },
+  { title: 'คลังความรู้/บทความ', href: '/admin/articles', icon: BookOpen, permission: 'article:view', group: 'คลังความรู้' },
+  { title: 'ผู้เขียนและผู้ตรวจทาน', href: '/admin/authors', icon: UserCheck, permission: 'article:view', group: 'คลังความรู้' },
+  { title: 'ศูนย์ควบคุม SEO', href: '/admin/seo', icon: Globe, permission: 'article:view', group: 'คลังความรู้' },
+  { title: 'ผู้ใช้งานระบบ', href: '/admin/users', icon: Users, permission: '*', group: 'ดูแลระบบ' },
   { title: 'บทบาทและสิทธิ์', href: '/admin/roles', icon: ShieldCheck, permission: '*', group: 'ดูแลระบบ' },
+  { title: 'ตั้งค่าระบบ', href: '/admin/settings', icon: Settings, permission: '*', group: 'ดูแลระบบ' },
 ] as const;
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -43,11 +51,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [urgentCount, setUrgentCount] = useState<number>(0);
 
   useEffect(() => {
-    if (pathname === '/admin/login') return;
+    if (pathname === '/admin/login') {
+      if (user) setUser(null);
+      return;
+    }
     if (user) return; // Session already loaded in memory, no need to re-query on every click!
 
     const controller = new AbortController();
-    fetch('/api/admin/auth/me', { signal: controller.signal })
+    fetch('/api/admin/auth/me', { signal: controller.signal, cache: 'no-store' })
       .then(async (response) => {
         const data = await response.json().catch(() => null);
         if (!response.ok || !data?.user) throw new Error('Unauthenticated');
@@ -95,8 +106,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   async function handleLogout() {
     await fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => null);
-    router.replace('/admin/login');
-    router.refresh();
+    setUser(null);
+    window.location.href = '/admin/login';
   }
 
   return (

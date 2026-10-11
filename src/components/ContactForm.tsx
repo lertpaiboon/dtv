@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { AlertCircle, CheckCircle2, Clock3, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 
@@ -11,6 +11,34 @@ export default function ContactForm() {
   const [honeypot, setHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
+
+  // Auto-fill inquiry topic when redirected from Knowledge articles
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const topic = searchParams.get('topic');
+    if (topic) {
+      setFormData((prev) => {
+        if (!prev.message || prev.message.startsWith('สนใจขอคำปรึกษาเรื่อง:')) {
+          return { ...prev, message: `สนใจขอคำปรึกษาเรื่อง: ${topic}` };
+        }
+        return prev;
+      });
+    }
+
+    const scrollToContact = () => {
+      if (window.location.hash === '#contact') {
+        const contactEl = document.getElementById('contact');
+        if (contactEl) {
+          contactEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+
+    scrollToContact();
+    const timer = setTimeout(scrollToContact, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

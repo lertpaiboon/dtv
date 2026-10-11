@@ -27,18 +27,24 @@ export async function POST(req: Request) {
       );
     }
 
+    const isDev = process.env.NODE_ENV !== 'production';
     const now = Date.now();
     const key = clientKey(req, email);
-    const current = attempts.get(key);
-    const attempt = !current || current.resetAt <= now
-      ? { count: 0, resetAt: now + WINDOW_MS }
-      : current;
 
-    if (attempt.count >= MAX_ATTEMPTS) {
-      return NextResponse.json(
-        { success: false, error: 'เข้าสู่ระบบไม่สำเร็จหลายครั้ง โปรดลองใหม่ในอีก 15 นาที' },
-        { status: 429, headers: { 'Retry-After': String(Math.ceil((attempt.resetAt - now) / 1000)) } }
-      );
+    if (isDev) {
+      attempts.delete(key);
+    } else {
+      const current = attempts.get(key);
+      const attempt = !current || current.resetAt <= now
+        ? { count: 0, resetAt: now + WINDOW_MS }
+        : current;
+
+      if (attempt.count >= MAX_ATTEMPTS) {
+        return NextResponse.json(
+          { success: false, error: 'เข้าสู่ระบบไม่สำเร็จหลายครั้ง โปรดลองใหม่ในอีก 15 นาที' },
+          { status: 429, headers: { 'Retry-After': String(Math.ceil((attempt.resetAt - now) / 1000)) } }
+        );
+      }
     }
 
     const user = await prisma.user.findUnique({
@@ -48,8 +54,11 @@ export async function POST(req: Request) {
     const isMatch = await comparePassword(password, user?.passwordHash || DUMMY_HASH);
 
     if (!user || !user.isActive || !isMatch) {
-      attempt.count += 1;
-      attempts.set(key, attempt);
+      if (!isDev) {
+        const current = attempts.get(key) || { count: 0, resetAt: now + WINDOW_MS };
+        current.count += 1;
+        attempts.set(key, current);
+      }
       return NextResponse.json(
         { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' },
         { status: 401 }

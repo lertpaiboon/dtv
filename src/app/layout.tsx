@@ -96,14 +96,14 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="th" className={`${prompt.variable} ${outfit.variable}`}>
+    <html lang="th" className={`${prompt.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>

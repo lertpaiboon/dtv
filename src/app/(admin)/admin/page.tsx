@@ -63,6 +63,17 @@ export default async function AdminDashboardPage() {
   const session = await getAdminSession();
   if (!session) redirect('/admin/login');
 
+  // If user only has article/content permissions (e.g. EDITOR) and no financial/tax permissions,
+  // guide them directly to the Articles workspace
+  const hasFinancialPermissions =
+    hasPermission(session, '*') ||
+    ['pnd51:view', 'wht:view', 'vat:view', 'companies:view', 'followup:view'].some((p) =>
+      hasPermission(session, p)
+    );
+  if (!hasFinancialPermissions && hasPermission(session, 'article:view')) {
+    redirect('/admin/articles');
+  }
+
   const allowedTypes = [
     hasPermission(session, 'pnd51:view') || hasPermission(session, '*') ? 'PND51' : null,
     hasPermission(session, 'wht:view') || hasPermission(session, '*') ? ['WHT_PND1', 'WHT_PND3', 'WHT_PND53'] : null,

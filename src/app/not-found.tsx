@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Home, ArrowLeft, HelpCircle } from 'lucide-react';
+import NotFoundTracker from '@/components/seo/NotFoundTracker';
 
 export default function NotFound() {
   return (
@@ -13,6 +14,7 @@ export default function NotFound() {
       padding: '60px 24px',
       textAlign: 'center'
     }}>
+      <NotFoundTracker />
       <div style={{
         maxWidth: '560px',
         background: '#ffffff',
