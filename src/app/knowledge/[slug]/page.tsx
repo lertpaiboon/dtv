@@ -3,7 +3,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { getArticleBySlug, getRelatedArticles, getArticleRedirect } from '@/lib/articles/queries';
+import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect } from '@/lib/articles/queries';
+import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
 import ArticleBody from '@/components/articles/ArticleBody';
 import ArticleToc from '@/components/articles/ArticleToc';
 import ArticleFaq from '@/components/articles/ArticleFaq';
@@ -16,8 +17,6 @@ interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://deethavorn.com';
-
 export const dynamic = 'force-dynamic';
 
 /**
@@ -25,7 +24,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticleBySlug(slug);
 
   if (!article) {
     return {
@@ -34,8 +33,9 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
-  const canonicalUrl = article.canonicalUrl || `${SITE_URL}/knowledge/${article.slug}`;
-  const ogImageUrl = article.ogImage || article.coverImage || `${SITE_URL}/images/hero-tax.png`;
+  const siteUrl = getSiteUrl();
+  const canonicalUrl = article.canonicalUrl || `${siteUrl}/knowledge/${article.slug}`;
+  const ogImageUrl = toAbsoluteUrl(article.ogImage || article.coverImage || '/images/hero-tax.png');
 
   return {
     title: `${article.title} | ดีถาวรการบัญชี`,
@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
  */
 export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getCachedArticleBySlug(slug);
 
   if (!article) {
     const redirectTarget = await getArticleRedirect(slug);
@@ -91,6 +91,8 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     notFound();
   }
 
+  const siteUrl = getSiteUrl();
+  const canonicalUrl = article.canonicalUrl || `${siteUrl}/knowledge/${article.slug}`;
   const relatedArticles = await getRelatedArticles(article.slug, article.category, 2);
 
   const publishedDateThai = new Date(article.publishedAt).toLocaleDateString('th-TH', {
@@ -113,23 +115,25 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     '@type': 'Article',
     headline: article.title,
     description: article.summary,
+    image: [toAbsoluteUrl(article.coverImage || '/images/hero-tax.png')],
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${SITE_URL}/knowledge/${article.slug}`,
+      '@id': canonicalUrl,
     },
+    url: canonicalUrl,
     author: {
       '@type': 'Person',
       name: article.author.name,
       jobTitle: article.author.role,
-      url: `${SITE_URL}/#why-us`,
+      url: toAbsoluteUrl('/#why-us'),
     },
     publisher: {
       '@type': 'AccountingService',
       name: 'บริษัท ดีถาวรการบัญชี จำกัด',
-      url: SITE_URL,
+      url: siteUrl,
       logo: {
         '@type': 'ImageObject',
-        url: `${SITE_URL}/images/DTV%20LOGO.png`,
+        url: toAbsoluteUrl('/images/DTV%20LOGO.png'),
       },
     },
     datePublished: article.publishedAt,
@@ -144,25 +148,25 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         '@type': 'ListItem',
         position: 1,
         name: 'หน้าแรก',
-        item: SITE_URL,
+        item: siteUrl,
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: 'คลังความรู้',
-        item: `${SITE_URL}/knowledge`,
+        item: toAbsoluteUrl('/knowledge'),
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: article.category,
-        item: `${SITE_URL}/knowledge?category=${encodeURIComponent(article.category)}`,
+        item: toAbsoluteUrl(`/knowledge?category=${encodeURIComponent(article.category)}`),
       },
       {
         '@type': 'ListItem',
         position: 4,
         name: article.title,
-        item: `${SITE_URL}/knowledge/${article.slug}`,
+        item: canonicalUrl,
       },
     ],
   };
@@ -192,19 +196,19 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         minHeight: '80vh',
       }}
     >
-      {/* JSON-LD Injections */}
+      {/* JSON-LD Injections with < escaping to prevent XSS */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema).replace(/</g, '\\u003c') }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema).replace(/</g, '\\u003c') }}
       />
       {faqSchema && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
         />
       )}
 
@@ -334,7 +338,19 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
             }}
           >
             <div>
-              เขียนโดย: <strong>{article.author.name}</strong> ({article.author.role})
+              เขียนโดย:{' '}
+              {article.author.slug ? (
+                <Link
+                  href={`/authors/${article.author.slug}`}
+                  className="hover-gold"
+                  style={{ color: 'inherit', textDecoration: 'none', fontWeight: 700 }}
+                >
+                  {article.author.name}
+                </Link>
+              ) : (
+                <strong>{article.author.name}</strong>
+              )}{' '}
+              ({article.author.role})
             </div>
             {article.reviewer && reviewedDateThai && (
               <div
@@ -347,7 +363,21 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 }}
               >
                 <ShieldCheck size={16} aria-hidden="true" />
-                <span>ตรวจสอบความถูกต้องโดย {article.reviewer.name} ({reviewedDateThai})</span>
+                <span>
+                  ตรวจสอบความถูกต้องโดย{' '}
+                  {article.reviewer.slug ? (
+                    <Link
+                      href={`/authors/${article.reviewer.slug}`}
+                      className="hover-gold"
+                      style={{ color: 'inherit', textDecoration: 'underline' }}
+                    >
+                      {article.reviewer.name}
+                    </Link>
+                  ) : (
+                    article.reviewer.name
+                  )}{' '}
+                  ({reviewedDateThai})
+                </span>
               </div>
             )}
           </div>

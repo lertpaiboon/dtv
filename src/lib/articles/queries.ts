@@ -1,4 +1,6 @@
+import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
+import { getSiteUrl } from '@/lib/seo/site-url';
 import { Article, Author, ArticleFaqItem, ArticleCitationItem } from './types';
 
 function calculateReadTime(markdown: string): string {
@@ -121,6 +123,56 @@ export async function getPublishedArticles(category?: string): Promise<Article[]
 }
 
 /**
+ * Fetch strictly indexable articles for XML Sitemap, IndexNow, and SEO Audits.
+ * Criteria:
+ * 1. status === 'PUBLISHED'
+ * 2. publishedAt <= now
+ * 3. isNoIndex === false
+ * 4. canonicalUrl is either null or belongs to our canonical site host (not pointing externally)
+ */
+export async function getIndexableArticles(): Promise<Article[]> {
+  const now = new Date();
+  const siteUrl = getSiteUrl();
+
+  const rawArticles = await prisma.article.findMany({
+    where: {
+      status: 'PUBLISHED',
+      publishedAt: {
+        lte: now,
+      },
+      isNoIndex: false,
+    },
+    include: {
+      author: true,
+      reviewer: true,
+      faqs: { orderBy: { sortOrder: 'asc' } },
+      citations: { orderBy: { sortOrder: 'asc' } },
+    },
+    orderBy: {
+      publishedAt: 'desc',
+    },
+  });
+
+  // Filter out articles that have external canonical URLs
+  const filtered = rawArticles.filter((art) => {
+    if (!art.canonicalUrl) return true;
+    try {
+      const canonicalHost = new URL(art.canonicalUrl).host.toLowerCase();
+      const siteHost = new URL(siteUrl).host.toLowerCase();
+      return (
+        canonicalHost === siteHost ||
+        canonicalHost === siteHost.replace(/^www\./, '') ||
+        canonicalHost === `www.${siteHost}`
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  return filtered.map(mapArticle);
+}
+
+/**
  * Fetch a single published article by its slug from MySQL
  * Also checks 301 Redirects table if a slug was renamed.
  */
@@ -143,6 +195,14 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 
   return mapArticle(raw);
 }
+
+/**
+ * Cached version of getArticleBySlug to prevent duplicate SQL queries
+ * between generateMetadata() and ArticlePage() in Next.js Server Components.
+ */
+export const getCachedArticleBySlug = cache(async (slug: string): Promise<Article | null> => {
+  return getArticleBySlug(slug);
+});
 
 /**
  * Check if a slug has a registered 301 redirect
@@ -209,3 +269,68 @@ export async function getRelatedArticles(
 
   return articles.map(mapArticle);
 }
+
+export interface AuthorProfileData {
+  author: Author;
+  authoredArticles: Article[];
+  reviewedArticles: Article[];
+}
+
+/**
+ * Fetch an author by slug along with their published authored and reviewed articles.
+ */
+export async function getAuthorBySlug(slug: string): Promise<AuthorProfileData | null> {
+  const now = new Date();
+
+  const rawAuthor = await prisma.author.findUnique({
+    where: { slug },
+    include: {
+      authoredArticles: {
+        where: {
+          status: 'PUBLISHED',
+          publishedAt: { lte: now },
+        },
+        include: {
+          author: true,
+          reviewer: true,
+          faqs: { orderBy: { sortOrder: 'asc' } },
+          citations: { orderBy: { sortOrder: 'asc' } },
+        },
+        orderBy: { publishedAt: 'desc' },
+      },
+      reviewedArticles: {
+        where: {
+          status: 'PUBLISHED',
+          publishedAt: { lte: now },
+        },
+        include: {
+          author: true,
+          reviewer: true,
+          faqs: { orderBy: { sortOrder: 'asc' } },
+          citations: { orderBy: { sortOrder: 'asc' } },
+        },
+        orderBy: { publishedAt: 'desc' },
+      },
+    },
+  });
+
+  if (!rawAuthor || !rawAuthor.isActive) return null;
+
+  return {
+    author: mapAuthor(rawAuthor),
+    authoredArticles: rawAuthor.authoredArticles.map(mapArticle),
+    reviewedArticles: rawAuthor.reviewedArticles.map(mapArticle),
+  };
+}
+
+/**
+ * Fetch all active authors
+ */
+export async function getAllActiveAuthors(): Promise<Author[]> {
+  const authors = await prisma.author.findMany({
+    where: { isActive: true },
+    orderBy: { id: 'asc' },
+  });
+  return authors.map(mapAuthor);
+}
+

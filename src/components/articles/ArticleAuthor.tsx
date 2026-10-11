@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { Author } from '@/lib/articles/types';
-import { ShieldCheck, UserCheck, Calendar, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, UserCheck, Calendar, AlertTriangle, ArrowRight } from 'lucide-react';
 
 interface ArticleAuthorProps {
   author: Author;
@@ -83,7 +84,17 @@ export default function ArticleAuthor({
               ผู้เขียนบทความ (Author)
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
-              {author.name}
+              {author.slug ? (
+                <Link
+                  href={`/authors/${author.slug}`}
+                  className="hover-gold"
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                >
+                  {author.name}
+                </Link>
+              ) : (
+                author.name
+              )}
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
               {author.role}
@@ -102,6 +113,26 @@ export default function ArticleAuthor({
             >
               {author.credentials}
             </div>
+            {author.slug && (
+              <div style={{ marginTop: '8px' }}>
+                <Link
+                  href={`/authors/${author.slug}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.82rem',
+                    color: 'var(--primary)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                  className="hover-gold"
+                >
+                  <span>ดูประวัติและบทความทั้งหมด</span>
+                  <ArrowRight size={12} />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -128,7 +159,17 @@ export default function ArticleAuthor({
                 ผู้สอบทานความถูกต้อง (Expert Reviewer)
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
-                {reviewer.name}
+                {reviewer.slug ? (
+                  <Link
+                    href={`/authors/${reviewer.slug}`}
+                    className="hover-gold"
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {reviewer.name}
+                  </Link>
+                ) : (
+                  reviewer.name
+                )}
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                 {reviewer.role}
@@ -136,6 +177,26 @@ export default function ArticleAuthor({
               {revDateStr && (
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '6px' }}>
                   ตรวจสอบล่าสุดเมื่อ: <strong>{revDateStr}</strong>
+                </div>
+              )}
+              {reviewer.slug && (
+                <div style={{ marginTop: '8px' }}>
+                  <Link
+                    href={`/authors/${reviewer.slug}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.82rem',
+                      color: '#16a34a',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                    className="hover-gold"
+                  >
+                    <span>ดูประวัติและบทบาทผู้ตรวจทาน</span>
+                    <ArrowRight size={12} />
+                  </Link>
                 </div>
               )}
             </div>

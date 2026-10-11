@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { submitToIndexNow, getSiteBaseUrl } from '@/lib/seo/indexnow';
+import { getIndexableArticles } from '@/lib/articles/queries';
 import { ArticleStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -24,15 +25,12 @@ export async function POST(req: Request) {
 
     if (mode === 'bulk_published') {
       const baseUrl = getSiteBaseUrl();
-      const publishedArticles = await prisma.article.findMany({
-        where: { status: ArticleStatus.PUBLISHED },
-        select: { slug: true },
-      });
+      const indexableArticles = await getIndexableArticles();
 
       targetUrls = [
         `${baseUrl}/`,
         `${baseUrl}/knowledge`,
-        ...publishedArticles.map((a) => `${baseUrl}/knowledge/${a.slug}`),
+        ...indexableArticles.map((a) => `${baseUrl}/knowledge/${a.slug}`),
       ];
     } else if (Array.isArray(urls) && urls.length > 0) {
       targetUrls = urls.map((u: string) => u.trim()).filter(Boolean);

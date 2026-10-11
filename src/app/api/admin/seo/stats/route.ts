@@ -3,6 +3,8 @@ import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ArticleStatus } from '@prisma/client';
 
+import { getIndexableArticles } from '@/lib/articles/queries';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
@@ -21,9 +23,17 @@ export async function GET() {
     const [
       articles,
       indexingLogs,
+      totalIndexLogsCount,
       customRedirects,
+      customRedirectsCount,
+      customRedirectsHitsAggregate,
       articleRedirects,
+      articleRedirectsCount,
       error404Logs,
+      unresolved404Count,
+      total404HitsAggregate,
+      indexableArticles,
+      activeAuthorsCount,
     ] = await Promise.all([
       prisma.article.findMany({
         select: {
@@ -41,37 +51,48 @@ export async function GET() {
         orderBy: { updatedAt: 'desc' },
       }),
       prisma.indexingLog.findMany({
-        take: 15,
+        take: 20,
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.indexingLog.count(),
       prisma.customRedirect.findMany({
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.customRedirect.count({ where: { isActive: true } }),
+      prisma.customRedirect.aggregate({ _sum: { hits: true } }),
       prisma.articleRedirect.findMany({
         include: { article: { select: { title: true, slug: true } } },
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.articleRedirect.count(),
       prisma.errorLog404.findMany({
-        take: 20,
+        take: 30,
         orderBy: { hits: 'desc' },
       }),
+      prisma.errorLog404.count({ where: { isResolved: false } }),
+      prisma.errorLog404.aggregate({ _sum: { hits: true } }),
+      getIndexableArticles(),
+      prisma.author.count({ where: { isActive: true } }),
     ]);
 
     const publishedArticles = articles.filter((a) => a.status === ArticleStatus.PUBLISHED);
     const draftArticles = articles.filter((a) => a.status === ArticleStatus.DRAFT);
     const archivedArticles = articles.filter((a) => a.status === ArticleStatus.ARCHIVED);
 
-    // Calculate SEO scores
+    // Calculate SEO scores (null if no articles have score yet, avoid fake 75)
     const totalPublishedWithScore = publishedArticles.filter((a) => (a.seoScore || 0) > 0);
-    const averageScore = totalPublishedWithScore.length > 0
-      ? Math.round(
-          totalPublishedWithScore.reduce((acc, curr) => acc + (curr.seoScore || 0), 0) /
-            totalPublishedWithScore.length
-        )
-      : 75;
+    const averageScore =
+      totalPublishedWithScore.length > 0
+        ? Math.round(
+            totalPublishedWithScore.reduce((acc, curr) => acc + (curr.seoScore || 0), 0) /
+              totalPublishedWithScore.length
+          )
+        : null;
 
     const goodScoreCount = publishedArticles.filter((a) => (a.seoScore || 0) >= 80).length;
-    const fairScoreCount = publishedArticles.filter((a) => (a.seoScore || 0) >= 60 && (a.seoScore || 0) < 80).length;
+    const fairScoreCount = publishedArticles.filter(
+      (a) => (a.seoScore || 0) >= 60 && (a.seoScore || 0) < 80
+    ).length;
     const poorScoreCount = publishedArticles.filter((a) => (a.seoScore || 0) < 60).length;
 
     // Review Due Alerts (articles where nextReviewAt <= now or within 14 days)
@@ -82,12 +103,11 @@ export async function GET() {
       return diffDays <= 14;
     });
 
-    const totalCustomRedirectHits = customRedirects.reduce((acc, curr) => acc + curr.hits, 0);
-    const total404Hits = error404Logs.reduce((acc, curr) => acc + curr.hits, 0);
-    const unresolved404Count = error404Logs.filter((e) => !e.isResolved).length;
+    const totalCustomRedirectHits = customRedirectsHitsAggregate._sum.hits || 0;
+    const total404Hits = total404HitsAggregate._sum.hits || 0;
 
-    // Sitemap stats: 2 static routes + published articles
-    const sitemapUrlCount = 2 + publishedArticles.length;
+    // Sitemap stats: 2 static routes + strictly indexable articles + active author profiles
+    const sitemapUrlCount = 2 + indexableArticles.length + activeAuthorsCount;
 
     return NextResponse.json({
       success: true,
@@ -101,13 +121,13 @@ export async function GET() {
           fairScoreCount,
           poorScoreCount,
           reviewDueCount: reviewDueArticles.length,
-          totalRedirects: customRedirects.length + articleRedirects.length,
+          totalRedirects: customRedirectsCount + articleRedirectsCount,
           totalRedirectHits: totalCustomRedirectHits,
           unresolved404Count,
           total404Hits,
           sitemapUrlCount,
           lastIndexingTime: indexingLogs[0]?.createdAt || null,
-          totalIndexPings: indexingLogs.length,
+          totalIndexPings: totalIndexLogsCount,
         },
         articles,
         reviewDueArticles,

@@ -51,6 +51,8 @@ export function validateArticlePayload(
     coverImageAlt?: string | null;
     quickAnswer?: string | null;
     authorId?: number | null;
+    canonicalUrl?: string | null;
+    ogImage?: string | null;
   },
   isPublishing = false
 ): ArticleValidationResult {
@@ -113,6 +115,27 @@ export function validateArticlePayload(
   // Quick answer recommendation (AEO)
   if (!payload.quickAnswer || payload.quickAnswer.trim().length === 0) {
     warnings.push('แนะนำให้ใส่สรุปประเด็นสำคัญใน 1 นาที (Quick Answer) เพื่อรองรับ AEO / AI Overviews');
+  }
+
+  // Canonical URL validation
+  if (payload.canonicalUrl && payload.canonicalUrl.trim().length > 0) {
+    const trimmed = payload.canonicalUrl.trim();
+    try {
+      const u = new URL(trimmed);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+        errors.push('Canonical URL ต้องขึ้นต้นด้วย http:// หรือ https://');
+      }
+    } catch {
+      errors.push('Canonical URL ไม่ถูกต้องตามรูปแบบ URL มาตรฐาน (เช่น https://www.deethavorn.com/...)');
+    }
+  }
+
+  // OG Image URL validation
+  if (payload.ogImage && payload.ogImage.trim().length > 0) {
+    const trimmed = payload.ogImage.trim();
+    if (!trimmed.startsWith('/') && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      errors.push('Social Share Image (OG Image) ต้องเป็นพาธที่ขึ้นต้นด้วย / หรือ URL เต็ม (http/https)');
+    }
   }
 
   return {

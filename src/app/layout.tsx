@@ -17,8 +17,10 @@ const outfit = Outfit({
   variable: '--font-outfit',
 });
 
+import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://deethavorn.com'),
+  metadataBase: new URL(getSiteUrl()),
   title: 'ดีถาวรการบัญชี | รับทำบัญชี วางแผนภาษี ตรวจสอบบัญชี จดทะเบียนธุรกิจ',
   description:
     'บริษัท ดีถาวรการบัญชี จำกัด ให้บริการด้านบัญชีและภาษีครบวงจร ตรวจสอบบัญชีโดยผู้สอบบัญชีรับอนุญาต (CPA) จดทะเบียนธุรกิจ บริหารบุคคล เริ่มต้น 1,500 บาท/เดือน ติดต่อ 099-149-5656 หรือ 091-941-5656 (ใกล้ MRT เพชรบุรี)',
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
     title: 'ดีถาวรการบัญชี | รับทำบัญชี วางแผนภาษี ตรวจสอบบัญชี จดทะเบียนธุรกิจ',
     description:
       'ยกระดับธุรกิจของคุณด้วยบริการมาตรฐานวิชาชีพในราคายุติธรรมและโปร่งใส ครอบคลุมงานบัญชี ภาษี ตรวจสอบบัญชี และจดทะเบียนธุรกิจ',
-    url: 'https://deethavorn.com',
+    url: getSiteUrl(),
     type: 'website',
     locale: 'th_TH',
     siteName: 'ดีถาวรการบัญชี',
@@ -76,10 +78,10 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'AccountingService',
     'name': 'บริษัท ดีถาวรการบัญชี จำกัด (Deethavorn Accounting Co., Ltd.)',
-    'image': 'https://deethavorn.com/images/logo.png',
+    'image': toAbsoluteUrl('/images/logo.png'),
     'telephone': ['099-149-5656', '091-941-5656'],
     'email': ['dtv_accounting@hotmail.com', 'c.pimmphisa@gmail.com'],
-    'url': 'https://deethavorn.com',
+    'url': getSiteUrl(),
     'address': {
       '@type': 'PostalAddress',
       'streetAddress': '234/116 ถนนอโศก-ดินแดง',
@@ -100,7 +102,7 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       </head>
       <body suppressHydrationWarning>

@@ -4,18 +4,20 @@ import { ArrowRight } from 'lucide-react';
 import { getPublishedArticles } from '@/lib/articles/queries';
 import KnowledgeListClient from '@/components/articles/KnowledgeListClient';
 
+import { toAbsoluteUrl } from '@/lib/seo/site-url';
+
 export const metadata = {
   title: 'คลังความรู้บัญชีและภาษี | บริษัท ดีถาวรการบัญชี จำกัด',
   description:
     'รวมบทความและเกร็ดความรู้ด้านภาษี บัญชี การจดทะเบียนธุรกิจ และการบริหารบุคคล โดยทีมงานผู้สอบบัญชีรับอนุญาต (CPA) บริษัท ดีถาวรการบัญชี จำกัด',
   alternates: {
-    canonical: 'https://deethavorn.com/knowledge',
+    canonical: toAbsoluteUrl('/knowledge'),
   },
   openGraph: {
     title: 'คลังความรู้บัญชีและภาษี | บริษัท ดีถาวรการบัญชี จำกัด',
     description:
       'รวมบทความและเกร็ดความรู้ด้านภาษี บัญชี การจดทะเบียนธุรกิจ และการบริหารบุคคล โดยทีมงานผู้เชี่ยวชาญ',
-    url: 'https://deethavorn.com/knowledge',
+    url: toAbsoluteUrl('/knowledge'),
     siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
     locale: 'th_TH',
     type: 'website',

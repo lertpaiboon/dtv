@@ -47,17 +47,30 @@ export async function POST(req: Request) {
       });
     }
 
+    const userAgent = req.headers.get('user-agent')?.slice(0, 255) || null;
+    const ipAddress = (
+      req.headers.get('x-forwarded-for')?.split(',')[0] ||
+      req.headers.get('x-real-ip') ||
+      ''
+    )
+      .trim()
+      .slice(0, 50) || null;
+
     // Upsert 404 error log
     await prisma.errorLog404.upsert({
       where: { url: cleanUrl },
       update: {
         hits: { increment: 1 },
         referrer: referrer ? String(referrer).slice(0, 500) : undefined,
+        userAgent: userAgent || undefined,
+        ipAddress: ipAddress || undefined,
         isResolved: false,
       },
       create: {
         url: cleanUrl,
         referrer: referrer ? String(referrer).slice(0, 500) : undefined,
+        userAgent,
+        ipAddress,
       },
     });
 
