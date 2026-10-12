@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollObserver from '@/components/ScrollObserver';
 import FloatingLineButton from '@/components/FloatingLineButton';
+import CookieConsentBanner from '@/components/CookieConsentBanner';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,6 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <main id="main-content">{children}</main>
       <Footer />
       <FloatingLineButton />
+      <CookieConsentBanner />
     </>
   );
 }

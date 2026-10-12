@@ -2,27 +2,29 @@
 ## บริษัท ดีถาวรการบัญชี จำกัด (Deethavorn Accounting Co., Ltd.)
 ### โมเดลต้นแบบ: Rank Math SEO Suite (ปรับประยุกต์สู่ Native Next.js 15 & React 19)
 
-> **เวอร์ชัน:** 1.9.0
-> **สถานะ:** Production Ready — ผ่านการทดสอบและแก้ปัญหา Technical SEO Remediation (Phase 0) และ Front-end UX (Phase 1) สมบูรณ์ 100%
-> **อัปเดตล่าสุด:** 11 ตุลาคม 2026 (23:30 น.)  
+> **เวอร์ชัน:** 2.0.0
+> **สถานะ:** Production Ready — ผ่านการทดสอบและแก้ปัญหา Technical SEO Remediation (Phase 0), Front-end UX (Phase 1), ระบบบริหารผู้เขียน E-E-A-T และ UI/UX Polish สมบูรณ์ 100%
+> **อัปเดตล่าสุด:** 12 ตุลาคม 2026 (10:15 น.)  
 > **กลุ่มเป้าหมาย:** ระบบบริหารจัดการบทความ (CMS) และศูนย์ควบคุม SEO/AEO/GEO ดีถาวรการบัญชี  
 
 ---
 
 ## 📌 สรุปสถานะความคืบหน้าภาพรวม (Implementation Status Dashboard)
 
-| โมดูล / ส่วนงาน                                             |   สถานะ    | สรุปสิ่งที่ทำเสร็จแล้ว                                                                                                                                                                | สิ่งที่ต้องทำต่อ                                                                   |
-| :---------------------------------------------------------- | :--------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- |
-| **Pillar 1: ศูนย์ควบคุมภาพรวม SEO หลังบ้าน (`/admin/seo`)** | ✅ **100%** | แดชบอร์ดและ UI ครบ 5 แท็บ, IndexNow ยืนยัน Key ผ่าน root, Server-Side 301/308 Redirect, 404 Logging ฝั่ง Server, KPI รวมจาก SQL count/aggregate จริง และ Canonical Domain บน `www`     | — (สมบูรณ์ 100%)                                                                   |
-| **โมดูล Instant Indexing (IndexNow API ⚡)**                 | ✅ **100%** | ย้าย Key Endpoint ไป root (`/{key}.txt`), ตรวจสอบสถานะเข้มงวด (เฉพาะ 200/202 คือ Success), ตรวจ Host Canonical และกรองเฉพาะ URL ที่เป็น Indexable เท่านั้น                            | ทดสอบยิงบน Production หลัง deploy โดเมนจริง                                        |
-| **โมดูล 301 Redirects Manager ⚠️**                          | ✅ **100%** | พัฒนา Server-Side Catch-All (`/[...catchall]`) ส่ง HTTP 301/308 พร้อม `Location` header ทันทีจาก Server สำหรับทั้ง `custom_redirects` และ `article_redirects` พร้อมนับยอด Hits ใน DB | เพิ่มฟังก์ชัน Import/Export รายการ Redirect ในรูปแบบไฟล์ CSV (ตัวเลือกเสริม)        |
-| **โมดูล 404 Error Monitor 🔍**                              | ✅ **100%** | ย้ายการบันทึกลง Server-Side Catch-All บันทึก IP Address, User-Agent, Referrer ลงตาราง `error_logs_404` พร้อมตัวกรองบอทสแปมและปุ่ม One-Click "แปลงเป็น 301 Redirect"                  | ตั้ง Schedule ล้าง Log เก่าตามรอบเวลา (Retention Policy)                          |
-| **โมดูล XML Sitemap & Robots.txt 🗺️**                      | ✅ **100%** | ใช้โดเมน Canonical `https://www.deethavorn.com`, รวมเฉพาะบทความ Indexable จาก `getIndexableArticles()` และโปรไฟล์ผู้เขียน E-E-A-T, ใช้วันที่แก้ไขจริงสำหรับ `lastModified`           | เพิ่ม Image Sitemap Tags เสริมในอนาคต                                              |
-| **Pillar 2: Focus Keyword & Scoring Engine ใน Editor**      | ✅ **100%** | คำนวณคะแนน 0–100 เรียลไทม์ 4 หมวด, ตรวจ Heading, Keyword Density, Alt Text, E-E-A-T และรองรับการบันทึกคะแนนอัตโนมัติ                                                                | — (สมบูรณ์ 100%)                                                                   |
-| **Social & SERP Previews**                                  | ✅ **100%** | กล่องจำลองผลลัพธ์เหมือนจริง: Google SERP (Desktop & Mobile), LINE Share Card, Facebook Feed                                                                                           | — (สมบูรณ์ 100%)                                                                   |
-| **Rich Media & Synthetic HTML**                             | ✅ **100%** | อัปโหลดรูปภาพลงบทความ, บังคับ Alt Text สำหรับ Image SEO, เรนเดอร์เป็น Semantic `<figure class="article-figure">` และ `<figcaption>`                                                   | ปรับขนาดและบีบอัดรูปเป็น WebP อัตโนมัติในฝั่ง Server                               |
-| **Public Knowledge Hub UX (`/knowledge`)**                  | ✅ **100%** | หน้ารวมบทความพร้อม **Live Search Bar** ค้นหาเรียลไทม์, แท็บหมวดหมู่, หน้าโปรไฟล์ผู้เขียนและผู้ตรวจทานสาธารณะ (`/authors/[slug]`) พร้อม Person/ProfilePage JSON-LD ยกระดับ Google E-E-A-T | — (สมบูรณ์ 100%)                                                                   |
-| **Content AI & AEO Assistant (Gemini API 🤖)**              |  ⏳ **0%**  | วางสถาปัตยกรรมและ Prompt Engineering ไว้ในสเปก                                                                                                                                        | สร้างปุ่มใน Editor ให้ AI ช่วยคิด Meta Description, Quick Answer และ Focus Keyword |
+| โมดูล / ส่วนงาน | สถานะ | สรุปสิ่งที่ทำเสร็จแล้ว | สิ่งที่ต้องทำต่อ |
+| :--- | :---: | :--- | :--- |
+| **Pillar 1: ศูนย์ควบคุมภาพรวม SEO หลังบ้าน (`/admin/seo`)** | ✅ **100%** | แดชบอร์ดและ UI ครบ 5 แท็บ, IndexNow ยืนยัน Key ผ่าน root, Server-Side 301/308 Redirect, 404 Logging ฝั่ง Server, KPI รวมจาก SQL จริง, แก้ไข Modal ให้เป็น Fixed Center Overlay พร้อม Backdrop Blur | — (สมบูรณ์ 100%) |
+| **โมดูล Instant Indexing (IndexNow API ⚡)** | ✅ **100%** | ย้าย Key Endpoint ไป root (`/{key}.txt`), ตรวจสอบสถานะเข้มงวด (เฉพาะ 200/202 คือ Success), ตรวจ Host Canonical และกรองเฉพาะ URL ที่เป็น Indexable เท่านั้น | ทดสอบยิงบน Production หลัง deploy โดเมนจริง |
+| **โมดูล 301 Redirects Manager ⚠️** | ✅ **100%** | พัฒนา Server-Side Catch-All (`/[...catchall]`) ส่ง HTTP 301/308 พร้อม `Location` header ทันทีจาก Server สำหรับทั้ง `custom_redirects` และ `article_redirects` พร้อมนับยอด Hits ใน DB | เพิ่มฟังก์ชัน Import/Export รายการ Redirect ในรูปแบบไฟล์ CSV (ตัวเลือกเสริม) |
+| **โมดูล 404 Error Monitor 🔍** | ✅ **100%** | ย้ายการบันทึกลง Server-Side Catch-All บันทึก IP Address, User-Agent, Referrer ลงตาราง `error_logs_404` พร้อมตัวกรองบอทสแปม และ Modal One-Click "แปลงเป็น 301 Redirect" แบบ Center Overlay | ตั้ง Schedule ล้าง Log เก่าตามรอบเวลา (Retention Policy) |
+| **โมดูล XML Sitemap & Robots.txt 🗺️** | ✅ **100%** | ใช้โดเมน Canonical `https://www.deethavorn.com`, รวมเฉพาะบทความ Indexable จาก `getIndexableArticles()` และโปรไฟล์ผู้เขียน E-E-A-T, ใช้วันที่แก้ไขจริงสำหรับ `lastModified` | เพิ่ม Image Sitemap Tags เสริมในอนาคต |
+| **Pillar 2: Focus Keyword & Scoring Engine ใน Editor** | ✅ **100%** | คำนวณคะแนน 0–100 เรียลไทม์ 4 หมวด, ตรวจ Heading, Keyword Density, Alt Text, E-E-A-T และรองรับการบันทึกคะแนนอัตโนมัติ | — (สมบูรณ์ 100%) |
+| **Social & SERP Previews** | ✅ **100%** | กล่องจำลองผลลัพธ์เหมือนจริง: Google SERP (Desktop & Mobile), LINE Share Card, Facebook Feed | — (สมบูรณ์ 100%) |
+| **Rich Media & Synthetic HTML** | ✅ **100%** | อัปโหลดรูปภาพลงบทความ, บังคับ Alt Text สำหรับ Image SEO, เรนเดอร์เป็น Semantic `<figure class="article-figure">` และ `<figcaption>` | ปรับขนาดและบีบอัดรูปเป็น WebP อัตโนมัติในฝั่ง Server |
+| **Public Knowledge Hub UX (`/knowledge`)** | ✅ **100%** | หน้ารวมบทความพร้อม **Live Search Bar** ค้นหาเรียลไทม์, แท็บหมวดหมู่, ปรับแต่ง Corporate Slim Scrollbar สไตล์โมเดิร์น | — (สมบูรณ์ 100%) |
+| **ระบบผู้เขียน E-E-A-T หลังบ้าน & หน้าสาธารณะ (`/admin/authors` & `/authors/[slug]`)** | ✅ **100%** | ระบบอัปโหลดรูปภาพจริงจากเครื่อง (`/api/admin/uploads/author-photo`), Revalidate Cache ทันทีหลังบันทึก, ปุ่มดูหน้าเว็บจริง, ถอดป้ายภาษาอังกฤษและปุ่มแก้ไขหน้าบ้านออกเพื่อความคลีนระดับพรีเมียม | อัปโหลดรูปจริงของผู้เขียนแต่ละท่าน |
+| **Cookie Consent & PDPA Banner (`/privacy-policy`)** | ✅ **100%** | แถบขอความยินยอมคุกกี้ลอยมุมซ้ายล่างเรียบหรู, หน้าต่าง Preferences ปรับแต่ง 3 หมวด (จำเป็น/วิเคราะห์/การตลาด), บันทึกใน LocalStorage, ปุ่มเปิดตั้งค่าจาก Footer, และหน้า Privacy Policy ครบถ้วนตามมาตรฐานวิชาชีพบัญชี | — (สมบูรณ์ 100%) |
+| **Content AI & AEO Assistant (Gemini API 🤖)** | ⏳ **0%** | วางสถาปัตยกรรมและ Prompt Engineering ไว้ในสเปก | สร้างปุ่มใน Editor ให้ AI ช่วยคิด Meta Description, Quick Answer และ Focus Keyword |
 
 ---
 
@@ -323,6 +325,24 @@ model CustomRedirect {
    - เชื่อมโยงลิงก์จากหน้าอ่านบทความ (`ArticleAuthor` และ Byline) ตรงสู่หน้าโปรไฟล์ผู้เขียน
    - เพิ่ม URL ผู้เขียนลงใน `/sitemap.xml` เพื่อเร่งการจัดทำดัชนี E-E-A-T ของ Google
 
+#### ✅ ระยะที่ 1.5: การปรับปรุงระบบบริหารผู้เขียน E-E-A-T และประสบการณ์ผู้ใช้งาน (UX/UI Polish) — [เสร็จสมบูรณ์ 100% วันที่ 12 ตุลาคม 2026]
+1. **ระบบอัปโหลดรูปภาพโปรไฟล์ผู้เขียน (`/api/admin/uploads/author-photo`)** ✅
+   - พัฒนา API อัปโหลดรูปภาพจริงจากเครื่องคอมพิวเตอร์ รองรับไฟล์ JPG, PNG, WebP สูงสุด 5 MB
+   - เพิ่มปุ่มอัปโหลดพร้อมแสดงภาพตัวอย่างทรงกลม (Circular Avatar Preview) ในหน้าต่างแก้ไขผู้เขียนหลังบ้าน (`/admin/authors`)
+   - เพิ่มปุ่ม "ดูหน้าเว็บ" จากตารางหลังบ้าน เปิดดูหน้าโปรไฟล์สาธารณะได้ในคลิกเดียว
+   - เพิ่มระบบ Revalidate Cache อัปเดตข้อมูลหน้าสาธารณะ `/authors/[slug]` และ `/knowledge` ทันทีหลังกดบันทึก
+2. **การปรับแต่งหน้าโปรไฟล์ผู้เขียนสาธารณะ (`/authors/[slug]`) ให้เป็นมืออาชีพ** ✅
+   - เรนเดอร์รูปถ่ายจริงของผู้เขียนแทนไอคอน Default คนสีน้ำเงินเดิม
+   - ถอดป้ายภาษาอังกฤษ "E-E-A-T Certified Expert Profile" ออก เพื่อให้หน้าเว็บดูสะอาด เป็นธรรมชาติ น่าเชื่อถือ และโฟกัสที่ชื่อ ตำแหน่ง และวิชาชีพจริง
+   - ถอดปุ่ม "✏️ แก้ไขข้อมูลหลังบ้าน" ออกจากหน้าสาธารณะ เพื่อรักษาภาพลักษณ์ที่เป็นมืออาชีพสำหรับผู้เข้าชมทั่วไป
+3. **การปรับปรุง Modal แปลง 404 เป็น 301 ในหน้า `/admin/seo`** ✅
+   - แก้ไขปัญหากล่องฟอร์มหลุดไปแสดงที่ขอบล่างของหน้าจอ โดยปรับเป็น **Fixed Center Overlay** ลอยอยู่กึ่งกลางหน้าจอตลอดเวลา
+   - เพิ่มพื้นหลังโปร่งแสงพร้อมเอฟเฟกต์เบลอฉากหลัง (`backdrop-filter: blur(4px)`) และรองรับการคลิก Backdrop ด้านนอก หรือกดปุ่ม ✕ เพื่อปิด
+4. **การออกแบบ Custom Corporate Slim Scrollbar** ✅
+   - ออกแบบแถบเลื่อนขนาด Slim (8px) ทรงแคปซูลมนกลม (Pill shape) โทนสี Soft Slate (`#cbd5e1`) บนรางโปร่งใส
+   - เปลี่ยนเป็นสีน้ำเงินเข้มเอกลักษณ์แบรนด์ดีถาวร (`#1B2A80`) เมื่อเลื่อนเมาส์ชี้ (Hover)
+   - ปรับแต่งแถบเลื่อนในส่วนเมนูหลังบ้าน (Admin Sidebar) เป็นขนาด 6px สีสว่างโปร่งแสง รองรับทุกเบราว์เซอร์อย่างสมบูรณ์
+
 ---
 
 #### ⏳ ระยะที่ 2: ระบบผู้ช่วยอัจฉริยะ AI Content & AEO Assistant
@@ -339,31 +359,34 @@ model CustomRedirect {
 
 ---
 
-## 8. บันทึกผลตรวจสอบระบบล่าสุด (Technical Audit — 11 ตุลาคม 2026 หลังแก้ Phase 0 & 1)
+## 8. บันทึกผลตรวจสอบระบบล่าสุด (Technical Audit — 12 ตุลาคม 2026 หลังแก้ Phase 0, 1 & 1.5)
 
 ### ขอบเขตที่ตรวจ
 * ไล่เส้นทางข้อมูลจากหน้า Admin Editor/API → Prisma → Public Metadata/Schema/Sitemap/Robots/IndexNow
 * ทดสอบ HTTP Response ของ Server-Side Catch-All และ Redirect Header
 * ตรวจสอบความถูกต้องของสถาปัตยกรรมผ่านคำสั่ง `npx tsc --noEmit` และ `npm run build`
 * ตรวจสอบผลลัพธ์การ Prerender Static Pages (SSG) รวมทั้งหน้าสาธารณะ `/knowledge` และ `/authors/[slug]`
+* ตรวจสอบการแสดงผลจริงผ่าน Headless Browser สำหรับหน้าแรก, หน้าบทความ, หน้าโปรไฟล์ผู้เขียน และหน้าหลังบ้าน
 
 ### ผลทดสอบที่ยืนยันแล้วหลังการแก้ไข
 | รายการทดสอบ | ผลลัพธ์ | สถานะ |
 | :--- | :--- | :---: |
 | **TypeScript Typecheck** | `npx tsc --noEmit` ผ่านสมบูรณ์ 0 errors | ✅ ผ่าน |
-| **Production Build** | `npm run build` ผ่านสมบูรณ์ Prerender ครบ 42 static pages | ✅ ผ่าน |
+| **Production Build** | `npm run build` ผ่านสมบูรณ์ Prerender ครบ 43 static pages | ✅ ผ่าน |
 | **Server-Side 301/308 Redirect** | รายการ `/old-vat-link` ตอบกลับด้วย HTTP 308/301 พร้อม `Location: /knowledge/vat-registration-guide` ทันทีจาก Server โดยไม่เรนเดอร์ 404 | ✅ ผ่าน |
 | **IndexNow Key Verification** | ย้าย Key ไปที่ Root `/d9f8b4a2e5c1473682b09a71deethavorn.txt` ครอบคลุมการยืนยันสิทธิ์ทั้งโดเมน | ✅ ผ่าน |
 | **Canonical Host Parity** | ทุกระบบใช้ `https://www.deethavorn.com` (มี `www` ตรงกับ Production 301 Redirect บน Hostinger) | ✅ ผ่าน |
 | **XML Sitemap ล่าสุด** | บรรจุ 8 URLs ถูกต้อง: หน้าหลัก (2), บทความ Indexable (3), และหน้าโปรไฟล์ผู้เขียน E-E-A-T (3) | ✅ ผ่าน |
 | **Live Search Bar** | ค้นหาบทความเรียลไทม์บน `/knowledge` พร้อมประสานกับหมวดหมู่และจัดการ Empty State ได้สมบูรณ์ | ✅ ผ่าน |
-| **Public Author Profiles** | หน้า `/authors/[slug]` พร้อม Schema.org JSON-LD `ProfilePage` & `Person` เชื่อมต่อสมบูรณ์ | ✅ ผ่าน |
+| **Public Author Profiles** | หน้า `/authors/[slug]` สะอาดตา แสดงรูปจริง ไร้ปุ่มหลังบ้าน พร้อม Schema.org JSON-LD `ProfilePage` & `Person` | ✅ ผ่าน |
+| **Modal 301 Overlay** | กล่องฟอร์มแปลง 404 เป็น 301 แสดงผลกึ่งกลางหน้าจอพร้อม Backdrop Blur สมบูรณ์ | ✅ ผ่าน |
+| **Custom Scrollbar** | แถบเลื่อน Slim 8px สี Slate/Navy ทำงานลื่นไหล สอดคล้องกับ CI แบรนด์ทั้งหน้าบ้านและหลังบ้าน | ✅ ผ่าน |
 
 ---
 
 ## 9. 📋 สรุปสิ่งที่ยังเหลือต้องทำต่อ (Remaining Tasks & Roadmap)
 
-ปัจจุบันระบบ Core SEO ทั้งฝั่งหลังบ้าน (Pillar 1 & 2), การจัดการ URL เชิงเทคนิค (Phase 0) และประสบการณ์หน้าบ้าน (Phase 1) **เสร็จสิ้นสมบูรณ์ 100% และพร้อมใช้งานบน Production แล้ว**
+ปัจจุบันระบบ Core SEO ทั้งฝั่งหลังบ้าน (Pillar 1 & 2), การจัดการ URL เชิงเทคนิค (Phase 0), ประสบการณ์หน้าบ้าน (Phase 1) และระบบโปรไฟล์ผู้เขียน E-E-A-T (Phase 1.5) **เสร็จสิ้นสมบูรณ์ 100% และส่งขึ้น Git (`origin main`) เรียบร้อยแล้ว**
 
 สิ่งที่เหลือสำหรับรอบการพัฒนาถัดไป มีดังนี้:
 
@@ -381,8 +404,30 @@ model CustomRedirect {
 * **การเชื่อมต่อ Google Search Console API:**
   - นำ Service Account เชื่อมต่อ Search Console เพื่อดึงยอดคลิก (Clicks), การมองเห็น (Impressions), และอันดับเฉลี่ย (Average Position) มาแสดงในการ์ด SEO Dashboard หลังบ้านโดยตรง
 
-### 💡 3. ฟังก์ชันเสริมย่อย (Minor Enhancements Backlog)
+### 💡 3. ฟังก์ชันเสริมย่อยในระบบ SEO (Minor Enhancements Backlog)
 * **ระบบ Import / Export รายการ Redirect:** เพิ่มปุ่มดาวน์โหลดรายการ Redirect ออกเป็นไฟล์ CSV และปุ่ม Import รายการจากไฟล์ CSV
 * **Image Sitemap Tags:** เพิ่มแท็ก `<image:image>` ใน `/sitemap.xml` สำหรับดึงรูปภาพหน้าปกบทความเข้าสู่ระบบค้นหารูปภาพของ Google
 * **Retention Policy สำหรับ Log 404:** สคริปต์ล้างข้อมูลประวัติ 404 เกิน 90 วันที่แก้ไขแล้ว เพื่อไม่ให้ขนาดฐานข้อมูลโตเกินความจำเป็น
+
+---
+
+### 🚀 4. แผนพัฒนาต่อยอดเพื่อยกระดับเว็บไซต์โดยรวม (Beyond SEO: Conversion & Experience)
+*ข้อเสนอแนะในการเพิ่มศักยภาพทางธุรกิจให้กับเว็บไซต์สำนักงานบัญชีดีถาวร นอกเหนือจากงาน SEO:*
+
+1. **Interactive Fee Calculator (ระบบคำนวณและประเมินค่าบริการแบบโต้ตอบ):**
+   - พัฒนา Wizard 3 ขั้นตอน ให้ลูกค้าเลือกลักษณะกิจการ (บุคคล/ห้างหุ้นส่วน/บริษัท), จำนวนบิลต่อเดือน, และการจด VAT เพื่อประเมินค่าบริการคร่าวๆ ทันที พร้อมปุ่ม **"กดส่งใบประเมินนี้เข้า LINE สำนักงาน"** ช่วยเพิ่ม Conversion Rate ในการตัดสินใจจ้าง
+2. **LINE OA Lead Notification (ระบบแจ้งเตือนลูกค้าทักเข้ากลุ่ม LINE ทีมงานทันที):**
+   - เมื่อมีลูกค้าส่งฟอร์มขอคำปรึกษาจากหน้าเว็บ ระบบจะส่งข้อความแจ้งเตือนเข้ากลุ่ม LINE ของทีมงานดีถาวรทันทีผ่าน LINE Notify / LINE Messaging API เพื่อให้ติดต่อกลับหาลูกค้าได้ภายใน 5–15 นาที
+3. **Monthly Tax Calendar & Document Checklist Download (ปฏิทินภาษีและคู่มือดาวน์โหลดฟรี):**
+   - หน้าปฏิทินกำหนดวันยื่นภาษีประจำเดือน (ภ.พ.30, ภ.ง.ด.1/3/53, ประกันสังคม) เพื่อให้เจ้าของธุรกิจ Bookmark ไว้ติดตาม
+   - แจก Checklist เอกสารเตรียมทำบัญชีประจำเดือน (ไฟล์ PDF/Excel) แลกกับการทัก LINE รับคำปรึกษา
+4. **Client Trust & Case Studies Showcase (หมวดผลงานและเคสแก้ปัญหาภาษีจริง):**
+   - เพิ่มหมวด "กรณีศึกษาจริง (Case Studies)" เช่น การแก้ปัญหาเบี้ยปรับย้อนหลัง, การวางแผนภาษีธุรกิจออนไลน์, การเปลี่ยนผ่านจากบุคคลธรรมดาสู่บริษัทจำกัด เพื่อสร้างความมั่นใจสูงสุดก่อนตัดสินใจจ้าง
+5. **Cookie Consent & PDPA Banner (ระบบความยินยอมตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล):** ✅ **[ดำเนินการเสร็จสมบูรณ์ 100%]**
+   - แถบขอความยินยอมคุกกี้ลอยมุมซ้ายล่าง (`CookieConsentBanner.tsx`) สี Corporate Navy `#102a56` พร้อมป้าย PDPA
+   - ตัวเลือก "ยอมรับทั้งหมด", "เฉพาะที่จำเป็น" และ "ตั้งค่าคุกกี้"
+   - หน้าต่าง Cookie Preferences Modal พร้อมสวิตช์เปิด-ปิดแยกหมวด (จำเป็นเสมอ / สถิติและประสิทธิภาพ / การสื่อสารและการตลาด)
+   - จดจำสถานะความยินยอมผ่าน `localStorage` (`dtv_cookie_consent`)
+   - ปุ่ม "ตั้งค่าคุกกี้" และลิงก์ "นโยบายความเป็นส่วนตัว (PDPA)" ในส่วนท้ายเว็บไซต์ (`Footer.tsx`) ให้ผู้ใช้กลับมาปรับแต่งความยินยอมได้ตลอดเวลา
+   - หน้าเอกสารนโยบายคุ้มครองข้อมูลส่วนบุคคลฉบับเต็มสำหรับสำนักงานบัญชีที่ `/privacy-policy` พร้อมปุ่มปรับแต่งคุกกี้ในหน้า
 

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Clock3, Mail, MapPin, MessageCircle, Phone, ShieldCheck } from 'lucide-react';
 import ScrollToTopButton from './ScrollToTopButton';
+import CookiePreferencesButton from './CookiePreferencesButton';
 
 const serviceLinks = [
   'บัญชีและภาษีอากร',
@@ -43,6 +44,10 @@ export default function Footer() {
           <Link href="/#pricing">ค่าบริการ</Link>
           <Link href="/#faq">คำถามที่พบบ่อย</Link>
           <Link href="/knowledge">คลังความรู้</Link>
+          <Link href="/privacy-policy">นโยบายความเป็นส่วนตัว (PDPA)</Link>
+          <CookiePreferencesButton className="footer__cookie-btn">
+            ตั้งค่าคุกกี้
+          </CookiePreferencesButton>
         </div>
 
         <div className="footer__column footer__contact">
@@ -75,7 +80,16 @@ export default function Footer() {
       </div>
 
       <div className="container footer__bottom">
-        <span>© {new Date().getFullYear()} บริษัท ดีถาวรการบัญชี จำกัด</span>
+        <span>
+          © {new Date().getFullYear()} บริษัท ดีถาวรการบัญชี จำกัด ·{' '}
+          <Link href="/privacy-policy" className="footer__bottom-link">
+            นโยบายข้อมูลส่วนบุคคล
+          </Link>{' '}
+          ·{' '}
+          <CookiePreferencesButton className="footer__cookie-link-btn">
+            ตั้งค่าคุกกี้
+          </CookiePreferencesButton>
+        </span>
         <span>มาตรฐานวิชาชีพ · ราคาชัดเจน · ติดต่อได้จริง</span>
         <ScrollToTopButton />
       </div>
