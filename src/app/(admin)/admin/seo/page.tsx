@@ -1616,16 +1616,32 @@ export default function AdminSeoSuitePage() {
 
       {/* MODAL: ADD 301 REDIRECT */}
       {redirectModalOpen && (
-        <div className="admin-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRedirectModalOpen(false);
+          }}
+        >
           <div
-            className="admin-modal"
             style={{
               background: '#ffffff',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: '16px',
               maxWidth: '520px',
-              width: '90%',
-              padding: '30px',
-              boxShadow: 'var(--shadow-xl)',
+              width: '100%',
+              padding: '28px 32px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1635,7 +1651,20 @@ export default function AdminSeoSuitePage() {
               <button
                 type="button"
                 onClick={() => setRedirectModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                }}
               >
                 ✕
               </button>
@@ -1725,16 +1754,32 @@ export default function AdminSeoSuitePage() {
 
       {/* MODAL: CONVERT 404 TO 301 */}
       {convert404ModalOpen && selected404Log && (
-        <div className="admin-modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConvert404ModalOpen(false);
+          }}
+        >
           <div
-            className="admin-modal"
             style={{
               background: '#ffffff',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: '16px',
               maxWidth: '520px',
-              width: '90%',
-              padding: '30px',
-              boxShadow: 'var(--shadow-xl)',
+              width: '100%',
+              padding: '28px 32px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1744,7 +1789,20 @@ export default function AdminSeoSuitePage() {
               <button
                 type="button"
                 onClick={() => setConvert404ModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                }}
               >
                 ✕
               </button>
