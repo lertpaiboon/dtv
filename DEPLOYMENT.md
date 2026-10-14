@@ -46,6 +46,9 @@ NOTIFICATION_EMAIL="contact@deethavorn.com"
 
 # 4. LINE Notify Token (ทางเลือก สำหรับส่งแจ้งเตือนเข้ากลุ่มไลน์พนักงานทันที)
 LINE_NOTIFY_TOKEN="your_line_notify_token_here"
+
+# 5. Google Tag Manager (GTM) Container ID
+NEXT_PUBLIC_GTM_ID="GTM-M2JQJX4Q"
 ```
 
 ---

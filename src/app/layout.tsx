@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Prompt, Outfit } from 'next/font/google';
+import { GoogleTagManager } from '@next/third-parties/google';
 import './globals.css';
 import AppShell from '@/components/AppShell';
 
@@ -97,8 +98,11 @@ export default function RootLayout({
     ]
   };
 
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
+
   return (
     <html lang="th" className={`${prompt.variable} ${outfit.variable}`} suppressHydrationWarning>
+      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
       <head>
         <script
           type="application/ld+json"
