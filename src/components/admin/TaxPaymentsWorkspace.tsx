@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   AlertCircle,
@@ -1521,7 +1522,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                             <span>ตรวจสอบคำค้น หรือเพิ่มบริษัทในทะเบียนลูกค้า</span>
                           </div>
                         )}
-                        <a href="/admin/companies" className="company-combobox__add"><Plus aria-hidden="true" size={16} /> เพิ่มบริษัทใหม่</a>
+                        <Link href="/admin/companies" className="company-combobox__add"><Plus aria-hidden="true" size={16} /> เพิ่มบริษัทใหม่</Link>
                       </div>
                     )}
                   </div>
