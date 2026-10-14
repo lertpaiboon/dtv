@@ -94,7 +94,9 @@ export default function RootLayout({
     'priceRange': '1,500 - 15,000 THB',
     'openingHours': 'Mo-Fr 08:30-17:30',
     'sameAs': [
-      'https://pitchayakarnpa.wixstudio.com/deethavorndesign4'
+      'https://www.facebook.com/profile.php?id=61593462960006',
+      'https://line.me/ti/p/DliAyJfUXd',
+      'https://maps.app.goo.gl/t4gBzzKUVorbciF88'
     ]
   };
 
