@@ -1,47 +1,108 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Search, X, RotateCcw, FileQuestion } from 'lucide-react';
-import { Article } from '@/lib/articles/types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, X, RotateCcw, FileQuestion, User } from 'lucide-react';
+import { Article, ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
 import ArticleCard from './ArticleCard';
 
 interface KnowledgeListClientProps {
   initialArticles: Article[];
+  initialCategory?: string;
+  initialAuthor?: string;
+  initialQuery?: string;
 }
 
-const CATEGORIES = ['ทั้งหมด', 'ภาษีอากร', 'การทำบัญชี', 'ตรวจสอบบัญชี', 'จดทะเบียนธุรกิจ'];
+const CATEGORIES = ['ทั้งหมด', ...ARTICLE_CATEGORIES];
 
-export default function KnowledgeListClient({ initialArticles }: KnowledgeListClientProps) {
-  const [activeCategory, setActiveCategory] = useState('ทั้งหมด');
-  const [searchQuery, setSearchQuery] = useState('');
+export default function KnowledgeListClient({
+  initialArticles,
+  initialCategory,
+  initialAuthor,
+  initialQuery = '',
+}: KnowledgeListClientProps) {
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    if (!initialCategory) return 'ทั้งหมด';
+    const norm = normalizeArticleCategory(initialCategory);
+    return CATEGORIES.includes(norm) ? norm : 'ทั้งหมด';
+  });
+
+  const [activeAuthor, setActiveAuthor] = useState<string | null>(initialAuthor || null);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    if (initialCategory) {
+      const norm = normalizeArticleCategory(initialCategory);
+      if (CATEGORIES.includes(norm)) setActiveCategory(norm);
+    }
+  }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialAuthor !== undefined) {
+      setActiveAuthor(initialAuthor || null);
+    }
+  }, [initialAuthor]);
+
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setSearchQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
+  const authorDisplayName = useMemo(() => {
+    if (!activeAuthor) return null;
+    const matched = initialArticles.find(
+      (a) => a.author.slug === activeAuthor || a.author.name === activeAuthor
+    );
+    return matched ? matched.author.name : activeAuthor;
+  }, [activeAuthor, initialArticles]);
 
   const filteredArticles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     return initialArticles.filter((item) => {
-      // 1. Category check
-      const matchesCategory = activeCategory === 'ทั้งหมด' || item.category === activeCategory;
+      // 1. Author check
+      if (activeAuthor) {
+        const matchesAuthor =
+          item.author.slug.toLowerCase() === activeAuthor.toLowerCase() ||
+          item.author.name.toLowerCase() === activeAuthor.toLowerCase();
+        if (!matchesAuthor) return false;
+      }
+
+      // 2. Category check
+      const normalizedItemCat = normalizeArticleCategory(item.category);
+      const matchesCategory =
+        activeCategory === 'ทั้งหมด' ||
+        item.category === activeCategory ||
+        normalizedItemCat === activeCategory;
       if (!matchesCategory) return false;
 
-      // 2. Search query check
+      // 3. Search query check
       if (!query) return true;
 
       const titleMatch = item.title.toLowerCase().includes(query);
       const summaryMatch = item.summary.toLowerCase().includes(query);
       const keywordMatch = item.focusKeyword ? item.focusKeyword.toLowerCase().includes(query) : false;
-      const categoryMatch = item.category.toLowerCase().includes(query);
+      const categoryMatch =
+        item.category.toLowerCase().includes(query) ||
+        normalizedItemCat.toLowerCase().includes(query);
+      const authorMatch = item.author.name.toLowerCase().includes(query);
 
-      return titleMatch || summaryMatch || keywordMatch || categoryMatch;
+      return titleMatch || summaryMatch || keywordMatch || categoryMatch || authorMatch;
     });
-  }, [activeCategory, searchQuery, initialArticles]);
+  }, [activeCategory, activeAuthor, searchQuery, initialArticles]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
   };
 
+  const handleClearAuthor = () => {
+    setActiveAuthor(null);
+  };
+
   const handleResetAll = () => {
     setSearchQuery('');
     setActiveCategory('ทั้งหมด');
+    setActiveAuthor(null);
   };
 
   return (
@@ -143,6 +204,58 @@ export default function KnowledgeListClient({ initialArticles }: KnowledgeListCl
           </div>
         )}
       </div>
+
+      {/* Active Author Filter Pill */}
+      {activeAuthor && (
+        <div
+          style={{
+            maxWidth: '640px',
+            margin: '-20px auto 30px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#e0f2fe',
+              border: '1px solid #7dd3fc',
+              color: '#0369a1',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.88rem',
+              fontWeight: 600,
+            }}
+          >
+            <User size={15} />
+            <span>บทความโดย: {authorDisplayName}</span>
+            <button
+              onClick={handleClearAuthor}
+              style={{
+                background: '#bae6fd',
+                border: 'none',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#0369a1',
+                marginLeft: '4px',
+              }}
+              title="ล้างตัวกรองผู้เขียน"
+              aria-label="ล้างตัวกรองผู้เขียน"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Category Filter Tabs */}
       <div

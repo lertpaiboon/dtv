@@ -16,8 +16,20 @@ export async function POST(
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasArticlePermission(session, ARTICLE_PERMISSIONS.PUBLISH)) {
-    return NextResponse.json({ success: false, error: 'Forbidden: ไม่มีสิทธิ์เผยแพร่บทความ' }, { status: 403 });
+  const body = await req.json().catch(() => ({}));
+  const action = body?.action || 'publish';
+
+  if (action === 'archive') {
+    if (
+      !hasArticlePermission(session, ARTICLE_PERMISSIONS.ARCHIVE) &&
+      !hasArticlePermission(session, ARTICLE_PERMISSIONS.PUBLISH)
+    ) {
+      return NextResponse.json({ success: false, error: 'Forbidden: ไม่มีสิทธิ์จัดเก็บบทความ' }, { status: 403 });
+    }
+  } else {
+    if (!hasArticlePermission(session, ARTICLE_PERMISSIONS.PUBLISH)) {
+      return NextResponse.json({ success: false, error: 'Forbidden: ไม่มีสิทธิ์เผยแพร่บทความ' }, { status: 403 });
+    }
   }
 
   const { id } = await params;
@@ -35,9 +47,6 @@ export async function POST(
     if (!article) {
       return NextResponse.json({ success: false, error: 'ไม่พบบทความ' }, { status: 404 });
     }
-
-    const body = await req.json().catch(() => ({}));
-    const action = body?.action || 'publish';
 
     if (action === 'unpublish') {
       const updated = await prisma.article.update({

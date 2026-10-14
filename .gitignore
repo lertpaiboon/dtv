@@ -61,3 +61,7 @@ Thumbs.db
 .claude/
 .obsidian/
 scratch/
+
+# Confidential uploads & private storage
+storage/
+public/uploads/slips/

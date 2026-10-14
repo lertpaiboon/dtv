@@ -26,6 +26,25 @@ export interface ArticleCitationItem {
   sortOrder: number;
 }
 
+export const ARTICLE_CATEGORIES = [
+  'ภาษีและสรรพากร',
+  'บัญชีและงบการเงิน',
+  'จดทะเบียนธุรกิจ',
+  'ตรวจสอบบัญชี',
+  'วางแผนภาษี',
+  'ทรัพยากรบุคคล',
+] as const;
+
+export type ArticleCategory = (typeof ARTICLE_CATEGORIES)[number];
+
+export function normalizeArticleCategory(category?: string | null): string {
+  if (!category) return 'ภาษีและสรรพากร';
+  const trimmed = category.trim();
+  if (trimmed === 'ภาษีอากร') return 'ภาษีและสรรพากร';
+  if (trimmed === 'การทำบัญชี') return 'บัญชีและงบการเงิน';
+  return trimmed;
+}
+
 export type ArticleStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface Article {

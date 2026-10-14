@@ -28,6 +28,16 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  const canView =
+    hasPermission(session, '*') ||
+    hasPermission(session, 'vat:view') ||
+    hasPermission(session, 'wht:view') ||
+    hasPermission(session, 'pnd51:view');
+
+  if (!canView) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const settings = await prisma.systemSetting.findMany();
     const settingsMap: Record<string, string> = {};

@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { slugify, analyzeContentQuality } from '@/lib/articles/validation';
 import { analyzeSeoScore } from '@/lib/articles/seo-engine';
+import { ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
 import ArticleBody from '@/components/articles/ArticleBody';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 import SeoSuiteCard from '@/components/admin/SeoSuiteCard';
@@ -99,14 +100,7 @@ interface ArticleEditorFormProps {
   isNew?: boolean;
 }
 
-const CATEGORIES = [
-  'ภาษีและสรรพากร',
-  'จดทะเบียนธุรกิจ',
-  'ตรวจสอบบัญชี',
-  'วางแผนภาษี',
-  'บัญชีและงบการเงิน',
-  'ทรัพยากรบุคคล',
-];
+const CATEGORIES = ARTICLE_CATEGORIES;
 
 export default function ArticleEditorForm({
   initialData,
@@ -117,27 +111,32 @@ export default function ArticleEditorForm({
   const { user } = useAdminSession();
 
   const [formData, setFormData] = useState<ArticleFormData>(
-    initialData || {
-      title: '',
-      slug: '',
-      category: 'ภาษีและสรรพากร',
-      summary: '',
-      contentMarkdown: '',
-      coverImage: '',
-      coverImageAlt: '',
-      quickAnswer: '',
-      authorId: authors[0]?.id || null,
-      reviewerId: null,
-      status: 'DRAFT',
-      nextReviewAt: '',
-      faqs: [],
-      citations: [],
-      focusKeyword: '',
-      seoScore: 0,
-      isNoIndex: false,
-      canonicalUrl: '',
-      ogImage: '',
-    }
+    initialData
+      ? {
+          ...initialData,
+          category: normalizeArticleCategory(initialData.category),
+        }
+      : {
+          title: '',
+          slug: '',
+          category: ARTICLE_CATEGORIES[0] || 'ภาษีและสรรพากร',
+          summary: '',
+          contentMarkdown: '',
+          coverImage: '',
+          coverImageAlt: '',
+          quickAnswer: '',
+          authorId: authors[0]?.id || null,
+          reviewerId: null,
+          status: 'DRAFT',
+          nextReviewAt: '',
+          faqs: [],
+          citations: [],
+          focusKeyword: '',
+          seoScore: 0,
+          isNoIndex: false,
+          canonicalUrl: '',
+          ogImage: '',
+        }
   );
 
   const [activeTab, setActiveTab] = useState<'content' | 'faqs' | 'citations' | 'seo' | 'editorial'>('content');

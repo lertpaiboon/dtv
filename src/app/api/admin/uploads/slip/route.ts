@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminSession } from '@/lib/auth';
+import { getAdminSession, hasPermission } from '@/lib/auth';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -23,6 +23,22 @@ export async function POST(req: Request) {
   const session = await getAdminSession();
   if (!session) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const canUploadSlip =
+    hasPermission(session, '*') ||
+    hasPermission(session, 'pnd51:edit') ||
+    hasPermission(session, 'pnd51:create') ||
+    hasPermission(session, 'wht:edit') ||
+    hasPermission(session, 'wht:create') ||
+    hasPermission(session, 'vat:edit') ||
+    hasPermission(session, 'vat:create');
+
+  if (!canUploadSlip) {
+    return NextResponse.json(
+      { success: false, error: 'Forbidden: คุณไม่มีสิทธิ์ในการอัปโหลดหลักฐานการโอนเงินภาษี' },
+      { status: 403 }
+    );
   }
 
   try {
@@ -53,7 +69,8 @@ export async function POST(req: Request) {
     const randomPart = Math.random().toString(36).substring(2, 8);
     const uniqueFileName = `slip_${timestamp}_${randomPart}${ext}`;
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'slips');
+    // บันทึกไฟล์ใน storage/uploads/slips นอก public/ เพื่อป้องกันการเปิดอ่านโดยตรงผ่าน Web Server
+    const uploadDir = path.join(process.cwd(), 'storage', 'uploads', 'slips');
     await mkdir(uploadDir, { recursive: true });
 
     const filePath = path.join(uploadDir, uniqueFileName);

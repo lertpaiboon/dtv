@@ -305,6 +305,17 @@ export default function CompaniesPage() {
   };
 
   // Quote-aware CSV line parser
+  const cleanCsvField = (val: string): string => {
+    let trimmed = val.trim();
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length >= 2)
+    ) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+    return trimmed.replace(/""/g, '"');
+  };
+
   const parseCsvRow = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -320,13 +331,13 @@ export default function CompaniesPage() {
           inQuotes = !inQuotes;
         }
       } else if (ch === ',' && !inQuotes) {
-        result.push(current.trim());
+        result.push(cleanCsvField(current));
         current = '';
       } else {
         current += ch;
       }
     }
-    result.push(current.trim());
+    result.push(cleanCsvField(current));
     return result;
   };
 

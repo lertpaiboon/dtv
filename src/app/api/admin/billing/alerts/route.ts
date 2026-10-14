@@ -1,11 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { getAdminSession, hasPermission } from '@/lib/auth';
 
 export async function GET() {
   const session = await getAdminSession();
   if (!session) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const canView =
+    hasPermission(session, '*') ||
+    hasPermission(session, 'followup:view') ||
+    hasPermission(session, 'vat:view') ||
+    hasPermission(session, 'wht:view') ||
+    hasPermission(session, 'pnd51:view');
+
+  if (!canView) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
 
   try {
@@ -17,6 +28,24 @@ export async function GET() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Filter only follow-up promises whose tax payments or company are still unpaid
+    const unpaidPromiseFilter = {
+      result: { in: ['PROMISED', 'PROMISED_TO_PAY'] },
+      OR: [
+        { taxPayment: { billingStatus: { not: 'PAID' } } },
+        {
+          taxPaymentId: null,
+          company: {
+            taxPayments: {
+              some: {
+                billingStatus: { not: 'PAID' },
+              },
+            },
+          },
+        },
+      ],
+    };
+
     // Run queries in parallel
     const [promisedToday, overduePromises, oldUnbilledCount] = await Promise.all([
       // 1. Follow-ups promised today
@@ -26,10 +55,11 @@ export async function GET() {
             gte: today,
             lt: tomorrow,
           },
-          result: 'PROMISED',
+          ...unpaidPromiseFilter,
         },
         include: {
           company: { select: { id: true, name: true, phone: true } },
+          taxPayment: { select: { id: true, billingStatus: true, amount: true } },
         },
         take: 20,
       }),
@@ -40,10 +70,11 @@ export async function GET() {
           promisedDate: {
             lt: today,
           },
-          result: 'PROMISED',
+          ...unpaidPromiseFilter,
         },
         include: {
           company: { select: { id: true, name: true, phone: true } },
+          taxPayment: { select: { id: true, billingStatus: true, amount: true } },
         },
         take: 20,
       }),

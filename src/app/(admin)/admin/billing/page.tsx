@@ -33,6 +33,7 @@ interface TaxItem {
   id: number;
   amount: number;
   status: string;
+  count?: number;
 }
 
 interface BillingStatement {
@@ -169,10 +170,12 @@ export default function ConsolidatedBillingPage() {
     const requestedYear = params.get('year');
     const requestedMonth = params.get('month');
     const requestedStatus = params.get('status');
-    const requestedSearch = params.get('q') || '';
+    const requestedSearch = params.get('search') || params.get('q') || '';
     if (requestedYear && /^\d{4}$/.test(requestedYear)) setTaxYear(requestedYear);
     if (requestedMonth && (requestedMonth === 'ALL_OUTSTANDING' || monthLabels.some(([value]) => value === requestedMonth))) {
       setTaxMonth(requestedMonth);
+    } else if (requestedSearch && !requestedMonth) {
+      setTaxMonth('ALL_OUTSTANDING');
     }
     if (requestedStatus && ['UNBILLED', 'BILLED', 'PAID', 'PENDING', 'ADVANCED', 'WAITING_TRANSFER'].includes(requestedStatus)) {
       setStatusFilter(requestedStatus);

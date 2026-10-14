@@ -26,7 +26,21 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function KnowledgePage() {
+export default async function KnowledgePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : {};
+  const initialCategory = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
+  const initialAuthor = typeof resolvedParams.author === 'string' ? resolvedParams.author : undefined;
+  const initialQuery =
+    typeof resolvedParams.q === 'string'
+      ? resolvedParams.q
+      : typeof resolvedParams.search === 'string'
+        ? resolvedParams.search
+        : undefined;
+
   const articles = await getPublishedArticles();
 
   return (
@@ -44,7 +58,12 @@ export default async function KnowledgePage() {
         </div>
 
         {/* Client-side Instant Filter List */}
-        <KnowledgeListClient initialArticles={articles} />
+        <KnowledgeListClient
+          initialArticles={articles}
+          initialCategory={initialCategory}
+          initialAuthor={initialAuthor}
+          initialQuery={initialQuery}
+        />
 
         {/* Bottom Consulting Callout */}
         <div

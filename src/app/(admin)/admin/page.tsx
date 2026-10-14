@@ -97,6 +97,7 @@ export default async function AdminDashboardPage() {
     recoveredMonthAgg,
     totalCompaniesCount,
     recentPayments,
+    systemSettings,
   ] = await Promise.all([
     // 1. All unpaid tax payments with company, primary contact, payment method
     prisma.taxPayment.findMany({
@@ -141,7 +142,18 @@ export default async function AdminDashboardPage() {
       orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }],
       include: { company: { select: { name: true } }, paymentMethod: { select: { name: true } } },
     }),
+
+    // 5. System settings for LINE templates & company bank info
+    prisma.systemSetting.findMany({
+      where: {
+        key: { in: ['company_bank_info', 'billing_line_template'] },
+      },
+    }),
   ]);
+
+  const settingsMap = Object.fromEntries(systemSettings.map((s) => [s.key, s.value]));
+  const bankInfo = settingsMap['company_bank_info'] || null;
+  const lineTemplate = settingsMap['billing_line_template'] || null;
 
   // Aggregate unpaid totals
   const totalUnpaidAmount = unpaidPayments.reduce((sum, p) => sum + Number(p.amount), 0);
@@ -435,7 +447,7 @@ export default async function AdminDashboardPage() {
                           </td>
                           <td>
                             <div className="debtor-info">
-                              <Link href={`/admin/billing?search=${encodeURIComponent(debtor.companyName)}`} className="debtor-name">
+                              <Link href={`/admin/billing?month=ALL_OUTSTANDING&search=${encodeURIComponent(debtor.companyName)}`} className="debtor-name">
                                 {debtor.companyName}
                               </Link>
                               <div className="debtor-contact">
@@ -474,6 +486,8 @@ export default async function AdminDashboardPage() {
                                 contactName={debtor.contactName}
                                 totalAmount={debtor.totalAmount}
                                 agingDays={debtor.agingDays}
+                                bankInfo={bankInfo}
+                                lineTemplate={lineTemplate}
                               />
                             </div>
                           </td>
@@ -655,7 +669,7 @@ export default async function AdminDashboardPage() {
                     <div key={item.id} className="action-item-card">
                       <div className="action-item-card__header">
                         <div className="action-item-company-wrap">
-                          <Link href={`/admin/billing?search=${encodeURIComponent(item.company.name)}`} className="action-item-company">
+                          <Link href={`/admin/billing?month=ALL_OUTSTANDING&search=${encodeURIComponent(item.company.name)}`} className="action-item-company">
                             {item.company.name}
                           </Link>
                           {contactName && (

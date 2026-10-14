@@ -267,7 +267,7 @@ export default function RolesPage() {
       </div>}
 
       {/* Role Selection Tabs */}
-      {!loading && !loadError && <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 admin-role-selector">
+      {!loading && !loadError && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 admin-role-selector">
         {roles.map((r) => {
           const isSelected = selectedRoleId === r.id;
           return (
@@ -286,6 +286,8 @@ export default function RolesPage() {
                     ? 'ผู้ดูแลระบบสูงสุด'
                     : r.name === 'ACCOUNTANT'
                     ? 'เจ้าหน้าที่บัญชีและการเงิน'
+                    : r.name === 'EDITOR'
+                    ? 'บรรณาธิการ / Editor'
                     : 'ผู้ตรวจสอบ / Viewer'}
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded font-mono font-semibold bg-white border border-[#cbd5e1] text-[#5e6b7a]">

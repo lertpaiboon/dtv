@@ -138,14 +138,35 @@ export async function GET(req: Request) {
       const { company, payments } = item;
 
       let companyTotal = 0;
-      let vatPayment: { id: number; amount: number; status: string } | null = null;
-      let pnd1Payment: { id: number; amount: number; status: string } | null = null;
-      let pnd3Payment: { id: number; amount: number; status: string } | null = null;
-      let pnd53Payment: { id: number; amount: number; status: string } | null = null;
-      let pnd51Payment: { id: number; amount: number; status: string } | null = null;
+      type TaxSummaryItem = { id: number; amount: number; status: string; count: number };
+      let vatPayment: TaxSummaryItem | null = null;
+      let pnd1Payment: TaxSummaryItem | null = null;
+      let pnd3Payment: TaxSummaryItem | null = null;
+      let pnd53Payment: TaxSummaryItem | null = null;
+      let pnd51Payment: TaxSummaryItem | null = null;
 
       const paymentIds: number[] = [];
       const paymentStatuses = new Set<string>();
+
+      const addTaxItem = (
+        current: TaxSummaryItem | null,
+        p: { id: number; amount: any; billingStatus: string }
+      ): TaxSummaryItem => {
+        const amt = Number(p.amount);
+        if (!current) {
+          return { id: p.id, amount: amt, status: p.billingStatus, count: 1 };
+        }
+        let combinedStatus = current.status;
+        if (current.status === 'PAID' && p.billingStatus !== 'PAID') {
+          combinedStatus = p.billingStatus;
+        }
+        return {
+          id: current.id,
+          amount: Math.round((current.amount + amt) * 100) / 100,
+          status: combinedStatus,
+          count: current.count + 1,
+        };
+      };
 
       for (const p of payments) {
         const amt = Number(p.amount);
@@ -153,13 +174,13 @@ export async function GET(req: Request) {
         paymentIds.push(p.id);
         paymentStatuses.add(p.billingStatus);
 
-        const summaryItem = { id: p.id, amount: amt, status: p.billingStatus };
-        if (p.taxType === 'VAT_PP30') vatPayment = summaryItem;
-        else if (p.taxType === 'WHT_PND1') pnd1Payment = summaryItem;
-        else if (p.taxType === 'WHT_PND3') pnd3Payment = summaryItem;
-        else if (p.taxType === 'WHT_PND53') pnd53Payment = summaryItem;
-        else if (p.taxType === 'PND51') pnd51Payment = summaryItem;
+        if (p.taxType === 'VAT_PP30') vatPayment = addTaxItem(vatPayment, p);
+        else if (p.taxType === 'WHT_PND1') pnd1Payment = addTaxItem(pnd1Payment, p);
+        else if (p.taxType === 'WHT_PND3') pnd3Payment = addTaxItem(pnd3Payment, p);
+        else if (p.taxType === 'WHT_PND53') pnd53Payment = addTaxItem(pnd53Payment, p);
+        else if (p.taxType === 'PND51') pnd51Payment = addTaxItem(pnd51Payment, p);
       }
+      companyTotal = Math.round(companyTotal * 100) / 100;
 
       // Determine overall company status for this period
       let overallStatus: 'ADVANCED' | 'WAITING_TRANSFER' | 'PAID' | 'PENDING' = 'ADVANCED';

@@ -130,7 +130,7 @@ async function main() {
       title: 'ภาษีมูลค่าเพิ่ม (VAT 7%) ธุรกิจแบบไหนต้องจด เกณฑ์รายได้ 1.8 ล้านบาท และขั้นตอนที่ถูกต้อง',
       slug: 'vat-registration-guide',
       summary: 'เจาะลึกเกณฑ์รายได้ 1.8 ล้านบาทต่อปีที่ต้องจด VAT หน้าที่ของผู้ประกอบการจดทะเบียน ข้อแตกต่างภาษีซื้อ-ภาษีขาย และโทษปรับหากยื่นล่าช้า',
-      category: 'ภาษีอากร',
+      category: 'ภาษีและสรรพากร',
       status: 'PUBLISHED' as const,
       publishedAt: new Date('2026-03-03T08:30:00.000Z'),
       contentUpdatedAt: new Date('2026-04-01T09:00:00.000Z'),

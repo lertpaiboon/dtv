@@ -23,12 +23,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Guard for /admin pages and /api/admin endpoints
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+  // Guard for /admin pages, /api/admin endpoints, and sensitive /uploads/slips files
+  if (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api/admin') ||
+    pathname.startsWith('/uploads/slips')
+  ) {
     const token = request.cookies.get('dtv_admin_session')?.value;
 
     if (!token) {
-      if (pathname.startsWith('/api/')) {
+      if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/')) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
       const loginUrl = new URL('/admin/login', request.url);
@@ -42,7 +46,7 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(token, key);
       return NextResponse.next();
     } catch {
-      if (pathname.startsWith('/api/')) {
+      if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/')) {
         return NextResponse.json({ success: false, error: 'Session expired or invalid' }, { status: 401 });
       }
       const loginUrl = new URL('/admin/login', request.url);
@@ -57,5 +61,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*', '/uploads/slips/:path*'],
 };

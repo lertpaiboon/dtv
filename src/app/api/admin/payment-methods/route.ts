@@ -8,6 +8,16 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  const canView =
+    hasPermission(session, '*') ||
+    hasPermission(session, 'vat:view') ||
+    hasPermission(session, 'wht:view') ||
+    hasPermission(session, 'pnd51:view');
+
+  if (!canView) {
+    return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
   const includeAll = searchParams.get('all') === 'true';
 

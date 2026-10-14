@@ -22,6 +22,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
+import { ARTICLE_CATEGORIES } from '@/lib/articles/types';
 
 interface ArticleItem {
   id: number;
@@ -411,12 +412,9 @@ export default function AdminArticlesPage() {
             }}
           >
             <option value="ALL">ทุกหมวดหมู่</option>
-            <option value="ภาษีและสรรพากร">ภาษีและสรรพากร</option>
-            <option value="จดทะเบียนธุรกิจ">จดทะเบียนธุรกิจ</option>
-            <option value="ตรวจสอบบัญชี">ตรวจสอบบัญชี</option>
-            <option value="วางแผนภาษี">วางแผนภาษี</option>
-            <option value="บัญชีและงบการเงิน">บัญชีและงบการเงิน</option>
-            <option value="ทรัพยากรบุคคล">ทรัพยากรบุคคล</option>
+            {ARTICLE_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
 
           {/* Status Dropdown */}
