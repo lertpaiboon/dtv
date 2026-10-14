@@ -139,14 +139,14 @@ export default function ContactForm() {
             </div>
 
             <div className="form-row">
-              <label>ชื่อ<input required name="firstName" autoComplete="given-name" placeholder="ชื่อ" value={formData.firstName} onChange={(event) => setFormData({ ...formData, firstName: event.target.value })} /></label>
-              <label>นามสกุล<input required name="lastName" autoComplete="family-name" placeholder="นามสกุล" value={formData.lastName} onChange={(event) => setFormData({ ...formData, lastName: event.target.value })} /></label>
+              <label htmlFor="contact-first-name">ชื่อ<input id="contact-first-name" required name="firstName" autoComplete="given-name" placeholder="ชื่อ" value={formData.firstName} onChange={(event) => setFormData({ ...formData, firstName: event.target.value })} /></label>
+              <label htmlFor="contact-last-name">นามสกุล<input id="contact-last-name" required name="lastName" autoComplete="family-name" placeholder="นามสกุล" value={formData.lastName} onChange={(event) => setFormData({ ...formData, lastName: event.target.value })} /></label>
             </div>
             <div className="form-row">
-              <label>อีเมล<input required type="email" name="email" autoComplete="email" placeholder="name@company.com" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} /></label>
-              <label>เบอร์โทรศัพท์<input type="tel" name="phone" autoComplete="tel" inputMode="tel" placeholder="081-234-5678" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} /></label>
+              <label htmlFor="contact-email">อีเมล<input id="contact-email" required type="email" name="email" autoComplete="email" spellCheck={false} placeholder="name@company.com" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} /></label>
+              <label htmlFor="contact-phone">เบอร์โทรศัพท์<input id="contact-phone" type="tel" name="phone" autoComplete="tel" inputMode="tel" placeholder="081-234-5678" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} /></label>
             </div>
-            <label>รายละเอียดที่ต้องการปรึกษา<textarea required name="message" rows={5} placeholder="ประเภทธุรกิจ บริการที่สนใจ และจำนวนเอกสารโดยประมาณ" value={formData.message} onChange={(event) => setFormData({ ...formData, message: event.target.value })} /></label>
+            <label htmlFor="contact-message">รายละเอียดที่ต้องการปรึกษา<textarea id="contact-message" required name="message" rows={5} placeholder="ประเภทธุรกิจ บริการที่สนใจ และจำนวนเอกสารโดยประมาณ" value={formData.message} onChange={(event) => setFormData({ ...formData, message: event.target.value })} /></label>
             <button className="btn btn-primary form-submit" type="submit" disabled={loading}>
               <Send aria-hidden="true" /> {loading ? 'กำลังส่งข้อมูล...' : 'ส่งข้อมูลให้ทีมงาน'}
             </button>

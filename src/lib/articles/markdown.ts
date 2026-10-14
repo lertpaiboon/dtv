@@ -64,7 +64,7 @@ function sanitizeUrl(url: string): string {
   if (
     trimmed.startsWith('https://') ||
     trimmed.startsWith('http://') ||
-    trimmed.startsWith('/') ||
+    (trimmed.startsWith('/') && !trimmed.startsWith('//')) ||
     trimmed.startsWith('#') ||
     trimmed.startsWith('tel:') ||
     trimmed.startsWith('mailto:')

@@ -11,19 +11,15 @@ import {
   ArrowRight,
   FileCheck2,
 } from 'lucide-react';
-import { getAuthorBySlug, getAllActiveAuthors } from '@/lib/articles/queries';
+import { getAuthorBySlug } from '@/lib/articles/queries';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
+import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleCard from '@/components/articles/ArticleCard';
 
 export const dynamic = 'force-dynamic';
 
 interface AuthorPageProps {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  const authors = await getAllActiveAuthors();
-  return authors.map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({ params }: AuthorPageProps): Promise<Metadata> {
@@ -72,6 +68,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
   const data = await getAuthorBySlug(slug);
 
   if (!data) {
+    await executeServerRedirectIfMatched(`/authors/${slug}`);
     notFound();
   }
 

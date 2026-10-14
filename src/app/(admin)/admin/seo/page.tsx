@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 interface SeoStatsData {
+  indexNowKeyPath?: string;
   kpi: {
     averageScore: number;
     publishedCount: number;
@@ -1098,14 +1099,14 @@ export default function AdminSeoSuitePage() {
               </p>
 
               <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '16px' }}>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>API Key Verification Endpoint:</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Root Key Verification File (keyLocation):</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <code style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>
-                    {siteUrl}/api/indexnow
+                    {siteUrl}{data?.indexNowKeyPath || '/d9f8b4a2e5c1473682b09a71deethavorn.txt'}
                   </code>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard(`${siteUrl}/api/indexnow`, 'key-endpoint')}
+                    onClick={() => copyToClipboard(`${siteUrl}${data?.indexNowKeyPath || '/d9f8b4a2e5c1473682b09a71deethavorn.txt'}`, 'key-endpoint')}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-dark)' }}
                     title="คัดลอกลิงก์"
                   >
@@ -1116,7 +1117,7 @@ export default function AdminSeoSuitePage() {
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <Link
-                  href="/api/indexnow"
+                  href={data?.indexNowKeyPath || '/d9f8b4a2e5c1473682b09a71deethavorn.txt'}
                   target="_blank"
                   className="btn btn-secondary"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 14px' }}

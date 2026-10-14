@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { normalizeRedirectSource, sanitizeRedirectTarget } from '@/lib/seo/redirects';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,22 +54,30 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    let { sourcePath, targetPath, statusCode } = body;
+    const { sourcePath: rawSource, targetPath: rawTarget, statusCode } = body;
 
-    if (!sourcePath || !targetPath) {
+    if (!rawSource || !rawTarget) {
       return NextResponse.json(
         { success: false, error: 'กรุณากรอก URL ต้นทาง (Source) และ URL ปลายทาง (Target)' },
         { status: 400 }
       );
     }
 
-    // Normalize paths
-    sourcePath = sourcePath.trim();
-    if (!sourcePath.startsWith('/')) sourcePath = `/${sourcePath}`;
+    const sourcePath = normalizeRedirectSource(String(rawSource));
+    const targetPath = sanitizeRedirectTarget(String(rawTarget));
 
-    targetPath = targetPath.trim();
-    if (!targetPath.startsWith('/') && !targetPath.startsWith('http')) {
-      targetPath = `/${targetPath}`;
+    if (!targetPath) {
+      return NextResponse.json(
+        { success: false, error: 'URL ปลายทางไม่ปลอดภัย ต้องเป็นพาธภายในเว็บไซต์ที่ขึ้นต้นด้วย / หรืออยู่ในโดเมนเดียวกันเท่านั้น' },
+        { status: 400 }
+      );
+    }
+
+    if (sourcePath === targetPath) {
+      return NextResponse.json(
+        { success: false, error: 'URL ต้นทางและปลายทางต้องไม่ซ้ำกัน (ป้องกัน Redirect Loop)' },
+        { status: 400 }
+      );
     }
 
     const code = Number(statusCode) === 302 ? 302 : 301;
@@ -91,7 +100,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       data: redirectRecord,
-      message: `บันทึก 301 Redirect (${sourcePath} ➔ ${targetPath}) สำเร็จแล้ว`,
+      message: `บันทึก ${code} Redirect (${sourcePath} ➔ ${targetPath}) สำเร็จแล้ว`,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

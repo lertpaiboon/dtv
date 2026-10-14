@@ -3,6 +3,10 @@ import { getSiteUrl } from '@/lib/seo/site-url';
 
 export const INDEXNOW_KEY = process.env.INDEXNOW_KEY || 'd9f8b4a2e5c1473682b09a71deethavorn';
 
+export function getIndexNowKeyPath(): string {
+  return `/${INDEXNOW_KEY}.txt`;
+}
+
 export function getSiteBaseUrl(): string {
   return getSiteUrl();
 }
@@ -36,7 +40,7 @@ export async function submitToIndexNow(urls: string[]): Promise<IndexNowResult> 
   const baseUrl = getSiteBaseUrl();
   const host = getHost();
   // Key file placed at root covers all URLs across the entire site
-  const keyLocation = `${baseUrl}/${INDEXNOW_KEY}.txt`;
+  const keyLocation = `${baseUrl}${getIndexNowKeyPath()}`;
 
   // Normalize and validate URLs
   const normalizedUrls: string[] = [];
@@ -130,19 +134,17 @@ export async function submitToIndexNow(urls: string[]): Promise<IndexNowResult> 
       userMessage = `IndexNow ตอบกลับสถานะ ${response.status}: ${responseText || 'เกิดข้อผิดพลาด'}`;
     }
 
-    // Record logs in database
-    for (const url of normalizedUrls) {
-      await prisma.indexingLog
-        .create({
-          data: {
-            url,
-            engine: 'IndexNow (Bing/Yandex)',
-            status: isSuccess ? 'SUCCESS' : 'FAILED',
-            response: statusDescription,
-          },
-        })
-        .catch((e) => console.error('Failed to log indexing result:', e));
-    }
+    // Record logs in database in a single batch query
+    await prisma.indexingLog
+      .createMany({
+        data: normalizedUrls.map((url) => ({
+          url,
+          engine: 'IndexNow (Bing/Yandex)',
+          status: isSuccess ? 'SUCCESS' : 'FAILED',
+          response: statusDescription,
+        })),
+      })
+      .catch((e) => console.error('Failed to log indexing result:', e));
 
     return {
       success: isSuccess,
@@ -152,18 +154,16 @@ export async function submitToIndexNow(urls: string[]): Promise<IndexNowResult> 
     };
   } catch (error: any) {
     console.error('IndexNow submission error:', error);
-    for (const url of normalizedUrls) {
-      await prisma.indexingLog
-        .create({
-          data: {
-            url,
-            engine: 'IndexNow (Bing/Yandex)',
-            status: 'FAILED',
-            response: error.message || 'Network error connecting to api.indexnow.org',
-          },
-        })
-        .catch(() => null);
-    }
+    await prisma.indexingLog
+      .createMany({
+        data: normalizedUrls.map((url) => ({
+          url,
+          engine: 'IndexNow (Bing/Yandex)',
+          status: 'FAILED',
+          response: error.message || 'Network error connecting to api.indexnow.org',
+        })),
+      })
+      .catch(() => null);
 
     return {
       success: false,

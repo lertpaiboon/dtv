@@ -46,6 +46,29 @@ export async function POST(req: Request) {
     let skippedCount = 0;
     const skippedItems: { name: string; reason: string }[] = [];
 
+    const companiesWithoutContacts: Array<{
+      name: string;
+      taxId: string | null;
+      email: string | null;
+      phone: string | null;
+      address: string | null;
+    }> = [];
+
+    const companiesWithContacts: Array<{
+      name: string;
+      taxId: string | null;
+      email: string | null;
+      phone: string | null;
+      address: string | null;
+      contacts: Array<{
+        name: string;
+        roleTitle: string;
+        phone: string | null;
+        email: string | null;
+        isPrimary: boolean;
+      }>;
+    }> = [];
+
     for (const item of items as ImportCompanyItem[]) {
       const cleanName = item.name?.trim();
       if (!cleanName) {
@@ -67,8 +90,18 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const contactsData = item.contactName?.trim()
-        ? [
+      const companyBase = {
+        name: cleanName,
+        taxId: cleanTaxId,
+        email: item.email?.trim() || null,
+        phone: item.phone?.trim() || null,
+        address: item.address?.trim() || null,
+      };
+
+      if (item.contactName?.trim()) {
+        companiesWithContacts.push({
+          ...companyBase,
+          contacts: [
             {
               name: item.contactName.trim(),
               roleTitle: item.contactRole?.trim() || 'ผู้ประสานงานหลัก',
@@ -76,23 +109,41 @@ export async function POST(req: Request) {
               email: item.contactEmail?.trim() || null,
               isPrimary: true,
             },
-          ]
-        : [];
-
-      await prisma.company.create({
-        data: {
-          name: cleanName,
-          taxId: cleanTaxId,
-          email: item.email?.trim() || null,
-          phone: item.phone?.trim() || null,
-          address: item.address?.trim() || null,
-          contacts: contactsData.length > 0 ? { create: contactsData } : undefined,
-        },
-      });
+          ],
+        });
+      } else {
+        companiesWithoutContacts.push(companyBase);
+      }
 
       existingNames.add(cleanName.toLowerCase());
       if (cleanTaxId) existingTaxIds.add(cleanTaxId);
       importedCount++;
+    }
+
+    if (companiesWithoutContacts.length > 0) {
+      await prisma.company.createMany({
+        data: companiesWithoutContacts,
+        skipDuplicates: true,
+      });
+    }
+
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < companiesWithContacts.length; i += CHUNK_SIZE) {
+      const chunk = companiesWithContacts.slice(i, i + CHUNK_SIZE);
+      await prisma.$transaction(
+        chunk.map((c) =>
+          prisma.company.create({
+            data: {
+              name: c.name,
+              taxId: c.taxId,
+              email: c.email,
+              phone: c.phone,
+              address: c.address,
+              contacts: { create: c.contacts },
+            },
+          })
+        )
+      );
     }
 
     return NextResponse.json({

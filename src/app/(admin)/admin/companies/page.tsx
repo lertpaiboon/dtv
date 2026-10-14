@@ -292,7 +292,7 @@ export default function CompaniesPage() {
   // CSV Template Download
   const handleDownloadTemplate = () => {
     const header = 'ชื่อบริษัท,เลขประจำตัวผู้เสียภาษี,อีเมลบริษัท,เบอร์โทร,ที่อยู่,ชื่อผู้ติดต่อหลัก,ตำแหน่งผู้ติดต่อ,เบอร์ผู้ติดต่อ,อีเมลผู้ติดต่อ\n';
-    const sample = 'บจก.ตัวอย่างการค้า,0105550000000,contact@example.com,021234567,123 ถ.สุขุมวิท กทม.,คุณสมศรี มีสุข,ฝ่ายการเงิน,0812345678,somsri@example.com\n';
+    const sample = 'บจก.ตัวอย่างการค้า,0105550000000,contact@example.com,021234567,"123 ถ.สุขุมวิท, กทม.",คุณสมศรี มีสุข,ฝ่ายการเงิน,0812345678,somsri@example.com\n';
     const blob = new Blob(['\uFEFF' + header + sample], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -301,9 +301,36 @@ export default function CompaniesPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  // File Upload / Parsing (CSV simple parser)
+  // Quote-aware CSV line parser
+  const parseCsvRow = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  // File Upload / Parsing (CSV parser supporting quoted commas)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -322,7 +349,7 @@ export default function CompaniesPage() {
       // Skip header line
       const parsedItems = [];
       for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',').map((p) => p.trim().replace(/^"|"$/g, ''));
+        const parts = parseCsvRow(lines[i]);
         if (parts[0]) {
           parsedItems.push({
             name: parts[0],

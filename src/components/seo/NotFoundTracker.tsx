@@ -16,8 +16,9 @@ export default function NotFoundTracker() {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.redirect?.targetPath) {
-          window.location.replace(data.redirect.targetPath);
+        const target = data?.redirect?.targetPath;
+        if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')) {
+          window.location.replace(target);
         }
       })
       .catch(() => null);

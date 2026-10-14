@@ -8,6 +8,24 @@ interface ContactLeadData {
   message: string;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizePhoneHref(phone?: string | null): string {
+  if (!phone) return '';
+  return phone.replace(/[^0-9+\-, ]/g, '').trim();
+}
+
+function sanitizeHeaderText(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
 /**
  * Creates and returns a nodemailer transporter based on .env SMTP configurations.
  * Returns null if SMTP configuration is not present.
@@ -30,9 +48,8 @@ function getMailTransporter() {
       user,
       pass,
     },
-    // Allows self-signed / hosting certificates without throwing errors on Plesk
     tls: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: process.env.SMTP_ALLOW_INSECURE_TLS !== 'true',
     },
   });
 }
@@ -49,7 +66,13 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
 
   const senderUser = process.env.SMTP_USER;
   const adminReceivers = process.env.NOTIFICATION_RECEIVER_EMAIL || 'dtv_accounting@hotmail.com, c.pimmphisa@gmail.com';
-  const fullName = `${lead.firstName} ${lead.lastName}`.trim();
+  const rawFullName = `${lead.firstName} ${lead.lastName}`.trim();
+  const safeFullName = escapeHtml(rawFullName);
+  const safePhoneLabel = lead.phone ? escapeHtml(lead.phone) : 'ไม่ได้ระบุ';
+  const safePhoneHref = sanitizePhoneHref(lead.phone);
+  const safeEmail = escapeHtml(lead.email);
+  const safeMessage = escapeHtml(lead.message);
+  const safeSubjectName = sanitizeHeaderText(rawFullName);
 
   const formattedDate = new Intl.DateTimeFormat('th-TH', {
     dateStyle: 'medium',
@@ -87,15 +110,19 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
           <table class="lead-table">
             <tr>
               <td class="label">ชื่อ-นามสกุล:</td>
-              <td class="value"><strong>${fullName}</strong></td>
+              <td class="value"><strong>${safeFullName}</strong></td>
             </tr>
             <tr>
               <td class="label">เบอร์โทรศัพท์:</td>
-              <td class="value"><a href="tel:${lead.phone || ''}" style="color: #1B2A80; font-weight: 600; text-decoration: none;">${lead.phone || 'ไม่ได้ระบุ'}</a></td>
+              <td class="value">${
+                safePhoneHref
+                  ? `<a href="tel:${safePhoneHref}" style="color: #1B2A80; font-weight: 600; text-decoration: none;">${safePhoneLabel}</a>`
+                  : safePhoneLabel
+              }</td>
             </tr>
             <tr>
               <td class="label">อีเมลลูกค้า:</td>
-              <td class="value"><a href="mailto:${lead.email}" style="color: #1B2A80; text-decoration: none;">${lead.email}</a></td>
+              <td class="value"><a href="mailto:${safeEmail}" style="color: #1B2A80; text-decoration: none;">${safeEmail}</a></td>
             </tr>
             <tr>
               <td class="label">เวลาที่ติดต่อ:</td>
@@ -103,7 +130,7 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
             </tr>
           </table>
           <p style="font-weight: 600; margin: 0 0 8px; font-size: 14px; color: #475569;">รายละเอียดที่ต้องการปรึกษา:</p>
-          <div class="msg-box">${lead.message}</div>
+          <div class="msg-box">${safeMessage}</div>
         </div>
         <div class="footer">
           อีเมลนี้ถูกส่งอัตโนมัติจากระบบแบบฟอร์มเว็บไซต์ deethavorn.com
@@ -117,11 +144,11 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
     await transporter.sendMail({
       from: `"ดีถาวรการบัญชี (ระบบเว็บไซต์)" <${senderUser}>`,
       to: adminReceivers,
-      replyTo: lead.email,
-      subject: `🔔 มีผู้ติดต่อขอคำปรึกษาใหม่: คุณ ${fullName}`,
+      replyTo: sanitizeHeaderText(lead.email),
+      subject: `🔔 มีผู้ติดต่อขอคำปรึกษาใหม่: คุณ ${safeSubjectName}`,
       html,
     });
-    console.log(`✅ [SMTP] Sent inquiry notification for ${fullName} to ${adminReceivers}`);
+    console.log(`✅ [SMTP] Sent inquiry notification for ${safeSubjectName} to ${adminReceivers}`);
     return true;
   } catch (error) {
     console.error('❌ [SMTP] Failed to send admin notification email:', error);
@@ -137,7 +164,8 @@ export async function sendClientConfirmation(lead: ContactLeadData) {
   if (!transporter) return false;
 
   const senderUser = process.env.SMTP_USER;
-  const fullName = `${lead.firstName} ${lead.lastName}`.trim();
+  const rawFullName = `${lead.firstName} ${lead.lastName}`.trim();
+  const safeFullName = escapeHtml(rawFullName);
 
   const html = `
     <!DOCTYPE html>
@@ -163,7 +191,7 @@ export async function sendClientConfirmation(lead: ContactLeadData) {
           <p>ได้รับข้อมูลการติดต่อของคุณเรียบร้อยแล้ว</p>
         </div>
         <div class="content">
-          <p>เรียน คุณ <strong>${fullName}</strong>,</p>
+          <p>เรียน คุณ <strong>${safeFullName}</strong>,</p>
           <p>ทางทีมงานดีถาวรการบัญชีได้รับข้อมูลและรายละเอียดคำปรึกษาของคุณเรียบร้อยแล้ว เจ้าหน้าที่จะทำการตรวจสอบข้อมูลเบื้องต้นและติดต่อกลับโดยเร็วที่สุดในเวลาทำการครับ</p>
           
           <div class="contact-pill">
@@ -187,7 +215,7 @@ export async function sendClientConfirmation(lead: ContactLeadData) {
   try {
     await transporter.sendMail({
       from: `"บริษัท ดีถาวรการบัญชี จำกัด" <${senderUser}>`,
-      to: lead.email,
+      to: sanitizeHeaderText(lead.email),
       subject: `บริษัท ดีถาวรการบัญชี จำกัด - ได้รับข้อมูลการขอคำปรึกษาของคุณเรียบร้อยแล้ว`,
       html,
     });

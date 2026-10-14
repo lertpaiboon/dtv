@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { normalizeRedirectSource, sanitizeRedirectTarget } from '@/lib/seo/redirects';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,17 +57,22 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: 'กรุณาระบุ URL ปลายทาง' }, { status: 400 });
       }
 
-      // Create CustomRedirect
-      let normSource = log.url.trim();
-      try {
-        if (normSource.startsWith('http')) {
-          normSource = new URL(normSource).pathname;
-        }
-      } catch {}
-      if (!normSource.startsWith('/')) normSource = `/${normSource}`;
+      const normSource = normalizeRedirectSource(log.url);
+      const normTarget = sanitizeRedirectTarget(String(targetPath));
 
-      let normTarget = targetPath.trim();
-      if (!normTarget.startsWith('/') && !normTarget.startsWith('http')) normTarget = `/${normTarget}`;
+      if (!normTarget) {
+        return NextResponse.json(
+          { success: false, error: 'URL ปลายทางไม่ปลอดภัย ต้องเป็นพาธภายในเว็บไซต์ที่ขึ้นต้นด้วย / เท่านั้น' },
+          { status: 400 }
+        );
+      }
+
+      if (normSource === normTarget) {
+        return NextResponse.json(
+          { success: false, error: 'URL ต้นทางและปลายทางต้องไม่ซ้ำกัน' },
+          { status: 400 }
+        );
+      }
 
       await prisma.$transaction([
         prisma.customRedirect.upsert({

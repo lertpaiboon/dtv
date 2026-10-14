@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         {/* Main Content Body */}
-        <main
+        <article
           style={{
             background: '#ffffff',
             border: '1px solid #e2e8f0',
@@ -392,7 +392,7 @@ export default function PrivacyPolicyPage() {
               </div>
             </div>
           </section>
-        </main>
+        </article>
       </div>
     </div>
   );

@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const faqs = [
+export interface FaqItem {
+  q: string;
+  a: string;
+}
+
+export const defaultFaqs: FaqItem[] = [
   {
     q: 'ดีถาวรการบัญชีให้บริการอะไรบ้าง?',
     a: 'เราดูแล 4 งานหลัก ได้แก่ ทำบัญชีและภาษี ตรวจสอบบัญชีโดย CPA งานจดทะเบียนธุรกิจ และงาน HR & Payroll โดยสามารถเลือกใช้เฉพาะบริการที่ต้องการหรือให้เราดูแลต่อเนื่องครบวงจรได้',
@@ -30,8 +35,9 @@ const faqs = [
   },
 ];
 
-export default function FAQ() {
+export default function FAQ({ items }: { items?: FaqItem[] }) {
   const [openIndex, setOpenIndex] = useState(0);
+  const faqList = items && items.length > 0 ? items : defaultFaqs;
 
   return (
     <section className="section faq" id="faq">
@@ -47,7 +53,7 @@ export default function FAQ() {
         </div>
 
         <div className="faq__list reveal-on-scroll delay-2">
-          {faqs.map((faq, index) => {
+          {faqList.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
               <article className={`faq-item${isOpen ? ' faq-item--open' : ''}`} key={faq.q}>

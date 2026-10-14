@@ -387,6 +387,13 @@ export default function ConsolidatedBillingPage() {
     });
   }
 
+  useEffect(() => {
+    if (!slipPreviewUrl || !slipPreviewUrl.startsWith('blob:')) return;
+    return () => {
+      URL.revokeObjectURL(slipPreviewUrl);
+    };
+  }, [slipPreviewUrl]);
+
   async function handleFileSelect(selectedFile: File) {
     if (selectedFile.size > 5 * 1024 * 1024) {
       alert(`ขนาดไฟล์เกิน 5 MB (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB) กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 5 MB`);

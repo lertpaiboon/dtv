@@ -90,11 +90,11 @@ export function validateArticlePayload(
   }
 
   // Content Markdown checks
-  if (!payload.contentMarkdown || payload.contentMarkdown.trim().length < 50) {
+  if (!payload.contentMarkdown || payload.contentMarkdown.trim().length < 100) {
     if (isPublishing) {
       errors.push('เนื้อหาบทความ (Markdown) ต้องมีเนื้อหาอย่างน้อย 100 ตัวอักษรสำหรับการเผยแพร่');
     } else {
-      warnings.push('เนื้อหาบทความยังสั้นเกินไป');
+      warnings.push('เนื้อหาบทความยังสั้นเกินไป (แนะนำอย่างน้อย 100 ตัวอักษร)');
     }
   }
 

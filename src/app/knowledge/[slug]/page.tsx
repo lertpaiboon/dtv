@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect } from '@/lib/articles/queries';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
+import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleBody from '@/components/articles/ArticleBody';
 import ArticleToc from '@/components/articles/ArticleToc';
 import ArticleFaq from '@/components/articles/ArticleFaq';
@@ -88,6 +89,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     if (redirectTarget) {
       permanentRedirect(`/knowledge/${redirectTarget}`);
     }
+    await executeServerRedirectIfMatched(`/knowledge/${slug}`);
     notFound();
   }
 
@@ -481,9 +483,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         <ArticleToc contentMarkdown={article.contentMarkdown} />
 
         {/* Article Body Prose */}
-        <main>
+        <div>
           <ArticleBody contentMarkdown={article.contentMarkdown} />
-        </main>
+        </div>
 
         {/* Citations / Legal References */}
         <ArticleCitations citations={article.citations} />

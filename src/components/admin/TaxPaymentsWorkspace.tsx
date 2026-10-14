@@ -411,6 +411,13 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
     });
   }
 
+  useEffect(() => {
+    if (!slipPreviewUrl || !slipPreviewUrl.startsWith('blob:')) return;
+    return () => {
+      URL.revokeObjectURL(slipPreviewUrl);
+    };
+  }, [slipPreviewUrl]);
+
   async function handleFileSelect(selectedFile: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowed.includes(selectedFile.type.toLowerCase())) {

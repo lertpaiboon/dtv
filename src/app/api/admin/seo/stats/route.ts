@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { ArticleStatus } from '@prisma/client';
 
 import { getIndexableArticles } from '@/lib/articles/queries';
+import { getIndexNowKeyPath } from '@/lib/seo/indexnow';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,12 +107,13 @@ export async function GET() {
     const totalCustomRedirectHits = customRedirectsHitsAggregate._sum.hits || 0;
     const total404Hits = total404HitsAggregate._sum.hits || 0;
 
-    // Sitemap stats: 2 static routes + strictly indexable articles + active author profiles
-    const sitemapUrlCount = 2 + indexableArticles.length + activeAuthorsCount;
+    // Sitemap stats: 3 static routes (/, /knowledge, /privacy-policy) + strictly indexable articles + active author profiles
+    const sitemapUrlCount = 3 + indexableArticles.length + activeAuthorsCount;
 
     return NextResponse.json({
       success: true,
       data: {
+        indexNowKeyPath: getIndexNowKeyPath(),
         kpi: {
           averageScore,
           publishedCount: publishedArticles.length,
