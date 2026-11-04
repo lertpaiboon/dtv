@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getIndexableArticles, getAllActiveAuthors } from '@/lib/articles/queries';
 import { getSiteUrl } from '@/lib/seo/site-url';
+import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
@@ -26,6 +27,60 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
+      url: `${baseUrl}/services`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/services/accounting-tax`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services/audit`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services/business-registration`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/services/hr-payroll`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/about`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'monthly',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/pricing`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: latestArticleDate,
+      changeFrequency: 'monthly',
+      priority: 0.85,
+    },
+    {
       url: `${baseUrl}/knowledge`,
       lastModified: latestArticleDate,
       changeFrequency: 'daily',
@@ -39,7 +94,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // 3. Dynamic Published Articles
+  // 3. Dynamic 16 Sub-Service Pages
+  const subServiceRoutes: MetadataRoute.Sitemap = SUB_SERVICES.map((sub) => ({
+    url: `${baseUrl}/services/${sub.slug}`,
+    lastModified: latestArticleDate,
+    changeFrequency: 'monthly',
+    priority: 0.85,
+  }));
+
+  // 4. Dynamic Published Articles
   const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${baseUrl}/knowledge/${article.slug}`,
     lastModified: new Date(article.contentUpdatedAt || article.publishedAt),
@@ -47,7 +110,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // 4. Dynamic Active Author Profiles (E-E-A-T)
+  // 5. Dynamic Active Author Profiles (E-E-A-T)
   const authorRoutes: MetadataRoute.Sitemap = authors.map((author) => ({
     url: `${baseUrl}/authors/${author.slug}`,
     lastModified: latestArticleDate,
@@ -55,6 +118,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...articleRoutes, ...authorRoutes];
+  return [...staticRoutes, ...subServiceRoutes, ...articleRoutes, ...authorRoutes];
 }
 

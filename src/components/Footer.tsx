@@ -1,14 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock3, Mail, MapPin, MessageCircle, Phone, ShieldCheck } from 'lucide-react';
+import { Clock3, Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
 import ScrollToTopButton from './ScrollToTopButton';
 import CookiePreferencesButton from './CookiePreferencesButton';
 
 const serviceLinks = [
-  'บัญชีและภาษีอากร',
-  'ตรวจสอบบัญชีโดย CPA',
-  'งานทะเบียนธุรกิจ',
-  'HR และ Payroll',
+  { label: 'ทำบัญชีและภาษี', href: '/services/accounting-tax' },
+  { label: 'ตรวจสอบบัญชีโดย CPA', href: '/services/audit' },
+  { label: 'จดทะเบียนธุรกิจ', href: '/services/business-registration' },
+  { label: 'งานบุคคลและเงินเดือน', href: '/services/hr-payroll' },
+  { label: 'ดูบริการทั้งหมด', href: '/services' },
 ];
 
 export default function Footer() {
@@ -27,35 +28,67 @@ export default function Footer() {
                 sizes="56px"
               />
             </span>
-            <span className="brand__copy"><strong>ดีถาวรการบัญชี</strong><small>Deethavorn Accounting</small></span>
+            <span className="brand__copy">
+              <strong>ดีถาวรการบัญชี</strong>
+              <small>Deethavorn Accounting</small>
+            </span>
           </Link>
-          <p>ดูแลบัญชี ภาษี ตรวจสอบบัญชี งานทะเบียน และระบบบุคคล ด้วยมาตรฐานวิชาชีพและราคาที่โปร่งใส</p>
-          <span className="footer__trust"><ShieldCheck aria-hidden="true" /> รักษาความลับของลูกค้าทุกกรณี</span>
+          <p>
+            รับทำบัญชี ยื่นภาษี ตรวจสอบบัญชีโดย CPA จดทะเบียนธุรกิจ และดูแลระบบเงินเดือน ด้วยมาตรฐานวิชาชีพและราคาที่โปร่งใส
+          </p>
+          <span className="footer__trust">
+            <ShieldCheck aria-hidden="true" /> เก็บข้อมูลลูกค้าเป็นความลับทุกกรณี
+          </span>
         </div>
 
         <div className="footer__column">
           <h3>บริการ</h3>
-          {serviceLinks.map((label) => <Link href="/#services" key={label}>{label}</Link>)}
+          {serviceLinks.map((item) => (
+            <Link href={item.href} key={item.href}>
+              {item.label}
+            </Link>
+          ))}
         </div>
 
         <div className="footer__column">
-          <h3>ข้อมูลเพิ่มเติม</h3>
-          <Link href="/#why-us">ทำไมต้องดีถาวร</Link>
-          <Link href="/#pricing">ค่าบริการ</Link>
-          <Link href="/#faq">คำถามที่พบบ่อย</Link>
+          <h3>เมนูหลัก</h3>
+          <Link href="/about">ทำไมต้องดีถาวร</Link>
+          <Link href="/pricing">ค่าบริการ</Link>
+          <Link href="/faq">คำถามที่พบบ่อย</Link>
           <Link href="/knowledge">คลังความรู้</Link>
+          <Link href="/contact">ติดต่อเรา</Link>
           <Link href="/privacy-policy">นโยบายความเป็นส่วนตัว (PDPA)</Link>
-          <CookiePreferencesButton className="footer__cookie-btn">
-            ตั้งค่าคุกกี้
-          </CookiePreferencesButton>
+          <CookiePreferencesButton className="footer__cookie-btn">ตั้งค่าคุกกี้</CookiePreferencesButton>
         </div>
 
         <div className="footer__column footer__contact">
           <h3>ติดต่อสำนักงาน</h3>
-          <div className="footer__contact-group"><Phone aria-hidden="true" /><span><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
-          <div className="footer__contact-group"><Mail aria-hidden="true" /><span><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-          <span><Clock3 aria-hidden="true" />จันทร์–ศุกร์ 08:30–17:30 น.</span>
-          <span><MapPin aria-hidden="true" /><span>234/116 ถ.อโศก–ดินแดง<br />แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310</span></span>
+          <div className="footer__contact-group">
+            <Phone aria-hidden="true" />
+            <span>
+              <a href="tel:0991495656">099-149-5656</a>
+              <a href="tel:0919415656">091-941-5656</a>
+            </span>
+          </div>
+          <div className="footer__contact-group">
+            <Mail aria-hidden="true" />
+            <span>
+              <a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a>
+              <a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a>
+            </span>
+          </div>
+          <span>
+            <Clock3 aria-hidden="true" />
+            จันทร์–ศุกร์ 08:30–17:30 น.
+          </span>
+          <span>
+            <MapPin aria-hidden="true" />
+            <span>
+              234/116 ถ.อโศก–ดินแดง
+              <br />
+              แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310
+            </span>
+          </span>
 
           <a
             href="https://line.me/ti/p/DliAyJfUXd"
@@ -85,10 +118,7 @@ export default function Footer() {
           <Link href="/privacy-policy" className="footer__bottom-link">
             นโยบายข้อมูลส่วนบุคคล
           </Link>{' '}
-          ·{' '}
-          <CookiePreferencesButton className="footer__cookie-link-btn">
-            ตั้งค่าคุกกี้
-          </CookiePreferencesButton>
+          · <CookiePreferencesButton className="footer__cookie-link-btn">ตั้งค่าคุกกี้</CookiePreferencesButton>
         </span>
         <span>มาตรฐานวิชาชีพ · ราคาชัดเจน · ติดต่อได้จริง</span>
         <ScrollToTopButton />

@@ -4,13 +4,30 @@ import { FormEvent, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { AlertCircle, CheckCircle2, Clock3, Mail, MapPin, MessageCircle, Phone, Send } from 'lucide-react';
 
-const initialForm = { firstName: '', lastName: '', email: '', phone: '', message: '' };
+const SERVICE_OPTIONS = [
+  'ทำบัญชีและยื่นภาษี',
+  'ตรวจสอบบัญชีโดย CPA',
+  'จดทะเบียนธุรกิจ',
+  'เงินเดือนและประกันสังคม',
+] as const;
+
+const initialForm = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  serviceType: 'ทำบัญชีและยื่นภาษี',
+  message: '',
+};
 
 export default function ContactForm() {
   const [formData, setFormData] = useState(initialForm);
   const [honeypot, setHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
+  const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error'; message: string }>({
+    type: 'idle',
+    message: '',
+  });
 
   // Auto-fill inquiry topic when redirected from Knowledge articles
   useEffect(() => {
@@ -46,6 +63,10 @@ export default function ContactForm() {
     setStatus({ type: 'idle', message: '' });
 
     try {
+      const combinedMessage = formData.serviceType
+        ? `[สนใจบริการ: ${formData.serviceType}]\n${formData.message.trim()}`
+        : formData.message.trim();
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,7 +75,8 @@ export default function ContactForm() {
           lastName: formData.lastName.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim(),
-          message: formData.message.trim(),
+          serviceType: formData.serviceType,
+          message: combinedMessage,
           website: honeypot,
         }),
       });
@@ -79,14 +101,42 @@ export default function ContactForm() {
       <div className="container contact__layout">
         <div className="contact__intro reveal-on-scroll">
           <p className="section-kicker section-kicker--inverse">เริ่มต้นคุยกับเรา</p>
-          <h2>เล่าเรื่องธุรกิจของคุณ<br />ที่เหลือให้เราช่วยจัดการ</h2>
-          <p>ส่งข้อมูลเบื้องต้นเพื่อให้ทีมงานประเมินขอบเขตและราคา ไม่มีค่าใช้จ่ายและไม่มีข้อผูกมัด</p>
+          <h2>
+            ปรึกษาเรา เพื่อเลือกบริการ
+            <br />
+            ที่เหมาะกับธุรกิจคุณ
+          </h2>
+          <p>กรอกข้อมูลสั้นๆ ทีมงานโทรกลับภายใน 1 วันทำการ การประเมินราคาไม่มีค่าใช้จ่าย</p>
 
           <div className="contact__details">
-            <div><Phone aria-hidden="true" /><span><small>โทรปรึกษา</small><a href="tel:0991495656">099-149-5656</a><a href="tel:0919415656">091-941-5656</a></span></div>
-            <div><Mail aria-hidden="true" /><span><small>อีเมล</small><a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a><a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a></span></div>
-            <div><Clock3 aria-hidden="true" /><span><small>เวลาทำการ</small>จันทร์–ศุกร์ 08:30–17:30 น.</span></div>
-            <div><MapPin aria-hidden="true" /><span><small>สำนักงาน</small>อโศก–ดินแดง ใกล้ MRT เพชรบุรี</span></div>
+            <div>
+              <Phone aria-hidden="true" />
+              <span>
+                <small>โทร</small>
+                <a href="tel:0991495656">099-149-5656</a>
+                <a href="tel:0919415656">091-941-5656</a>
+              </span>
+            </div>
+            <div>
+              <Mail aria-hidden="true" />
+              <span>
+                <small>อีเมล</small>
+                <a href="mailto:dtv_accounting@hotmail.com">dtv_accounting@hotmail.com</a>
+                <a href="mailto:c.pimmphisa@gmail.com">c.pimmphisa@gmail.com</a>
+              </span>
+            </div>
+            <div>
+              <Clock3 aria-hidden="true" />
+              <span>
+                <small>เวลาทำการ</small>จันทร์–ศุกร์ 08:30–17:30 น.
+              </span>
+            </div>
+            <div>
+              <MapPin aria-hidden="true" />
+              <span>
+                <small>สำนักงาน</small>234/116 ถ.อโศก–ดินแดง ใกล้ MRT เพชรบุรี ทางออก 1
+              </span>
+            </div>
           </div>
 
           <div className="contact__line-card">
@@ -121,7 +171,7 @@ export default function ContactForm() {
 
         <div className="contact-form-card reveal-on-scroll delay-2">
           <div className="contact-form-card__heading">
-            <h3>ขอคำปรึกษาเบื้องต้น</h3>
+            <h3>ขอใบเสนอราคา</h3>
             <span>ตอบกลับภายใน 1 วันทำการ</span>
           </div>
 
@@ -135,22 +185,104 @@ export default function ContactForm() {
           <form onSubmit={handleSubmit}>
             <div className="honeypot" aria-hidden="true">
               <label htmlFor="form-website-field">เว็บไซต์</label>
-              <input id="form-website-field" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} />
+              <input
+                id="form-website-field"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(event) => setHoneypot(event.target.value)}
+              />
             </div>
 
             <div className="form-row">
-              <label htmlFor="contact-first-name">ชื่อ<input id="contact-first-name" required name="firstName" autoComplete="given-name" placeholder="ชื่อ" value={formData.firstName} onChange={(event) => setFormData({ ...formData, firstName: event.target.value })} /></label>
-              <label htmlFor="contact-last-name">นามสกุล<input id="contact-last-name" required name="lastName" autoComplete="family-name" placeholder="นามสกุล" value={formData.lastName} onChange={(event) => setFormData({ ...formData, lastName: event.target.value })} /></label>
+              <label htmlFor="contact-first-name">
+                ชื่อ
+                <input
+                  id="contact-first-name"
+                  required
+                  name="firstName"
+                  autoComplete="given-name"
+                  placeholder="ชื่อ"
+                  value={formData.firstName}
+                  onChange={(event) => setFormData({ ...formData, firstName: event.target.value })}
+                />
+              </label>
+              <label htmlFor="contact-last-name">
+                นามสกุล
+                <input
+                  id="contact-last-name"
+                  required
+                  name="lastName"
+                  autoComplete="family-name"
+                  placeholder="นามสกุล"
+                  value={formData.lastName}
+                  onChange={(event) => setFormData({ ...formData, lastName: event.target.value })}
+                />
+              </label>
             </div>
             <div className="form-row">
-              <label htmlFor="contact-email">อีเมล<input id="contact-email" required type="email" name="email" autoComplete="email" spellCheck={false} placeholder="name@company.com" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} /></label>
-              <label htmlFor="contact-phone">เบอร์โทรศัพท์<input id="contact-phone" type="tel" name="phone" autoComplete="tel" inputMode="tel" placeholder="081-234-5678" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} /></label>
+              <label htmlFor="contact-email">
+                อีเมล
+                <input
+                  id="contact-email"
+                  required
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  placeholder="name@company.com"
+                  value={formData.email}
+                  onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                />
+              </label>
+              <label htmlFor="contact-phone">
+                เบอร์โทร
+                <input
+                  id="contact-phone"
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  placeholder="081-234-5678"
+                  value={formData.phone}
+                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                />
+              </label>
             </div>
-            <label htmlFor="contact-message">รายละเอียดที่ต้องการปรึกษา<textarea id="contact-message" required name="message" rows={5} placeholder="ประเภทธุรกิจ บริการที่สนใจ และจำนวนเอกสารโดยประมาณ" value={formData.message} onChange={(event) => setFormData({ ...formData, message: event.target.value })} /></label>
+
+            <label htmlFor="contact-service-type">
+              สนใจบริการ
+              <select
+                id="contact-service-type"
+                name="serviceType"
+                value={formData.serviceType}
+                onChange={(event) => setFormData({ ...formData, serviceType: event.target.value })}
+              >
+                {SERVICE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label htmlFor="contact-message">
+              เล่าเรื่องธุรกิจสั้นๆ
+              <textarea
+                id="contact-message"
+                required
+                name="message"
+                rows={4}
+                placeholder="เช่น ขายของออนไลน์ พนักงาน 5 คน จด VAT แล้ว เอกสารเดือนละประมาณ 80 ใบ"
+                value={formData.message}
+                onChange={(event) => setFormData({ ...formData, message: event.target.value })}
+              />
+            </label>
             <button className="btn btn-primary form-submit" type="submit" disabled={loading}>
               <Send aria-hidden="true" /> {loading ? 'กำลังส่งข้อมูล...' : 'ส่งข้อมูลให้ทีมงาน'}
             </button>
-            <p className="form-privacy">ข้อมูลของคุณใช้เพื่อการติดต่อกลับและประเมินบริการเท่านั้น</p>
+            <p className="form-privacy">ใช้ข้อมูลนี้เพื่อติดต่อกลับและประเมินราคาเท่านั้น</p>
           </form>
         </div>
       </div>

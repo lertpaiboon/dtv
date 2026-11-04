@@ -3,14 +3,21 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock3, MapPin, Menu, MessageCircle, Phone, X } from 'lucide-react';
+import { ChevronDown, Clock3, MapPin, Menu, MessageCircle, Phone, X } from 'lucide-react';
+
+const serviceCategories = [
+  { label: 'ทำบัญชีและภาษี', sub: 'ทำบัญชีรายเดือน ยื่นภาษี ปิดงบ วางแผนภาษี', href: '/services/accounting-tax' },
+  { label: 'ตรวจสอบบัญชีโดย CPA', sub: 'จัดทำและรับรองงบการเงินประจำปีโดย CPA', href: '/services/audit' },
+  { label: 'จดทะเบียนธุรกิจ', sub: 'จดตั้งบริษัท หจก. จด VAT แก้ไขข้อมูล เครื่องหมายการค้า', href: '/services/business-registration' },
+  { label: 'งานบุคคลและเงินเดือน', sub: 'ทำเงินเดือน วางระบบ HR สรรหาบุคลากร ประกันสังคม', href: '/services/hr-payroll' },
+];
 
 const navLinks = [
-  { label: 'บริการ', href: '/#services' },
-  { label: 'ทำไมต้องดีถาวร', href: '/#why-us' },
-  { label: 'ค่าบริการ', href: '/#pricing' },
-  { label: 'คำถามที่พบบ่อย', href: '/#faq' },
+  { label: 'ทำไมต้องดีถาวร', href: '/about' },
+  { label: 'ค่าบริการ', href: '/pricing' },
+  { label: 'คำถามที่พบบ่อย', href: '/faq' },
   { label: 'คลังความรู้', href: '/knowledge' },
+  { label: 'ติดต่อเรา', href: '/contact' },
 ];
 
 export default function Header() {
@@ -28,8 +35,12 @@ export default function Header() {
       <div className="utility-bar">
         <div className="container utility-bar__inner">
           <div className="utility-bar__details">
-            <span><Clock3 aria-hidden="true" /> จันทร์–ศุกร์ 08:30–17:30 น.</span>
-            <span><MapPin aria-hidden="true" /> ใกล้ MRT เพชรบุรี ทางออก 1</span>
+            <span>
+              <Clock3 aria-hidden="true" /> จันทร์–ศุกร์ 08:30–17:30 น.
+            </span>
+            <span>
+              <MapPin aria-hidden="true" /> ใกล้ MRT เพชรบุรี ทางออก 1
+            </span>
           </div>
           <div className="utility-bar__phones">
             <Phone aria-hidden="true" />
@@ -61,13 +72,35 @@ export default function Header() {
           </Link>
 
           <nav className="desktop-nav" aria-label="เมนูหลัก">
+            <div className="desktop-nav__dropdown">
+              <Link href="/services" className="desktop-nav__trigger">
+                <span>บริการ</span>
+                <ChevronDown aria-hidden="true" />
+              </Link>
+              <div className="desktop-nav__menu">
+                {serviceCategories.map((cat) => (
+                  <Link key={cat.href} href={cat.href} className="desktop-nav__menu-item">
+                    <strong>{cat.label}</strong>
+                    <span>{cat.sub}</span>
+                  </Link>
+                ))}
+                <Link href="/services" className="desktop-nav__menu-all">
+                  ดูบริการทั้งหมด →
+                </Link>
+              </div>
+            </div>
+
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>{link.label}</Link>
+              <Link key={link.href} href={link.href}>
+                {link.label}
+              </Link>
             ))}
           </nav>
 
           <div className="main-nav__actions">
-            <Link className="btn btn-primary nav-cta" href="/#contact">ขอคำปรึกษา</Link>
+            <Link className="btn btn-primary nav-cta" href="/contact">
+              ขอใบเสนอราคา
+            </Link>
             <button
               className="mobile-toggle-btn"
               type="button"
@@ -85,13 +118,26 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="mobile-nav" id="mobile-nav">
           <nav className="container" aria-label="เมนูบนมือถือ">
+            <Link href="/services" onClick={() => setMobileMenuOpen(false)}>
+              บริการทั้งหมด
+            </Link>
+            {serviceCategories.map((cat) => (
+              <Link
+                key={cat.href}
+                href={cat.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="mobile-nav__sublink"
+              >
+                — {cat.label}
+              </Link>
+            ))}
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}>
                 {link.label}
               </Link>
             ))}
-            <Link className="mobile-nav__contact" href="/#contact" onClick={() => setMobileMenuOpen(false)}>
-              ส่งรายละเอียดให้เราประเมินราคา
+            <Link className="mobile-nav__contact" href="/contact" onClick={() => setMobileMenuOpen(false)}>
+              ขอใบเสนอราคา / ประเมินราคาฟรี
             </Link>
             <a
               className="mobile-nav__phone mobile-nav__line-link"

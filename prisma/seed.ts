@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { dcaArticlePayload } from './seed-dca-article';
 
 const prisma = new PrismaClient();
 
@@ -276,6 +277,11 @@ async function main() {
         { title: 'พระราชบัญญัติวิชาชีพบัญชี พ.ศ. 2547', publisher: 'สภาวิชาชีพบัญชี ในพระบรมราชูปถัมภ์', url: 'https://www.tfac.or.th', accessedAt: new Date('2026-03-10'), sortOrder: 1 },
       ],
     },
+    {
+      ...dcaArticlePayload,
+      authorId: authorWichian.id,
+      reviewerId: authorTaxTeam.id,
+    },
   ];
 
   for (const art of articlesToSeed) {
@@ -301,9 +307,11 @@ async function main() {
         data: citations.map((c) => ({ ...c, articleId: createdArticle.id })),
       });
     }
+
+    console.log(`   📄 Seeded article: "${createdArticle.title}" (slug: ${createdArticle.slug})`);
   }
 
-  console.log('✅ Pilot Articles with FAQs & Citations successfully seeded into database.');
+  console.log('✅ Articles with FAQs & Citations successfully seeded into database.');
 
   // 4. Payment Methods (บัตรเครดิตสำนักงาน และวิธีชำระเงินหลัก)
   const paymentMethods = [
@@ -322,6 +330,56 @@ async function main() {
     });
   }
   console.log('✅ Payment Methods initialized (SCB, BBL, KBANK, Transfer, Cash).');
+
+  // 4.5. Customer Reviews (รีวิวจากลูกค้าเริ่มต้น)
+  const existingReviewsCount = await prisma.customerReview.count();
+  if (existingReviewsCount === 0) {
+    await prisma.customerReview.createMany({
+      data: [
+        {
+          headline: '“คืนใบเสร็จสรรพากรตัวจริงครบทุกเดือน สบายใจมาก”',
+          quote:
+            'ก่อนหน้านี้ใช้ที่อื่นไม่เคยเห็นใบเสร็จภาษีเลย พอย้ายมาดีถาวร ทีมงานส่งใบเสร็จตัวจริงจากกรมสรรพากรคืนให้เก็บเข้าแฟ้มทุกเดือน ตรวจสอบย้อนหลังได้ตลอด',
+          authorName: 'คุณธนกร ว.',
+          businessType: 'ธุรกิจนำเข้าและจำหน่ายสินค้าออนไลน์',
+          rating: 5,
+          sortOrder: 1,
+          isActive: true,
+        },
+        {
+          headline: '“ย้ายสำนักงานบัญชีกลางปี ช่วยเคลียร์งานเก่าให้จนจบ”',
+          quote:
+            'ตอนตัดสินใจย้ายมาช่วงกลางปีกังวลเรื่องเอกสารค้างจากที่เดิมมาก แต่ทีมดีถาวรช่วยตรวจเช็กยอดสะสมและรับช่วงต่อยื่น ภ.พ.30 กับปิดงบส่ง CPA ให้จนผ่านราบรื่น',
+          authorName: 'คุณกิตติพงศ์ ร.',
+          businessType: 'ธุรกิจบริการและคลินิกย่านอโศก',
+          rating: 5,
+          sortOrder: 2,
+          isActive: true,
+        },
+        {
+          headline: '“แจ้งราคาชัดเจนตั้งแต่ต้น ไม่มีบวกจุกจิกตอนปิดงบ”',
+          quote:
+            'ประเมินราคาตามจำนวนบิลจริงตั้งแต่คุยครั้งแรก ตลอดสัญญาไม่มีค่ากระดาษ ค่านำส่ง หรือค่าปรึกษายิบย่อยเพิ่ม โทรถามเรื่องภาษีในเวลาทำการได้คุยกับคนทำบัญชีให้เราโดยตรง',
+          authorName: 'คุณปิยะนุช ส.',
+          businessType: 'บริษัทเอเจนซี่และที่ปรึกษาการตลาด',
+          rating: 5,
+          sortOrder: 3,
+          isActive: true,
+        },
+        {
+          headline: '“ดูแลครบตั้งแต่จดบริษัท จด VAT จนถึงทำเงินเดือน”',
+          quote:
+            'เริ่มตั้งแต่เปลี่ยนจากร้านค้าบุคคลธรรมดามาจดบริษัทจำกัด ทีมงานช่วยวางแผนโครงสร้างภาษี เงินเดือน และประกันสังคมให้ครบในที่เดียว ประหยัดเวลาเจ้าของกิจการไปได้เยอะมาก',
+          authorName: 'คุณณัฐนิชา พ.',
+          businessType: 'ธุรกิจร้านอาหารและคาเฟ่',
+          rating: 5,
+          sortOrder: 4,
+          isActive: true,
+        },
+      ],
+    });
+    console.log('✅ Customer Reviews initialized (4 default items).');
+  }
 
   // 5. Default Super Admin User
   const defaultAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();

@@ -1,21 +1,36 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Check, MapPin, PhoneCall, ShieldCheck } from 'lucide-react';
+import { Check, MapPin, MessageCircle, PhoneCall, ShieldCheck } from 'lucide-react';
 
 export default function Hero() {
   return (
     <section className="hero">
       <div className="container hero__grid">
         <div className="hero__content reveal-on-scroll">
-          <p className="section-kicker">บัญชี ภาษี และงานทะเบียน สำหรับธุรกิจที่อยากเดินหน้าอย่างมั่นใจ</p>
-          <h1>เรื่องบัญชีที่ชัดเจน<br />ทำให้ธุรกิจไปได้ไกลกว่า</h1>
+          <p className="section-kicker">สำนักงานบัญชี อโศก–ดินแดง ใกล้ MRT เพชรบุรี</p>
+          <h1>
+            <span className="hero__h1-brand">ดีถาวรการบัญชี</span>
+            <span className="hero__h1-sub">
+              รับทำบัญชี ยื่นภาษี
+              <br />
+              และตรวจสอบบัญชีโดย CPA
+            </span>
+          </h1>
           <p className="hero__lead">
-            ดีถาวรดูแลบัญชีและภาษีให้ครบตั้งแต่เอกสารชิ้นแรกจนถึงงบประจำปี
-            ด้วยทีมงานวิชาชีพ ราคาที่บอกล่วงหน้า และใบเสร็จตัวจริงคืนให้คุณทุกครั้ง
+            ทำบัญชีรายเดือน ยื่น ภ.พ.30 และ ภ.ง.ด. ปิดงบปลายปีแล้วส่งให้ CPA ตรวจ
+            ทีมเดียวทำให้ทั้งหมด ค่าทำบัญชีเริ่ม 1,500 บาทต่อเดือน และแจ้งราคาก่อนเริ่มงานทุกครั้ง
           </p>
 
           <div className="hero__actions">
-            <Link className="btn btn-primary btn-large" href="/#contact">ประเมินค่าบริการเบื้องต้น</Link>
+            <Link className="btn btn-primary btn-large" href="/#contact">ขอใบเสนอราคา</Link>
+            <a
+              className="btn btn-secondary btn-large hero__line-cta"
+              href="https://line.me/ti/p/DliAyJfUXd"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle aria-hidden="true" /> แอด LINE คุยก่อน
+            </a>
             <div className="hero__phone">
               <PhoneCall aria-hidden="true" />
               <span>

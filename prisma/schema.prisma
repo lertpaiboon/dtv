@@ -139,6 +139,26 @@ model Faq {
   @@map("faqs")
 }
 
+// รีวิวจากลูกค้า (Customer Reviews / Testimonials)
+model CustomerReview {
+  id           Int      @id @default(autoincrement())
+  headline     String   @db.VarChar(255)
+  quote        String   @db.Text
+  authorName   String   @map("author_name") @db.VarChar(150)
+  authorImage  String?  @map("author_image") @db.VarChar(255)
+  companyName  String?  @map("company_name") @db.VarChar(200)
+  businessType String?  @map("business_type") @db.VarChar(200)
+  rating       Int      @default(5)
+  sourceUrl    String?  @map("source_url") @db.VarChar(500)
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("customer_reviews")
+}
+
 // ------------------------------------------------------------------------------
 // 2. ตารางระบบหลังบ้าน (RBAC & Authentication)
 // ------------------------------------------------------------------------------
