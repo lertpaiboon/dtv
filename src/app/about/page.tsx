@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import WhyUs from '@/components/WhyUs';
 import QuoteBand from '@/components/QuoteBand';
-import CustomerReviews, { defaultCustomerReviews, CustomerReviewItem } from '@/components/CustomerReviews';
+import CustomerReviews from '@/components/CustomerReviews';
 import WorkProcess from '@/components/WorkProcess';
 import ContactForm from '@/components/ContactForm';
+import { defaultCustomerReviews, type CustomerReviewItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 

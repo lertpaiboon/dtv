@@ -3,11 +3,17 @@ import Services from '@/components/Services';
 import QuoteBand from '@/components/QuoteBand';
 import WhyUs from '@/components/WhyUs';
 import WorkProcess from '@/components/WorkProcess';
-import CustomerReviews, { defaultCustomerReviews, CustomerReviewItem } from '@/components/CustomerReviews';
+import CustomerReviews from '@/components/CustomerReviews';
 import Pricing from '@/components/Pricing';
-import FAQ, { defaultFaqs, FaqItem } from '@/components/FAQ';
+import FAQ from '@/components/FAQ';
 import HomeKnowledge from '@/components/HomeKnowledge';
 import ContactForm from '@/components/ContactForm';
+import {
+  defaultCustomerReviews,
+  defaultFaqs,
+  type CustomerReviewItem,
+  type FaqItem,
+} from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
 
 async function getHomeReviews(): Promise<CustomerReviewItem[]> {

@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import Pricing from '@/components/Pricing';
 import WorkProcess from '@/components/WorkProcess';
-import FAQ, { defaultFaqs, FaqItem } from '@/components/FAQ';
+import FAQ from '@/components/FAQ';
 import ContactForm from '@/components/ContactForm';
+import { defaultFaqs, type FaqItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 

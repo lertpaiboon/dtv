@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
-import { defaultCustomerReviews } from '@/components/CustomerReviews';
+import { defaultCustomerReviews } from '@/lib/default-content';
 
 export async function GET() {
   const session = await getAdminSession();

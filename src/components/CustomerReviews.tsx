@@ -3,75 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { defaultCustomerReviews, type CustomerReviewItem } from '@/lib/default-content';
 
-export interface CustomerReviewItem {
-  id?: number;
-  headline: string;
-  quote: string;
-  authorName: string;
-  authorImage?: string | null;
-  companyName?: string | null;
-  businessType?: string | null;
-  rating?: number;
-  sourceUrl?: string | null;
-  sortOrder?: number;
-  isActive?: boolean;
-}
-
-export const defaultCustomerReviews: CustomerReviewItem[] = [
-  {
-    headline: '“คืนใบเสร็จสรรพากรตัวจริงครบทุกเดือน สบายใจมาก”',
-    quote:
-      'ก่อนหน้านี้ใช้ที่อื่นไม่เคยเห็นใบเสร็จภาษีเลย พอย้ายมาดีถาวร ทีมงานส่งใบเสร็จตัวจริงจากกรมสรรพากรคืนให้เก็บเข้าแฟ้มทุกเดือน ตรวจสอบย้อนหลังได้ตลอด',
-    authorName: 'คุณธนกร ว.',
-    authorImage: null,
-    companyName: null,
-    businessType: 'ธุรกิจนำเข้าและจำหน่ายสินค้าออนไลน์',
-    rating: 5,
-    sourceUrl: null,
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    headline: '“ย้ายสำนักงานบัญชีกลางปี ช่วยเคลียร์งานเก่าให้จนจบ”',
-    quote:
-      'ตอนตัดสินใจย้ายมาช่วงกลางปีกังวลเรื่องเอกสารค้างจากที่เดิมมาก แต่ทีมดีถาวรช่วยตรวจเช็กยอดสะสมและรับช่วงต่อยื่น ภ.พ.30 กับปิดงบส่ง CPA ให้จนผ่านราบรื่น',
-    authorName: 'คุณกิตติพงศ์ ร.',
-    authorImage: null,
-    companyName: null,
-    businessType: 'ธุรกิจบริการและคลินิกย่านอโศก',
-    rating: 5,
-    sourceUrl: null,
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    headline: '“แจ้งราคาชัดเจนตั้งแต่ต้น ไม่มีบวกจุกจิกตอนปิดงบ”',
-    quote:
-      'ประเมินราคาตามจำนวนบิลจริงตั้งแต่คุยครั้งแรก ตลอดสัญญาไม่มีค่ากระดาษ ค่านำส่ง หรือค่าปรึกษายิบย่อยเพิ่ม โทรถามเรื่องภาษีในเวลาทำการได้คุยกับคนทำบัญชีให้เราโดยตรง',
-    authorName: 'คุณปิยะนุช ส.',
-    authorImage: null,
-    companyName: null,
-    businessType: 'บริษัทเอเจนซี่และที่ปรึกษาการตลาด',
-    rating: 5,
-    sourceUrl: null,
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    headline: '“ดูแลครบตั้งแต่จดบริษัท จด VAT จนถึงทำเงินเดือน”',
-    quote:
-      'เริ่มตั้งแต่เปลี่ยนจากร้านค้าบุคคลธรรมดามาจดบริษัทจำกัด ทีมงานช่วยวางแผนโครงสร้างภาษี เงินเดือน และประกันสังคมให้ครบในที่เดียว ประหยัดเวลาเจ้าของกิจการไปได้เยอะมาก',
-    authorName: 'คุณณัฐนิชา พ.',
-    authorImage: null,
-    companyName: null,
-    businessType: 'ธุรกิจร้านอาหารและคาเฟ่',
-    rating: 5,
-    sourceUrl: null,
-    sortOrder: 4,
-    isActive: true,
-  },
-];
+export type { CustomerReviewItem };
 
 const REVIEWS_PER_PAGE = 4;
 
@@ -114,7 +48,7 @@ function ReviewCard({ item }: { item: CustomerReviewItem }) {
 }
 
 export default function CustomerReviews({ items = defaultCustomerReviews }: { items?: CustomerReviewItem[] }) {
-  const activeItems = items.length > 0 ? items : defaultCustomerReviews;
+  const activeItems = Array.isArray(items) && items.length > 0 ? items : defaultCustomerReviews;
   const totalPages = Math.max(1, Math.ceil(activeItems.length / REVIEWS_PER_PAGE));
   const [currentPage, setCurrentPage] = useState(0);
 
