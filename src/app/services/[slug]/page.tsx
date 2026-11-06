@@ -6,6 +6,10 @@ import MonthlyAccountingPage from '@/components/MonthlyAccountingPage';
 import AnnualFinancialStatementsPage from '@/components/AnnualFinancialStatementsPage';
 import TaxFilingPage from '@/components/TaxFilingPage';
 import TaxConsultingPage from '@/components/TaxConsultingPage';
+import WealthTransferPage from '@/components/WealthTransferPage';
+import CompanyRegistrationPage from '@/components/CompanyRegistrationPage';
+import VatRegistrationPage from '@/components/VatRegistrationPage';
+import CompanyAmendmentPage from '@/components/CompanyAmendmentPage';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 
 export function generateStaticParams() {
@@ -69,6 +73,22 @@ export default async function SubServiceRoutePage({
 
   if (slug === 'tax-consulting') {
     return <TaxConsultingPage data={service} />;
+  }
+
+  if (slug === 'wealth-transfer') {
+    return <WealthTransferPage data={service} />;
+  }
+
+  if (slug === 'company-registration') {
+    return <CompanyRegistrationPage data={service} />;
+  }
+
+  if (slug === 'vat-registration') {
+    return <VatRegistrationPage data={service} />;
+  }
+
+  if (slug === 'company-amendment') {
+    return <CompanyAmendmentPage data={service} />;
   }
 
   return <SubServiceDetailPage data={service} />;
