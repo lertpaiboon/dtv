@@ -41,8 +41,17 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   icons: {
-    icon: '/images/logo.png',
-    apple: '/images/logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/icon-96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
   openGraph: {
     title: 'ดีถาวรการบัญชี | รับทำบัญชี วางแผนภาษี ตรวจสอบบัญชี จดทะเบียนธุรกิจ',
@@ -79,6 +88,7 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'AccountingService',
     'name': 'บริษัท ดีถาวรการบัญชี จำกัด (Deethavorn Accounting Co., Ltd.)',
+    'logo': toAbsoluteUrl('/icon-512.png'),
     'image': toAbsoluteUrl('/images/logo.png'),
     'telephone': ['099-149-5656', '091-941-5656'],
     'email': ['dtv_accounting@hotmail.com', 'c.pimmphisa@gmail.com'],
