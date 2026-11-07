@@ -27,6 +27,9 @@ interface SeoSuiteCardProps {
     coverImage?: string;
     coverImageAlt?: string;
     focusKeyword?: string | null;
+    seoTitle?: string | null;
+    seoDescription?: string | null;
+    tags?: string | null;
     seoScore?: number | null;
     isNoIndex?: boolean;
     canonicalUrl?: string | null;
@@ -37,6 +40,9 @@ interface SeoSuiteCardProps {
   onChangeNoIndex: (val: boolean) => void;
   onChangeCanonicalUrl: (url: string) => void;
   onChangeOgImage: (url: string) => void;
+  onChangeSeoTitle?: (val: string) => void;
+  onChangeSeoDescription?: (val: string) => void;
+  onChangeTags?: (val: string) => void;
 }
 
 export default function SeoSuiteCard({
@@ -46,6 +52,9 @@ export default function SeoSuiteCard({
   onChangeNoIndex,
   onChangeCanonicalUrl,
   onChangeOgImage,
+  onChangeSeoTitle,
+  onChangeSeoDescription,
+  onChangeTags,
 }: SeoSuiteCardProps) {
   // Preview platform tab: 'google' | 'line' | 'facebook'
   const [previewTab, setPreviewTab] = useState<'google' | 'line' | 'facebook'>('google');
@@ -84,6 +93,8 @@ export default function SeoSuiteCard({
       : 'ควรปรับปรุง (Poor)';
 
   const activeOgImage = formData.ogImage || formData.coverImage || '/images/hero-tax.png';
+  const effectiveSeoTitle = (formData.seoTitle || '').trim() || formData.title;
+  const effectiveSeoDescription = (formData.seoDescription || '').trim() || formData.summary;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
@@ -294,10 +305,10 @@ export default function SeoSuiteCard({
             </div>
           </div>
 
-          {/* 4 Categorized Checklists */}
+          {/* 4 Categorized Checklists (100-Point SEO/AEO/GEO Engine) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <ChecklistAccordion
-              title="1. Basic SEO (เกณฑ์พื้นฐานบน Search Engine)"
+              title="1. Technical Eligibility (ความพร้อมทางเทคนิค — 35 คะแนน)"
               badge={`${basicChecks.filter((c) => c.passed).length} / ${basicChecks.length}`}
               isOpen={openSections.basic}
               onToggle={() => toggleSection('basic')}
@@ -305,15 +316,15 @@ export default function SeoSuiteCard({
             />
 
             <ChecklistAccordion
-              title="2. Additional SEO (โครงสร้างหัวข้อและการกระจายคำ)"
-              badge={`${additionalChecks.filter((c) => c.passed).length} / ${additionalChecks.length}`}
-              isOpen={openSections.additional}
-              onToggle={() => toggleSection('additional')}
-              checks={additionalChecks}
+              title="2. Answer Quality & AEO (คำตอบตรงประเด็น AI & FAQ — 25 คะแนน)"
+              badge={`${readabilityChecks.filter((c) => c.passed).length} / ${readabilityChecks.length}`}
+              isOpen={openSections.readability}
+              onToggle={() => toggleSection('readability')}
+              checks={readabilityChecks}
             />
 
             <ChecklistAccordion
-              title="3. E-E-A-T & Citations (ความน่าเชื่อถือทางวิชาชีพภาษี/บัญชี)"
+              title="3. Trust & Evidence / E-E-A-T (ความน่าเชื่อถือ CPA & อ้างอิงกฎหมาย — 20 คะแนน)"
               badge={`${eeatChecks.filter((c) => c.passed).length} / ${eeatChecks.length}`}
               isOpen={openSections.eeat}
               onToggle={() => toggleSection('eeat')}
@@ -321,11 +332,11 @@ export default function SeoSuiteCard({
             />
 
             <ChecklistAccordion
-              title="4. Readability & Engagement (การอ่านง่ายและ AI Overviews)"
-              badge={`${readabilityChecks.filter((c) => c.passed).length} / ${readabilityChecks.length}`}
-              isOpen={openSections.readability}
-              onToggle={() => toggleSection('readability')}
-              checks={readabilityChecks}
+              title="4. Content Depth & Cluster (ความลึกเนื้อหา & Internal Links — 20 คะแนน)"
+              badge={`${additionalChecks.filter((c) => c.passed).length} / ${additionalChecks.length}`}
+              isOpen={openSections.additional}
+              onToggle={() => toggleSection('additional')}
+              checks={additionalChecks}
             />
           </div>
         </div>
@@ -529,7 +540,7 @@ export default function SeoSuiteCard({
                       cursor: 'pointer',
                     }}
                   >
-                    {formData.title ? `${formData.title} | Deethavorn Accounting` : 'หัวข้อบทความจะปรากฏบนผลการค้นหาของ Google'}
+                    {effectiveSeoTitle ? `${effectiveSeoTitle} | ดีถาวรการบัญชี` : 'หัวข้อบทความจะปรากฏบนผลการค้นหาของ Google'}
                   </div>
 
                   <div
@@ -540,7 +551,7 @@ export default function SeoSuiteCard({
                       wordBreak: 'break-word',
                     }}
                   >
-                    {formData.summary || 'คำอธิบายสรุปความยาว 120-160 ตัวอักษรจะแสดงตรงนี้ เพื่อดึงดูดให้ผู้ค้นหาคลิกเข้าชมเว็บไซต์'}
+                    {effectiveSeoDescription || 'คำอธิบายสรุปความยาว 80-180 ตัวอักษรจะแสดงตรงนี้ เพื่อดึงดูดให้ผู้ค้นหาคลิกเข้าชมเว็บไซต์'}
                   </div>
 
                   <div
@@ -555,10 +566,10 @@ export default function SeoSuiteCard({
                     }}
                   >
                     <span>
-                      ความยาวหัวข้อ: <strong>{formData.title.length}</strong> / 60 ตัวอักษร
+                      ความยาว SEO Title: <strong>{effectiveSeoTitle.length}</strong> / 30–75 ตัวอักษร
                     </span>
                     <span>
-                      ความยาวสรุปย่อ: <strong>{formData.summary.length}</strong> / 160 ตัวอักษร
+                      ความยาว Meta Description: <strong>{effectiveSeoDescription.length}</strong> / 80–180 ตัวอักษร
                     </span>
                   </div>
                 </div>
@@ -762,6 +773,85 @@ export default function SeoSuiteCard({
             </div>
 
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Custom SEO Title Override (CTR Booster) */}
+              {onChangeSeoTitle && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+                      Custom SEO Title (ปรับพาดหัว Google แยกจาก H1 สำหรับเพิ่ม CTR):
+                    </label>
+                    <span style={{ fontSize: '0.76rem', color: effectiveSeoTitle.length >= 30 && effectiveSeoTitle.length <= 75 ? '#16a34a' : '#d97706', fontWeight: 600 }}>
+                      {effectiveSeoTitle.length} / 30–75 ตัวอักษร
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.seoTitle || ''}
+                    onChange={(e) => onChangeSeoTitle(e.target.value)}
+                    placeholder={formData.title || 'เว้นว่างไว้เพื่อใช้หัวข้อบทความหลัก (H1) อัตโนมัติ'}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Custom Meta Description Override */}
+              {onChangeSeoDescription && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+                      Custom Meta Description (ปรับคำอธิบาย SERP แยกจากบทสรุปย่อ):
+                    </label>
+                    <span style={{ fontSize: '0.76rem', color: effectiveSeoDescription.length >= 80 && effectiveSeoDescription.length <= 180 ? '#16a34a' : '#d97706', fontWeight: 600 }}>
+                      {effectiveSeoDescription.length} / 80–180 ตัวอักษร
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={formData.seoDescription || ''}
+                    onChange={(e) => onChangeSeoDescription(e.target.value)}
+                    placeholder={formData.summary || 'เว้นว่างไว้เพื่อใช้บทสรุปบทความ (Summary) อัตโนมัติ'}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Tags Input */}
+              {onChangeTags && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                    คำค้นหารอง / Tags (คั่นด้วยจุลภาค , ใช้ช่วยจับคู่ Topic Cluster):
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tags || ''}
+                    onChange={(e) => onChangeTags(e.target.value)}
+                    placeholder="เช่น ภ.พ.30, ภาษีมูลค่าเพิ่ม, ยื่นภาษีออนไลน์"
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '7px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      color: '#0f172a',
+                    }}
+                  />
+                </div>
+              )}
+
               {/* NoIndex Checkbox */}
               <label
                 style={{

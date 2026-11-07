@@ -5,6 +5,7 @@ import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permis
 import { prisma } from '@/lib/prisma';
 import { slugify, validateArticlePayload } from '@/lib/articles/validation';
 import { ArticleStatus } from '@prisma/client';
+import { getSyncedContentPlan } from '@/lib/seo/gsc-intelligence';
 
 export async function GET(
   req: Request,
@@ -156,7 +157,7 @@ export async function PUT(
 
     // Use transaction to update article, redirects, faqs, and citations safely
     const updated = await prisma.$transaction(async (tx) => {
-      // 1. Create redirect if slug changed
+      // 1. Create redirect if slug changed + Flatten any CustomRedirect chains (A -> B -> C becomes A -> C)
       if (oldSlugToRedirect) {
         await tx.articleRedirect.upsert({
           where: { fromSlug: oldSlugToRedirect },
@@ -166,6 +167,16 @@ export async function PUT(
           },
           update: {
             articleId,
+          },
+        });
+
+        // If any CustomRedirect previously pointed to `/knowledge/${oldSlugToRedirect}`, flatten it to `/knowledge/${slug}`
+        await tx.customRedirect.updateMany({
+          where: {
+            targetPath: `/knowledge/${oldSlugToRedirect}`,
+          },
+          data: {
+            targetPath: `/knowledge/${slug}`,
           },
         });
       }
@@ -203,6 +214,9 @@ export async function PUT(
           coverImageAlt: body.coverImageAlt !== undefined ? body.coverImageAlt : existing.coverImageAlt,
           quickAnswer: body.quickAnswer !== undefined ? body.quickAnswer : existing.quickAnswer,
           focusKeyword: body.focusKeyword !== undefined ? (body.focusKeyword ? body.focusKeyword.trim() : null) : existing.focusKeyword,
+          seoTitle: body.seoTitle !== undefined ? (body.seoTitle ? body.seoTitle.trim() : null) : existing.seoTitle,
+          seoDescription: body.seoDescription !== undefined ? (body.seoDescription ? body.seoDescription.trim() : null) : existing.seoDescription,
+          tags: body.tags !== undefined ? (body.tags ? body.tags.trim() : null) : existing.tags,
           seoScore: typeof body.seoScore === 'number' ? body.seoScore : existing.seoScore,
           isNoIndex: body.isNoIndex !== undefined ? Boolean(body.isNoIndex) : existing.isNoIndex,
           canonicalUrl: body.canonicalUrl !== undefined ? (body.canonicalUrl ? body.canonicalUrl.trim() : null) : existing.canonicalUrl,
@@ -233,11 +247,14 @@ export async function PUT(
       console.warn('Revalidation warning:', e);
     }
 
+    // Auto-sync SEO Content Plan status
+    getSyncedContentPlan().catch(() => null);
+
     return NextResponse.json({
       success: true,
       data: updated,
       message: oldSlugToRedirect
-        ? `บันทึกการแก้ไขเรียบร้อยแล้ว (สร้าง 301 Redirect จาก /knowledge/${oldSlugToRedirect} สู่ URL ใหม่โดยอัตโนมัติ)`
+        ? `บันทึกการแก้ไขเรียบร้อยแล้ว (สร้าง 301 Redirect จาก /knowledge/${oldSlugToRedirect} สู่ URL ใหม่พร้อมยุบ Redirect Chain อัตโนมัติ)`
         : 'บันทึกการแก้ไขบทความเรียบร้อยแล้ว',
     });
   } catch (error) {

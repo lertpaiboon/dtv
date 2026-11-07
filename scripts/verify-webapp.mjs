@@ -42,8 +42,8 @@ async function runTests() {
     if (!html.includes('5 ข้อควรรู้ก่อนจดทะเบียนบริษัทจำกัด')) throw new Error('Missing sample article');
   });
 
-  // 3. Sitemap & Robots
-  await test('SEO sitemap.xml and robots.txt are generated', async () => {
+  // 3. Sitemap & Robots (including AI Search Bots)
+  await test('SEO sitemap.xml and robots.txt (with AI Search Bots) are generated', async () => {
     const resSitemap = await fetch(`${BASE_URL}/sitemap.xml`);
     if (!resSitemap.ok) throw new Error(`Sitemap status ${resSitemap.status}`);
     const xml = await resSitemap.text();
@@ -55,6 +55,26 @@ async function runTests() {
     if (!robotsText.includes('User-Agent') && !robotsText.includes('user-agent')) {
       throw new Error('Invalid robots.txt format');
     }
+    for (const bot of ['OAI-SearchBot', 'GPTBot', 'PerplexityBot', 'ClaudeBot', 'Google-Extended']) {
+      if (!robotsText.includes(bot)) {
+        throw new Error(`Missing AI Search Bot rule in robots.txt: ${bot}`);
+      }
+    }
+  });
+
+  // 3.5 GEO / AEO Endpoints (/llms.txt and /llms-full.txt)
+  await test('GEO /llms.txt and /llms-full.txt endpoints respond with Markdown index', async () => {
+    const resLlms = await fetch(`${BASE_URL}/llms.txt`);
+    if (!resLlms.ok) throw new Error(`/llms.txt status ${resLlms.status}`);
+    const llmsText = await resLlms.text();
+    if (!llmsText.includes('ดีถาวรการบัญชี')) throw new Error('/llms.txt missing company identity');
+    if (!llmsText.includes('/llms-full.txt')) throw new Error('/llms.txt missing link to /llms-full.txt');
+
+    const resLlmsFull = await fetch(`${BASE_URL}/llms-full.txt`);
+    if (!resLlmsFull.ok) throw new Error(`/llms-full.txt status ${resLlmsFull.status}`);
+    const llmsFullText = await resLlmsFull.text();
+    if (!llmsFullText.includes('ดีถาวรการบัญชี')) throw new Error('/llms-full.txt missing company identity');
+    if (!llmsFullText.includes('Core Services')) throw new Error('/llms-full.txt missing Core Services section');
   });
 
   // 4. Contact API validation

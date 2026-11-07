@@ -51,6 +51,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminSessionUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [urgentCount, setUrgentCount] = useState<number>(0);
+  const [unresolved404Count, setUnresolved404Count] = useState<number>(0);
 
   useEffect(() => {
     if (pathname === '/admin/login') {
@@ -87,6 +88,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       .then((res) => {
         if (res.success && res.data?.urgentCount !== undefined) {
           setUrgentCount(res.data.urgentCount);
+        }
+      })
+      .catch(() => null);
+  }, [pathname, user]);
+
+  useEffect(() => {
+    if (pathname === '/admin/login' || !user) return;
+    const canViewSeo = user.permissions.includes('*') || user.permissions.includes('article:view');
+    if (!canViewSeo) return;
+
+    fetch('/api/admin/seo/stats')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && typeof res.data?.kpi?.unresolved404Count === 'number') {
+          setUnresolved404Count(res.data.kpi.unresolved404Count);
         }
       })
       .catch(() => null);
@@ -158,6 +174,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   {item.href === '/admin/billing' && urgentCount > 0 && (
                     <span className="admin-nav__badge" title={`มี ${urgentCount} รายการนัดชำระ/เกินกำหนด`}>
                       {urgentCount}
+                    </span>
+                  )}
+                  {item.href === '/admin/seo' && unresolved404Count > 0 && (
+                    <span className="admin-nav__badge" title={`มี ${unresolved404Count} ลิงก์เสีย (404 Not Found) รอแก้ไข`}>
+                      {unresolved404Count}
                     </span>
                   )}
                 </Link>

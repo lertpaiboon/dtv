@@ -75,6 +75,9 @@ function mapArticle(raw: any): Article {
     faqs,
     citations,
     focusKeyword: raw.focusKeyword || undefined,
+    seoTitle: raw.seoTitle || undefined,
+    seoDescription: raw.seoDescription || undefined,
+    tags: raw.tags || undefined,
     seoScore: typeof raw.seoScore === 'number' ? raw.seoScore : undefined,
     isNoIndex: Boolean(raw.isNoIndex),
     canonicalUrl: raw.canonicalUrl || undefined,
@@ -225,7 +228,7 @@ export async function getArticleRedirect(fromSlug: string): Promise<string | nul
 export async function getRelatedArticles(
   currentSlug: string,
   category: string,
-  limit = 2
+  limit = 3
 ): Promise<Article[]> {
   const now = new Date();
 
@@ -243,10 +246,10 @@ export async function getRelatedArticles(
       citations: { orderBy: { sortOrder: 'asc' } },
     },
     take: limit,
-    orderBy: { publishedAt: 'desc' },
+    orderBy: [{ seoScore: 'desc' }, { publishedAt: 'desc' }],
   });
 
-  // Fallback to latest published if fewer than limit in same category
+  // Fallback to highest SEO score / latest published if fewer than limit in same category
   if (articles.length < limit) {
     const existingSlugs = [currentSlug, ...articles.map((a) => a.slug)];
     const additional = await prisma.article.findMany({
@@ -262,12 +265,112 @@ export async function getRelatedArticles(
         citations: { orderBy: { sortOrder: 'asc' } },
       },
       take: limit - articles.length,
-      orderBy: { publishedAt: 'desc' },
+      orderBy: [{ seoScore: 'desc' }, { publishedAt: 'desc' }],
     });
     return [...articles, ...additional].map(mapArticle);
   }
 
   return articles.map(mapArticle);
+}
+
+export interface PillarHubInfo {
+  title: string;
+  url: string;
+  description: string;
+  subServices: {
+    title: string;
+    url: string;
+  }[];
+}
+
+/**
+ * Maps each article category to its Pillar Service Hub page and 3 related sub-services
+ */
+export function getPillarHubForCategory(category: string): PillarHubInfo {
+  const normalized = category.trim();
+
+  switch (normalized) {
+    case 'บัญชีและงบการเงิน':
+    case 'การทำบัญชี':
+      return {
+        title: 'บริการทำบัญชีและปิดงบการเงินครบวงจร',
+        url: '/services/accounting-tax',
+        description:
+          'ดูแลบัญชีรายเดือนตามมาตรฐาน TFRS for NPAEs ปิดงบการเงินประจำปี และยื่นภาษีครบถ้วน พร้อมส่งคืนใบเสร็จตัวจริงจากกรมสรรพากรทุกเดือน เริ่มต้น 1,500 บาท/เดือน',
+        subServices: [
+          { title: 'รับทำบัญชีรายเดือน', url: '/services/monthly-accounting' },
+          { title: 'รับปิดงบการเงินประจำปี', url: '/services/annual-financial-statements' },
+          { title: 'บริการยื่นภาษีรายเดือนและรายปี', url: '/services/tax-filing' },
+        ],
+      };
+
+    case 'จดทะเบียนธุรกิจ':
+      return {
+        title: 'บริการจดทะเบียนธุรกิจและนิติบุคคลครบวงจร',
+        url: '/services/business-registration',
+        description:
+          'รับจดทะเบียนบริษัทจำกัด ห้างหุ้นส่วนจำกัด ผ่านระบบ DBD Biz Regist จดทะเบียนภาษีมูลค่าเพิ่ม (VAT) แก้ไขข้อมูลบริษัท และจดเครื่องหมายการค้า เริ่มต้น 1,500 บาท',
+        subServices: [
+          { title: 'รับจดทะเบียนบริษัท', url: '/services/company-registration' },
+          { title: 'รับจดทะเบียน VAT', url: '/services/vat-registration' },
+          { title: 'แก้ไขข้อมูลบริษัท', url: '/services/company-amendment' },
+        ],
+      };
+
+    case 'ตรวจสอบบัญชี':
+      return {
+        title: 'บริการตรวจสอบบัญชีและรับรองงบการเงินโดย CPA',
+        url: '/services/audit',
+        description:
+          'ตรวจสอบและรับรองงบการเงินประจำปีโดยผู้สอบบัญชีรับอนุญาต (CPA) ตามมาตรฐานการสอบบัญชี TSA พร้อมให้ข้อสังเกตระบบควบคุมภายในเพื่อความโปร่งใสของกิจการ',
+        subServices: [
+          { title: 'รับปิดงบการเงินประจำปี', url: '/services/annual-financial-statements' },
+          { title: 'รับทำบัญชีรายเดือน', url: '/services/monthly-accounting' },
+          { title: 'ที่ปรึกษาภาษีธุรกิจ', url: '/services/tax-consulting' },
+        ],
+      };
+
+    case 'วางแผนภาษี':
+      return {
+        title: 'บริการที่ปรึกษาและวางแผนภาษีธุรกิจอย่างถูกต้องตามกฎหมาย',
+        url: '/services/accounting-tax',
+        description:
+          'วิเคราะห์โครงสร้างรายได้และค่าใช้จ่าย วางแผนภาษีเงินได้นิติบุคคล ภาษีมรดก และประกัน Keyman โดยทีมผู้เชี่ยวชาญและผู้สอบบัญชีรับอนุญาต (CPA)',
+        subServices: [
+          { title: 'ที่ปรึกษาภาษีธุรกิจ', url: '/services/tax-consulting' },
+          { title: 'วางแผนมรดกและภาษี', url: '/services/wealth-transfer' },
+          { title: 'ประกัน Keyman วางแผนภาษีกรรมการ', url: '/services/keyman-insurance' },
+        ],
+      };
+
+    case 'ทรัพยากรบุคคล':
+      return {
+        title: 'บริการงานบุคคล เงินเดือน และสวัสดิการองค์กร (HR & Payroll)',
+        url: '/services/hr-payroll',
+        description:
+          'รับทำเงินเดือนพนักงาน (Payroll Outsourcing) ยื่น ภ.ง.ด.1 และประกันสังคม วางระบบงานบุคคล จัดตั้งกองทุนสำรองเลี้ยงชีพ (PVD) และประกันกลุ่มพนักงาน',
+        subServices: [
+          { title: 'รับทำเงินเดือนและประกันสังคม (Payroll)', url: '/services/payroll-outsourcing' },
+          { title: 'วางระบบงานบุคคล (HR System)', url: '/services/hr-system' },
+          { title: 'ประกันกลุ่มพนักงานและสวัสดิการ', url: '/services/group-insurance' },
+        ],
+      };
+
+    case 'ภาษีและสรรพากร':
+    case 'ภาษีอากร':
+    default:
+      return {
+        title: 'บริการทำบัญชี ยื่นภาษี และที่ปรึกษาภาษีครบวงจร',
+        url: '/services/accounting-tax',
+        description:
+          'ยื่นภาษีธุรกิจ ภ.พ.30 ภ.ง.ด.1/3/53/50/51 ตรวจสอบเอกสารภาษีตามหลักเกณฑ์กรมสรรพากร และวางแผนภาษีนิติบุคคลโดยทีมงานมืออาชีพ เริ่มต้น 1,500 บาท/เดือน',
+        subServices: [
+          { title: 'บริการยื่นภาษีบริษัท', url: '/services/tax-filing' },
+          { title: 'ที่ปรึกษาภาษีธุรกิจ', url: '/services/tax-consulting' },
+          { title: 'รับทำบัญชีรายเดือน', url: '/services/monthly-accounting' },
+        ],
+      };
+  }
 }
 
 export interface AuthorProfileData {

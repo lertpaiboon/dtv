@@ -2,8 +2,8 @@ import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck } from 'lucide-react';
-import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect } from '@/lib/articles/queries';
+import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck, Layers, ArrowUpRight } from 'lucide-react';
+import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect, getPillarHubForCategory } from '@/lib/articles/queries';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
 import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleBody from '@/components/articles/ArticleBody';
@@ -37,10 +37,12 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   const siteUrl = getSiteUrl();
   const canonicalUrl = article.canonicalUrl || `${siteUrl}/knowledge/${article.slug}`;
   const ogImageUrl = toAbsoluteUrl(article.ogImage || article.coverImage || '/images/hero-tax.png');
+  const metaTitle = article.seoTitle || `${article.title} | ดีถาวรการบัญชี`;
+  const metaDescription = article.seoDescription || article.summary;
 
   return {
-    title: `${article.title} | ดีถาวรการบัญชี`,
-    description: article.summary,
+    title: metaTitle,
+    description: metaDescription,
     robots: {
       index: !article.isNoIndex,
       follow: !article.isNoIndex,
@@ -49,8 +51,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: article.title,
-      description: article.summary,
+      title: article.seoTitle || article.title,
+      description: metaDescription,
       url: canonicalUrl,
       siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
       locale: 'th_TH',
@@ -70,8 +72,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title: article.title,
-      description: article.summary,
+      title: article.seoTitle || article.title,
+      description: metaDescription,
       images: [ogImageUrl],
     },
   };
@@ -95,7 +97,8 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
   const siteUrl = getSiteUrl();
   const canonicalUrl = article.canonicalUrl || `${siteUrl}/knowledge/${article.slug}`;
-  const relatedArticles = await getRelatedArticles(article.slug, article.category, 2);
+  const relatedArticles = await getRelatedArticles(article.slug, article.category, 3);
+  const pillarHub = getPillarHubForCategory(article.category);
 
   const publishedDateThai = new Date(article.publishedAt).toLocaleDateString('th-TH', {
     day: 'numeric',
@@ -513,32 +516,208 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           category={article.category}
         />
 
-        {/* Related Articles Section */}
+        {/* Automated Topic Cluster & Pillar Service Hub */}
+        <section
+          aria-labelledby="topic-cluster-hub-title"
+          style={{
+            marginTop: '64px',
+            padding: '32px',
+            background: 'linear-gradient(135deg, #091c3a 0%, #122b54 100%)',
+            borderRadius: '18px',
+            color: '#ffffff',
+            border: '1px solid rgba(197, 160, 89, 0.35)',
+            boxShadow: '0 16px 36px -10px rgba(9, 28, 58, 0.25)',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: '#e5c158',
+              background: 'rgba(197, 160, 89, 0.16)',
+              padding: '5px 12px',
+              borderRadius: '999px',
+              marginBottom: '14px',
+            }}
+          >
+            <Layers size={14} aria-hidden="true" />
+            <span>Pillar Service Hub · หมวด{article.category}</span>
+          </div>
+
+          <h2
+            id="topic-cluster-hub-title"
+            style={{
+              fontSize: 'clamp(1.35rem, 2.5vw, 1.7rem)',
+              fontWeight: 800,
+              color: '#ffffff',
+              marginBottom: '10px',
+              lineHeight: 1.35,
+            }}
+          >
+            {pillarHub.title}
+          </h2>
+
+          <p
+            style={{
+              fontSize: '0.96rem',
+              color: 'rgba(255, 255, 255, 0.85)',
+              lineHeight: 1.7,
+              marginBottom: '22px',
+            }}
+          >
+            {pillarHub.description}
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+              marginBottom: '22px',
+            }}
+          >
+            {pillarHub.subServices.map((sub) => (
+              <Link
+                key={sub.url}
+                href={sub.url}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  color: '#f8fafc',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                <span>{sub.title}</span>
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+
+          <Link
+            href={pillarHub.url}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '11px 20px',
+              borderRadius: '10px',
+              background: '#c5a059',
+              color: '#091c3a',
+              fontWeight: 700,
+              fontSize: '0.92rem',
+              textDecoration: 'none',
+            }}
+          >
+            <span>ดูรายละเอียดบริการหลักในหมวดนี้</span>
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        </section>
+
+        {/* Related Topic Cluster Articles Section */}
         {relatedArticles.length > 0 && (
           <section
             aria-labelledby="related-articles-title"
-            style={{ marginTop: '70px', paddingTop: '40px', borderTop: '1px solid var(--border)' }}
+            style={{ marginTop: '56px', paddingTop: '40px', borderTop: '1px solid var(--border)' }}
           >
-            <h3
-              id="related-articles-title"
+            <div
               style={{
-                fontSize: '1.4rem',
-                fontWeight: 700,
-                color: 'var(--primary)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
                 marginBottom: '24px',
               }}
             >
-              บทความที่คุณอาจสนใจในหมวดหมู่เดียวกัน
-            </h3>
+              <h3
+                id="related-articles-title"
+                style={{
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  color: 'var(--primary)',
+                  margin: 0,
+                }}
+              >
+                บทความในคลัสเตอร์เดียวกัน ({article.category})
+              </h3>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  color: '#15803d',
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  padding: '4px 12px',
+                  borderRadius: '999px',
+                }}
+              >
+                <ShieldCheck size={14} aria-hidden="true" />
+                <span>คัดสรรตามคุณภาพเนื้อหา E-E-A-T & SEO Score</span>
+              </span>
+            </div>
+
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
                 gap: '24px',
               }}
             >
               {relatedArticles.map((rel) => (
-                <ArticleCard key={rel.id} article={rel} />
+                <div key={rel.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      marginBottom: '8px',
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: '#166534',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <ShieldCheck size={13} aria-hidden="true" />
+                      <span>{rel.reviewer ? `สอบทานโดย ${rel.reviewer.name}` : 'E-E-A-T Verified'}</span>
+                    </span>
+                    {typeof rel.seoScore === 'number' && rel.seoScore > 0 && (
+                      <span
+                        style={{
+                          background: rel.seoScore >= 80 ? '#dcfce7' : '#fef9c3',
+                          color: rel.seoScore >= 80 ? '#166534' : '#854d0e',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                        }}
+                      >
+                        SEO {rel.seoScore}/100
+                      </span>
+                    )}
+                  </div>
+                  <ArticleCard article={rel} />
+                </div>
               ))}
             </div>
           </section>

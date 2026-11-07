@@ -68,6 +68,9 @@ export interface Article {
   faqs: ArticleFaqItem[];
   citations: ArticleCitationItem[];
   focusKeyword?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  tags?: string;
   seoScore?: number;
   isNoIndex?: boolean;
   canonicalUrl?: string;

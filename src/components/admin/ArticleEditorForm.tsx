@@ -44,6 +44,7 @@ import {
 import { slugify, analyzeContentQuality } from '@/lib/articles/validation';
 import { analyzeSeoScore } from '@/lib/articles/seo-engine';
 import { ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
+import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import ArticleBody from '@/components/articles/ArticleBody';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 import SeoSuiteCard from '@/components/admin/SeoSuiteCard';
@@ -88,6 +89,9 @@ export interface ArticleFormData {
   faqs: FaqItem[];
   citations: CitationItem[];
   focusKeyword?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  tags?: string | null;
   seoScore?: number | null;
   isNoIndex?: boolean;
   canonicalUrl?: string | null;
@@ -132,6 +136,9 @@ export default function ArticleEditorForm({
           faqs: [],
           citations: [],
           focusKeyword: '',
+          seoTitle: '',
+          seoDescription: '',
+          tags: '',
           seoScore: 0,
           isNoIndex: false,
           canonicalUrl: '',
@@ -157,6 +164,30 @@ export default function ArticleEditorForm({
   const [uploadingBodyImage, setUploadingBodyImage] = useState(false);
   const [bodyImageUploadError, setBodyImageUploadError] = useState('');
   const bodyImageInputRef = useRef<HTMLInputElement>(null);
+
+  // 1-Click Internal Link Inserter State (Pillar Services & Cluster Articles)
+  const [internalLinkPanelOpen, setInternalLinkPanelOpen] = useState(false);
+  const [clusterArticles, setClusterArticles] = useState<
+    Array<{ id: number; title: string; slug: string; category: string }>
+  >([]);
+
+  useEffect(() => {
+    fetch('/api/admin/articles?status=PUBLISHED&limit=50')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setClusterArticles(
+            json.data.map((a: any) => ({
+              id: a.id,
+              title: a.title,
+              slug: a.slug,
+              category: a.category,
+            }))
+          );
+        }
+      })
+      .catch(() => null);
+  }, []);
 
   // Author Management & Quick Add
   const [authorList, setAuthorList] = useState<AuthorOption[]>(authors);
@@ -350,7 +381,7 @@ export default function ArticleEditorForm({
     });
   }, [formData]);
 
-  // Real-time Rank Math SEO Suite Analysis
+  // Real-time 100-Point SEO/AEO/GEO Suite Analysis
   const seoAnalysis = useMemo(() => {
     return analyzeSeoScore({
       title: formData.title,
@@ -358,6 +389,10 @@ export default function ArticleEditorForm({
       summary: formData.summary,
       contentMarkdown: formData.contentMarkdown,
       focusKeyword: formData.focusKeyword || '',
+      seoTitle: formData.seoTitle,
+      seoDescription: formData.seoDescription,
+      quickAnswer: formData.quickAnswer,
+      tags: formData.tags,
       coverImage: formData.coverImage,
       coverImageAlt: formData.coverImageAlt,
       faqs: formData.faqs,
@@ -461,6 +496,9 @@ export default function ArticleEditorForm({
         slug: slugify(formData.slug || formData.title),
         status: targetStatus || formData.status,
         focusKeyword: formData.focusKeyword ? formData.focusKeyword.trim() : null,
+        seoTitle: formData.seoTitle ? formData.seoTitle.trim() : null,
+        seoDescription: formData.seoDescription ? formData.seoDescription.trim() : null,
+        tags: formData.tags ? formData.tags.trim() : null,
         seoScore: seoAnalysis.score,
         isNoIndex: Boolean(formData.isNoIndex),
         canonicalUrl: formData.canonicalUrl ? formData.canonicalUrl.trim() : null,
@@ -1591,6 +1629,27 @@ export default function ArticleEditorForm({
                           </button>
                           <button
                             type="button"
+                            onClick={() => setInternalLinkPanelOpen((prev) => !prev)}
+                            title="1-Click แทรก Internal Link เชื่อมหน้าบริการหลัก (Pillar Pages) และบทความในคลัสเตอร์"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              background: internalLinkPanelOpen ? '#dcfce7' : '#f0fdf4',
+                              border: '1px solid #86efac',
+                              borderRadius: '5px',
+                              color: '#15803d',
+                              cursor: 'pointer',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            <Sparkles size={13} />
+                            <span>1-Click Internal Link</span>
+                          </button>
+                          <button
+                            type="button"
                             onClick={insertTable}
                             title="แทรกตารางข้อมูล (Insert Table)"
                             style={{
@@ -1740,6 +1799,108 @@ export default function ArticleEditorForm({
                           </button>
                         </div>
                       </div>
+
+                      {/* Visual Toolbar Help Banner */}
+                      {internalLinkPanelOpen && (
+                        <div
+                          style={{
+                            background: '#f8fafc',
+                            border: '1px solid #86efac',
+                            borderBottom: 'none',
+                            padding: '12px 14px',
+                            fontSize: '0.82rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <strong style={{ color: '#15803d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Sparkles size={14} />
+                              <span>1-Click แทรก Internal Link เชื่อมหน้าบริการหลัก (Pillar Pages) และบทความในคลัสเตอร์</span>
+                            </strong>
+                            <button
+                              type="button"
+                              onClick={() => setInternalLinkPanelOpen(false)}
+                              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.78rem' }}
+                            >
+                              ปิด ✕
+                            </button>
+                          </div>
+
+                          <div style={{ marginBottom: '8px' }}>
+                            <div style={{ fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                              เสาหลักบริการ (Pillar Services):
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {[
+                                { label: 'บริการทำบัญชีและภาษี', url: '/services/accounting-tax' },
+                                { label: 'บริการตรวจสอบบัญชี CPA', url: '/services/audit' },
+                                { label: 'บริการจดทะเบียนธุรกิจ', url: '/services/business-registration' },
+                                { label: 'บริการเงินเดือนและประกันสังคม', url: '/services/hr-payroll' },
+                                { label: 'อัตราค่าบริการ (Pricing)', url: '/pricing' },
+                                ...SUB_SERVICES.slice(0, 8).map((s) => ({
+                                  label: s.title,
+                                  url: `/services/${s.slug}`,
+                                })),
+                              ].map((p) => (
+                                <button
+                                  key={p.url}
+                                  type="button"
+                                  onClick={() => {
+                                    insertMarkdown(`[${p.label}](${p.url})`, '', '');
+                                    setInternalLinkPanelOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '999px',
+                                    border: '1px solid #bbf7d0',
+                                    background: '#ffffff',
+                                    color: '#166534',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  + {p.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {clusterArticles.filter((a) => a.slug !== formData.slug).length > 0 && (
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                                บทความในคลังความรู้ (Topic Cluster Articles):
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {clusterArticles
+                                  .filter((a) => a.slug !== formData.slug)
+                                  .slice(0, 8)
+                                  .map((art) => (
+                                    <button
+                                      key={art.id}
+                                      type="button"
+                                      onClick={() => {
+                                        insertMarkdown(`[${art.title}](/knowledge/${art.slug})`, '', '');
+                                        setInternalLinkPanelOpen(false);
+                                      }}
+                                      style={{
+                                        padding: '4px 10px',
+                                        borderRadius: '999px',
+                                        border: '1px solid #bfdbfe',
+                                        background: '#ffffff',
+                                        color: '#1e40af',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      + {art.title.length > 42 ? `${art.title.slice(0, 42)}...` : art.title}
+                                    </button>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Visual Toolbar Help Banner */}
                       {showMarkdownHelp && (
@@ -2274,6 +2435,9 @@ export default function ArticleEditorForm({
               onChangeNoIndex={(val) => setFormData((prev) => ({ ...prev, isNoIndex: val }))}
               onChangeCanonicalUrl={(url) => setFormData((prev) => ({ ...prev, canonicalUrl: url }))}
               onChangeOgImage={(url) => setFormData((prev) => ({ ...prev, ogImage: url }))}
+              onChangeSeoTitle={(val) => setFormData((prev) => ({ ...prev, seoTitle: val }))}
+              onChangeSeoDescription={(val) => setFormData((prev) => ({ ...prev, seoDescription: val }))}
+              onChangeTags={(val) => setFormData((prev) => ({ ...prev, tags: val }))}
             />
           )}
       </div>

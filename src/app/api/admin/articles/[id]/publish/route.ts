@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { validateArticlePayload } from '@/lib/articles/validation';
 import { ArticleStatus } from '@prisma/client';
 import { submitToIndexNow } from '@/lib/seo/indexnow';
+import { getSyncedContentPlan } from '@/lib/seo/gsc-intelligence';
 
 export async function POST(
   req: Request,
@@ -127,10 +128,13 @@ export async function POST(
       },
     });
 
-    // Asynchronously ping IndexNow search engines (Bing, Yandex, etc.)
+    // Asynchronously ping Multi-Channel Instant Indexing (Google Indexing API + GSC Sitemap + IndexNow)
     submitToIndexNow([`/knowledge/${article.slug}`]).catch((err) =>
-      console.error('Async IndexNow publish notification failed:', err)
+      console.error('Async Multi-Channel publish notification failed:', err)
     );
+
+    // Auto-sync SEO Content Plan (DRAFTING -> COMPLETED)
+    getSyncedContentPlan().catch(() => null);
 
     try {
       revalidatePath('/knowledge');

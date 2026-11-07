@@ -4,6 +4,7 @@ import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permis
 import { prisma } from '@/lib/prisma';
 import { slugify, validateArticlePayload } from '@/lib/articles/validation';
 import { ArticleStatus, Prisma } from '@prisma/client';
+import { getSyncedContentPlan } from '@/lib/seo/gsc-intelligence';
 
 export async function GET(req: Request) {
   const session = await getAdminSession();
@@ -202,6 +203,9 @@ export async function POST(req: Request) {
         quickAnswer: body.quickAnswer || null,
         status: ArticleStatus.DRAFT,
         focusKeyword: body.focusKeyword ? body.focusKeyword.trim() : null,
+        seoTitle: body.seoTitle ? body.seoTitle.trim() : null,
+        seoDescription: body.seoDescription ? body.seoDescription.trim() : null,
+        tags: body.tags ? body.tags.trim() : null,
         seoScore: typeof body.seoScore === 'number' ? body.seoScore : 0,
         isNoIndex: Boolean(body.isNoIndex),
         canonicalUrl: body.canonicalUrl ? body.canonicalUrl.trim() : null,
@@ -223,6 +227,9 @@ export async function POST(req: Request) {
         citations: true,
       },
     });
+
+    // Auto-sync SEO Content Plan status (PLANNED -> DRAFTING)
+    getSyncedContentPlan().catch(() => null);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Prompt, Outfit } from 'next/font/google';
-import { GoogleTagManager } from '@next/third-parties/google';
+import GoogleTagManagerGate from '@/components/GoogleTagManagerGate';
 import './globals.css';
 import AppShell from '@/components/AppShell';
 
@@ -114,7 +114,7 @@ export default function RootLayout({
 
   return (
     <html lang="th" className={`${prompt.variable} ${outfit.variable}`} suppressHydrationWarning>
-      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
+      <GoogleTagManagerGate gtmId={gtmId} />
       <head>
         <script
           type="application/ld+json"

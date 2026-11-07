@@ -82,25 +82,57 @@ export async function POST(req: Request) {
 
     const code = Number(statusCode) === 302 ? 302 : 301;
 
-    const redirectRecord = await prisma.customRedirect.upsert({
-      where: { sourcePath },
-      update: {
-        targetPath,
-        statusCode: code,
-        isActive: true,
-      },
-      create: {
-        sourcePath,
-        targetPath,
-        statusCode: code,
-        isActive: true,
-      },
+    // Redirect Chain Flattening:
+    // 1. If targetPath itself is already a sourcePath of another active CustomRedirect (B -> C), point directly to C
+    let flattenedTargetPath = targetPath;
+    const existingTargetRedirect = await prisma.customRedirect.findUnique({
+      where: { sourcePath: targetPath },
+    });
+    if (
+      existingTargetRedirect &&
+      existingTargetRedirect.isActive &&
+      existingTargetRedirect.targetPath !== sourcePath
+    ) {
+      flattenedTargetPath = existingTargetRedirect.targetPath;
+    }
+
+    const redirectRecord = await prisma.$transaction(async (tx) => {
+      const record = await tx.customRedirect.upsert({
+        where: { sourcePath },
+        update: {
+          targetPath: flattenedTargetPath,
+          statusCode: code,
+          isActive: true,
+        },
+        create: {
+          sourcePath,
+          targetPath: flattenedTargetPath,
+          statusCode: code,
+          isActive: true,
+        },
+      });
+
+      // 2. Flatten any upstream redirects that were pointing to `sourcePath` (A -> B becomes A -> C)
+      await tx.customRedirect.updateMany({
+        where: {
+          targetPath: sourcePath,
+          sourcePath: { not: flattenedTargetPath },
+        },
+        data: {
+          targetPath: flattenedTargetPath,
+        },
+      });
+
+      return record;
     });
 
     return NextResponse.json({
       success: true,
       data: redirectRecord,
-      message: `บันทึก ${code} Redirect (${sourcePath} ➔ ${targetPath}) สำเร็จแล้ว`,
+      message:
+        flattenedTargetPath !== targetPath
+          ? `บันทึก ${code} Redirect (${sourcePath} ➔ ${flattenedTargetPath}) พร้อมยุบ Redirect Chain อัตโนมัติสำเร็จแล้ว`
+          : `บันทึก ${code} Redirect (${sourcePath} ➔ ${flattenedTargetPath}) สำเร็จแล้ว`,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
