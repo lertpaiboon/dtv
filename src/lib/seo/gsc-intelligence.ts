@@ -964,25 +964,25 @@ export function analyzeRowsAgainstPosts(
     // Action Recommendation
     let actionRecommendation = '';
     if (bucket === 'CONTENT_GAP') {
-      actionRecommendation = `ยังไม่มีบทความเฉพาะรองรับคำนี้ (ปัจจุบัน Google นำหน้า ${pagePath} ไปแสดง) แนะนำกด "1-Click เขียนบทความใหม่" โดยใช้ "${query}" เป็น Focus Keyword แล้วส่ง Internal Link กลับไปยังหน้า ${pillarInfo.pillarTitle} (${pillarInfo.pillarUrl})`;
+      actionRecommendation = `ลูกค้าค้นหาคำนี้แต่เรายังไม่มีบทความที่ตอบเรื่องนี้โดยตรง (ตอนนี้ Google ดึงหน้า ${pagePath} ไปแสดงแทน) แนะนำให้สร้างบทความใหม่โดยใช้ "${query}" เป็น Focus Keyword แล้วผูก Internal Link กลับไปที่หน้า ${pillarInfo.pillarTitle} (${pillarInfo.pillarUrl}) ครับ`;
     } else if (bucket === 'STRIKING_DISTANCE') {
       if (alreadyOptimized) {
-        actionRecommendation = `บทความ "${matchedArticle?.title || pagePath}" มีคำค้นหานี้ในหัวข้อ H2/H3 หรือ FAQ เรียบร้อยแล้ว แนะนำรอ Google ประมวลผลอันดับรอบถัดไป หรือเสริม Internal Link จากบทความอื่นเพิ่ม`;
+        actionRecommendation = `บทความ "${matchedArticle?.title || pagePath}" มีคีย์เวิร์ดคำนี้ใน H2/H3 หรือ FAQ เรียบร้อยแล้ว แนะนำให้รอ Google อัปเดตอันดับรอบถัดไป หรือเพิ่ม Internal Link จากบทความอื่นส่งมาช่วยครับ`;
       } else if (matchedArticle) {
-        actionRecommendation = `ห้ามเขียนบทความใหม่ซ้ำ! แนะนำเปิดแก้ไขบทความ "${matchedArticle.title}" แล้วเพิ่มหัวข้อ H2/H3 หรือคำถาม FAQ ที่มีคำว่า "${query}" เพื่อดันจากอันดับ ${row.position} ขึ้น Top 5`;
+        actionRecommendation = `มีบทความ "${matchedArticle.title}" รองรับอยู่แล้ว (ไม่ควรเขียนบทความใหม่ซ้ำเพื่อป้องกัน Keyword Cannibalization) แนะนำให้เข้าไปเพิ่มหัวข้อ H2/H3 หรือ FAQ ที่มีคำว่า "${query}" เพื่อดันอันดับจาก ${row.position} ขึ้น Top 5 ครับ`;
       } else {
-        actionRecommendation = `หน้า ${pagePath} ติดอันดับ ${row.position} แนะนำสร้างบทความเจาะลึกหรือเพิ่มเนื้อหา FAQ ในหน้าดังกล่าวเพื่อดันขึ้นหน้าแรก`;
+        actionRecommendation = `หน้า ${pagePath} ติดอันดับ ${row.position} อยู่แล้ว แนะนำให้เขียนบทความเจาะลึกเสริม หรือเพิ่มส่วน FAQ ในหน้านั้นเพื่อดันขึ้น Top 5 ครับ`;
       }
     } else if (bucket === 'CTR_BOOSTER') {
       if (isExamQuery) {
-        actionRecommendation = `ตรวจพบเป็นคำค้นหาแนวโจทย์ข้อสอบปรนัย ผู้ค้นหามักดูคำตอบบนหน้า SERP ทันที (Zero-Click) ไม่แนะนำให้เปลี่ยน SEO Title ของบทความหลัก`;
+        actionRecommendation = `เป็นคำค้นหาแนวข้อสอบ (Zero-Click Query) ที่คนมักอ่านคำตอบจากหน้าค้นหา Google แล้วจบเลย ไม่จำเป็นต้องแก้ SEO Title ของบทความหลักครับ`;
       } else if (lowImpressionsWait) {
-        actionRecommendation = `มียอดการมองเห็นเพียง ${row.impressions} ครั้ง (ต่ำกว่าเกณฑ์ขั้นต่ำ ${MIN_IMPRESSIONS_FOR_CTR_EDIT} ครั้ง) แนะนำรอสะสมข้อมูลทางสถิติก่อนปรับแก้ SEO Title`;
+        actionRecommendation = `เพิ่งมี Impressions ${row.impressions} ครั้ง (ยังไม่ถึงเกณฑ์ขั้นต่ำ ${MIN_IMPRESSIONS_FOR_CTR_EDIT} ครั้ง) แนะนำให้รอเก็บสถิติเพิ่มอีกนิดก่อนค่อยปรับ SEO Title ครับ`;
       } else {
-        actionRecommendation = `ติดหน้าแรกอันดับ ${row.position} แต่ CTR เพียง ${(row.ctr * 100).toFixed(2)}% แนะนำปรับปรุง SEO Title และ Meta Description ให้ระบุตัวเลข/ประโยชน์ชัดเจนเพื่อดึงดูดคลิก`;
+        actionRecommendation = `ติด Top 5 หน้าแรกแล้ว (อันดับ ${row.position}) แต่ CTR ยังอยู่ที่ ${(row.ctr * 100).toFixed(2)}% แนะนำให้ปรับ SEO Title และ Meta Description ให้กระชับ มีตัวเลขหรือจุดเด่นชัดเจนเพื่อดึงดูดคลิกครับ`;
       }
     } else {
-      actionRecommendation = `ทำผลงานยอดเยี่ยม (อันดับ ${row.position}, CTR ${(row.ctr * 100).toFixed(2)}%) แนะนำรักษามาตรฐานเนื้อหาและใช้หน้านี้ส่ง Internal Link ไปดันบทความใหม่ในหมวด ${pillarInfo.category}`;
+      actionRecommendation = `ผลงานดีมากครับ (อันดับ ${row.position}, CTR ${(row.ctr * 100).toFixed(2)}%) แนะนำให้คงโครงสร้างเดิมไว้ และใช้หน้านี้ส่ง Internal Link ไปช่วยดันบทความใหม่ในหมวด ${pillarInfo.category}`;
     }
 
     return {
@@ -1047,10 +1047,10 @@ export function buildPlainEnglishReport(items: AnalyzedOpportunityItem[]): Plain
 
     nextThreeActions.push({
       step: 1,
-      title: `เขียนบทความใหม่ปิดช่องว่าง: "${topGap.query}"`,
-      detail: `มีผู้ค้นหาเห็นแล้ว ${topGap.impressions.toLocaleString()} ครั้ง (อันดับ ${topGap.position}) แต่ยังไม่มีบทความเฉพาะรองรับ กดสร้างบทความและเชื่อมลิงก์ไปยัง ${topGap.pillarTitle}`,
+      title: `เขียนบทความใหม่รองรับคำว่า "${topGap.query}"`,
+      detail: `มีคนค้นหาและเห็นเว็บเราแล้ว ${topGap.impressions.toLocaleString()} Impressions (อันดับเฉลี่ย ${topGap.position}) แต่เรายังไม่มีบทความเรื่องนี้โดยตรง แนะนำให้สร้างบทความใหม่และผูก Internal Link ไปหน้า ${topGap.pillarTitle}`,
       bucket: 'CONTENT_GAP',
-      actionLabel: '1-Click เขียนบทความนี้ทันที',
+      actionLabel: 'สร้างบทความนี้ทันที (Auto-Fill)',
       actionUrl: newUrl,
     });
   }
@@ -1058,12 +1058,12 @@ export function buildPlainEnglishReport(items: AnalyzedOpportunityItem[]): Plain
   if (fastestWin) {
     nextThreeActions.push({
       step: nextThreeActions.length + 1,
-      title: `ดันขึ้น Top 5: เติม H2/FAQ คำว่า "${fastestWin.query}"`,
+      title: `ดันอันดับคำว่า "${fastestWin.query}" ขึ้น Top 5`,
       detail: fastestWin.matchedArticleId
-        ? `บทความ "${fastestWin.matchedArticleTitle}" ติดอันดับ ${fastestWin.position} อยู่แล้ว แค่เพิ่มหัวข้อ H2 และคำถาม FAQ คำนี้จะช่วยดันขึ้นหน้าแรกได้เร็วที่สุดโดยไม่ต้องเขียนใหม่`
-        : `คำค้นหานี้ติดอันดับ ${fastestWin.position} (${fastestWin.impressions} วิว) พร้อมดันขึ้น Top 5 ทันที`,
+        ? `บทความ "${fastestWin.matchedArticleTitle}" ติดอันดับ ${fastestWin.position} อยู่แล้ว แค่เข้าไปเพิ่มหัวข้อ H2 หรือ FAQ ที่มีคีย์เวิร์ดคำนี้ จะช่วยดันขึ้นหน้าแรกได้ไวที่สุดโดยไม่ต้องเขียนใหม่ครับ`
+        : `คีย์เวิร์ดนี้ติดอันดับ ${fastestWin.position} (${fastestWin.impressions.toLocaleString()} Impressions) สามารถปรับเนื้อหาเสริมเพื่อดันขึ้น Top 5 ได้ทันทีครับ`,
       bucket: 'STRIKING_DISTANCE',
-      actionLabel: fastestWin.matchedArticleId ? 'เปิดแก้ไขบทความเดิม' : 'เขียนบทความรองรับ',
+      actionLabel: fastestWin.matchedArticleId ? 'เข้าไปอัปเดตบทความเดิม' : 'เขียนบทความเสริม',
       actionUrl: fastestWin.matchedArticleId
         ? `/admin/articles/${fastestWin.matchedArticleId}`
         : `/admin/articles/new?title=${encodeURIComponent(
@@ -1077,12 +1077,12 @@ export function buildPlainEnglishReport(items: AnalyzedOpportunityItem[]): Plain
   if (topCtrFix) {
     nextThreeActions.push({
       step: nextThreeActions.length + 1,
-      title: `ปรับ SEO Title เพิ่มคลิก: "${topCtrFix.query}"`,
-      detail: `ติดหน้าแรกอันดับ ${topCtrFix.position} (${topCtrFix.impressions} วิว) แต่ CTR เพียง ${(
+      title: `ปรับ SEO Title เพิ่มยอดคลิกคำว่า "${topCtrFix.query}"`,
+      detail: `ติด Top 5 หน้าแรกแล้ว (อันดับ ${topCtrFix.position} • ${topCtrFix.impressions.toLocaleString()} Impressions) แต่ CTR อยู่ที่ ${(
         topCtrFix.ctr * 100
-      ).toFixed(2)}% แนะนำปรับ SEO Title ให้น่าคลิกยิ่งขึ้น`,
+      ).toFixed(2)}% แนะนำให้ปรับ SEO Title และ Meta Description ให้น่าคลิกขึ้นครับ`,
       bucket: 'CTR_BOOSTER',
-      actionLabel: topCtrFix.matchedArticleId ? 'ปรับ SEO Title บทความ' : 'ดูรายละเอียด',
+      actionLabel: topCtrFix.matchedArticleId ? 'แก้ไข SEO Title' : 'ดูรายละเอียด',
       actionUrl: topCtrFix.matchedArticleId
         ? `/admin/articles/${topCtrFix.matchedArticleId}`
         : undefined,
@@ -1090,26 +1090,26 @@ export function buildPlainEnglishReport(items: AnalyzedOpportunityItem[]): Plain
   }
 
   return {
-    headline: `สรุปสุขภาพการค้นหา: มองเห็นรวม ${totalImpressions.toLocaleString()} ครั้ง • คลิกเข้าเว็บ ${totalClicks.toLocaleString()} ครั้ง (CTR เฉลี่ย ${averageCtrPercent}%)`,
-    summaryParagraph: `จากข้อมูลคำค้นหาทั้งหมด ${items.length} รายการ ระบบตรวจพบขุมทรัพย์เนื้อหาใหม่ (Content Gap) ${
+    headline: `ภาพรวมผลการค้นหาบน Google: แสดงผลรวม ${totalImpressions.toLocaleString()} Impressions • คลิกเข้าเว็บ ${totalClicks.toLocaleString()} Clicks • CTR เฉลี่ย ${averageCtrPercent}% (อันดับเฉลี่ย ${averagePosition})`,
+    summaryParagraph: `จากคีย์เวิร์ดที่ลูกค้าใช้ค้นหาทั้งหมด ${items.length} คำ ตอนนี้มีโอกาสเติบโตสำคัญ 3 ส่วนครับ: (1) คีย์เวิร์ดที่คนค้นหาเยอะแต่เรายังไม่มีบทความรองรับโดยตรง (Content Gap) ${
       items.filter((i) => i.bucket === 'CONTENT_GAP').length
-    } หัวข้อ, บทความระยะประชิดอันดับ 5–20 (Striking Distance) ${
+    } คำ, (2) คีย์เวิร์ดที่ติดอันดับ 5–20 ซึ่งดันขึ้นหน้าแรกได้เร็วที่สุด (Striking Distance) ${
       items.filter((i) => i.bucket === 'STRIKING_DISTANCE').length
-    } รายการ และหน้าติด Top 5 ที่ควรปรับพาดหัวเพิ่มคลิก (CTR Booster) ${
+    } คำ และ (3) หน้าที่ติด Top 5 แล้วแต่ควรปรับ Title/Meta เพื่อดึงคนคลิกเพิ่ม (CTR Booster) อีก ${
       items.filter((i) => i.bucket === 'CTR_BOOSTER').length
-    } รายการ`,
+    } คำ`,
     totalClicks,
     totalImpressions,
     averagePosition,
     averageCtrPercent,
     topPerformerHighlight: topPerformer
-      ? `"${topPerformer.query}" (อันดับ ${topPerformer.position} • ${topPerformer.clicks} คลิก)`
+      ? `"${topPerformer.query}" (อันดับ ${topPerformer.position} • ${topPerformer.clicks} Clicks)`
       : 'ยังไม่มีข้อมูลคีย์เวิร์ดหลัก',
     topContentGapHighlight: topGap
-      ? `"${topGap.query}" (${topGap.impressions} Impressions • ยังไม่มีบทความรองรับ)`
-      : 'ครอบคลุมทุกคำค้นหาหลักแล้ว',
+      ? `"${topGap.query}" (${topGap.impressions.toLocaleString()} Impressions • ยังไม่มีบทความรองรับ)`
+      : 'มีบทความครอบคลุมคีย์เวิร์ดหลักครบแล้ว',
     fastestWinHighlight: fastestWin
-      ? `"${fastestWin.query}" (อันดับ ${fastestWin.position} • ดันขึ้น Top 5 ได้ทันที)`
+      ? `"${fastestWin.query}" (อันดับ ${fastestWin.position} • พร้อมดันขึ้น Top 5)`
       : 'อัปเดตคีย์เวิร์ดครบทุกบทความแล้ว',
     nextThreeActions,
   };

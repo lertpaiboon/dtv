@@ -492,7 +492,7 @@ export default function AdminSeoSuitePage() {
           กำลังประมวลผลระบบ SEO Intelligence & AI Search OS...
         </h3>
         <p style={{ margin: 0, fontSize: '0.9rem' }}>
-          วิเคราะห์คำค้นหา 4 ตะกร้าโอกาส • ตรวจสอบ Anti-Cannibalization • สแกนโครงข่าย Internal Links
+          วิเคราะห์คีย์เวิร์ด 4 Opportunity Buckets • ตรวจสอบ Anti-Cannibalization • สแกน Internal Links
         </p>
       </div>
     );
@@ -727,7 +727,7 @@ export default function AdminSeoSuitePage() {
         </div>
       )}
 
-      {/* 2. Layer 3: Plain-English Executive Briefing & Next 3 Actions */}
+      {/* 2. Layer 3: Executive Briefing & Next 3 Actions */}
       {report && (
         <div
           style={{
@@ -741,7 +741,7 @@ export default function AdminSeoSuitePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <Sparkles size={20} color="#c5a059" />
             <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800, color: '#091c3a' }}>
-              รายงานสรุปผู้บริหารภาษามนุษย์ (Plain-English Executive Briefing)
+              สรุปภาพรวมและแผนงาน SEO ประจำสัปดาห์ (Executive Briefing)
             </h2>
           </div>
 
@@ -763,7 +763,7 @@ export default function AdminSeoSuitePage() {
           >
             <div style={{ padding: '14px 16px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
               <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#15803d', textTransform: 'uppercase' }}>
-                🏆 ผลงานคลิกสูงสุด (Top Performer)
+                🏆 คีย์เวิร์ดที่ดึงคนเข้าเว็บสูงสุด (Top Performer)
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#14532d', marginTop: '4px' }}>
                 {report.topPerformerHighlight}
@@ -772,7 +772,7 @@ export default function AdminSeoSuitePage() {
 
             <div style={{ padding: '14px 16px', borderRadius: '12px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
               <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase' }}>
-                💎 ขุมทรัพย์เนื้อหาใหม่อันดับ 1 (Top Content Gap)
+                💎 โอกาสเขียนบทความใหม่ที่น่าทำที่สุด (Top Content Gap)
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e3a8a', marginTop: '4px' }}>
                 {report.topContentGapHighlight}
@@ -781,7 +781,7 @@ export default function AdminSeoSuitePage() {
 
             <div style={{ padding: '14px 16px', borderRadius: '12px', background: '#fefce8', border: '1px solid #fde047' }}>
               <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#a16207', textTransform: 'uppercase' }}>
-                🚀 ดันขึ้นหน้าแรกเร็วที่สุด (Fastest Striking Win)
+                🚀 คีย์เวิร์ดที่ดันขึ้น Top 5 ได้ไวที่สุด (Quick Win)
               </div>
               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#713f12', marginTop: '4px' }}>
                 {report.fastestWinHighlight}
@@ -793,7 +793,7 @@ export default function AdminSeoSuitePage() {
           {report.nextThreeActions && report.nextThreeActions.length > 0 && (
             <div>
               <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#091c3a', marginBottom: '10px' }}>
-                ⚡ Next 3 Actions ที่ควรทำทันทีในสัปดาห์นี้:
+                ⚡ 3 งานสำคัญที่แนะนำให้ทำก่อนในสัปดาห์นี้ (Priority Actions):
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
                 {report.nextThreeActions.map((act: any) => (
@@ -862,31 +862,31 @@ export default function AdminSeoSuitePage() {
         {[
           {
             id: 'CONTENT_GAP' as const,
-            label: '1. ช่องว่างเนื้อหาใหม่',
+            label: '1. Content Gap (บทความที่ยังขาด)',
             count: buckets.CONTENT_GAP.length,
             icon: Sparkles,
           },
           {
             id: 'STRIKING_DISTANCE' as const,
-            label: '2. อันดับ 5–20 (ระยะประชิด)',
+            label: '2. Striking Distance (อันดับ 5–20)',
             count: buckets.STRIKING_DISTANCE.length,
             icon: TrendingUp,
           },
           {
             id: 'CTR_BOOSTER' as const,
-            label: '3. ปรับพาดหัวเพิ่มคลิก',
+            label: '3. CTR Booster (ปรับ Title เพิ่มคลิก)',
             count: buckets.CTR_BOOSTER.length,
             icon: Target,
           },
           {
             id: 'PLAN' as const,
-            label: '4. แผนบทความ SEO',
+            label: '4. Content Plan (แผนบทความ)',
             count: contentPlan.length,
             icon: BookmarkPlus,
           },
           {
             id: 'TOP_PERFORMER' as const,
-            label: '5. คีย์เวิร์ดทำคลิกสูงสุด',
+            label: '5. Top Performers',
             count: buckets.TOP_PERFORMER.length,
             icon: Award,
           },
@@ -898,14 +898,14 @@ export default function AdminSeoSuitePage() {
           },
           {
             id: 'EXPLORER' as const,
-            label: '7. ค้นหาคีย์เวิร์ดใหม่ (Autocomplete)',
+            label: '7. Keyword Explorer (Autocomplete)',
             count: explorerResults.length || null,
             icon: Compass,
           },
           {
             id: 'INTERNAL_LINKS' as const,
-            label: '8. โครงข่าย Internal Link',
-            count: linkMatrix.orphanCount > 0 ? `${linkMatrix.orphanCount} กำพร้า` : linkMatrix.matrix.length,
+            label: '8. Internal Link Matrix',
+            count: linkMatrix.orphanCount > 0 ? `${linkMatrix.orphanCount} Orphan` : linkMatrix.matrix.length,
             icon: Network,
           },
           {
@@ -916,7 +916,7 @@ export default function AdminSeoSuitePage() {
           },
           {
             id: 'AUDIT_GEO' as const,
-            label: '10. คะแนน 100-Point & /llms.txt',
+            label: '10. SEO Audit 100-Point & /llms.txt',
             count: kpi.publishedCount || 0,
             icon: Bot,
           },
@@ -986,13 +986,13 @@ export default function AdminSeoSuitePage() {
           <div style={{ marginBottom: '18px' }}>
             <h3 style={{ margin: '0 0 4px', fontSize: '1.15rem', fontWeight: 800, color: '#091c3a' }}>
               {activeTab === 'CONTENT_GAP' &&
-                'Tab 1 — ช่องว่างเนื้อหาใหม่ (Content Gap: มี Impressions สูง แต่ยังไม่มีบทความเฉพาะรองรับ)'}
+                'Tab 1 — Content Gap (คีย์เวิร์ดที่มี Impressions สูง แต่ยังไม่มีบทความรองรับโดยตรง)'}
               {activeTab === 'STRIKING_DISTANCE' &&
-                'Tab 2 — ระยะประชิด อันดับ 5–20 (Striking Distance: ห้ามเขียนซ้ำ! เน้นเติม H2/H3 & FAQ ในบทความเดิม)'}
+                'Tab 2 — Striking Distance อันดับ 5–20 (มีบทความแล้ว แนะนำเติม H2/H3 & FAQ เพื่อดันขึ้นหน้าแรก)'}
               {activeTab === 'CTR_BOOSTER' &&
-                'Tab 3 — ปรับพาดหัวเพิ่มคลิก (CTR Booster: ติด Top 5 หน้าแรกแล้ว แต่ CTR < 3.5%)'}
+                'Tab 3 — CTR Booster (ติด Top 5 หน้าแรกแล้ว แต่ควรปรับ SEO Title / Meta เพื่อเพิ่มยอดคลิก)'}
               {activeTab === 'TOP_PERFORMER' &&
-                'Tab 5 — คีย์เวิร์ดทำคลิกสูงสุด (Top Performers: อันดับ <= 4.5 และ CTR >= 3.5%)'}
+                'Tab 5 — Top Performers (คีย์เวิร์ดที่ทำอันดับและยอดคลิกได้สูงที่สุด)'}
             </h3>
             <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
               ระบบกรองอัตโนมัติด้วย 5 Smart SEO Guardrails (Anti-Cannibalization, คำพ้องภาษีไทย, ตรวจ H2/FAQ, กรองข้อสอบปรนัย และเกณฑ์ Impressions &ge; 15)
@@ -1038,7 +1038,7 @@ export default function AdminSeoSuitePage() {
                     </div>
 
                     <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                      หน้าที่ Google นำไปแสดงจริง: <code>{item.page}</code> • เสาหลักบริการ:{' '}
+                      หน้าที่ติดอันดับบน Google: <code>{item.page}</code> • Pillar Page:{' '}
                       <Link href={item.pillarUrl} target="_blank" style={{ color: '#2563eb', fontWeight: 600 }}>
                         {item.pillarTitle} ({item.pillarUrl})
                       </Link>
@@ -1219,10 +1219,10 @@ export default function AdminSeoSuitePage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
             <div>
               <h3 style={{ margin: '0 0 4px', fontSize: '1.15rem', fontWeight: 800, color: '#091c3a' }}>
-                Tab 4 — ตะกร้าวางแผนบทความ SEO (Auto-Synced Content Plan)
+                Tab 4 — แผนบทความ SEO (Auto-Synced Content Plan)
               </h3>
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                ซิงค์สถานะอัตโนมัติ (`PLANNED` ➔ `DRAFTING` ➔ `COMPLETED`) ทันทีเมื่อมีบทความที่มี Slug หรือ Focus Keyword ตรงกันถูกสร้างหรือเผยแพร่
+                อัปเดตสถานะอัตโนมัติ (<code>PLANNED</code> ➔ <code>DRAFTING</code> ➔ <code>COMPLETED</code>) ทันทีเมื่อบทความที่มี Slug หรือ Focus Keyword ตรงกันถูกสร้างหรือเผยแพร่
               </p>
             </div>
 
@@ -1700,7 +1700,7 @@ export default function AdminSeoSuitePage() {
                     </span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    รูปแบบคำขยาย: {item.sourcePattern} • เสาหลักบริการ: {item.pillarTitle}
+                    หมวดคำค้น: {item.sourcePattern} • Pillar Page: {item.pillarTitle}
                     {item.matchedArticleTitle && ` • พบในบทความ: "${item.matchedArticleTitle}"`}
                   </div>
                 </div>
@@ -1789,10 +1789,10 @@ export default function AdminSeoSuitePage() {
         >
           <div>
             <h3 style={{ margin: '0 0 4px', fontSize: '1.15rem', fontWeight: 800, color: '#091c3a' }}>
-              Tab 8 — โครงข่าย Internal Link Matrix & ระบบตรวจจับบทความกำพร้า (Orphan Detector)
+              Tab 8 — โครงข่าย Internal Link Matrix & ตรวจจับ Orphan Posts
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-              สแกน Markdown ของทุกบทความเพื่อตรวจนับ Inbound Links, Outbound Blog Links และ Pillar Service Links พร้อมปุ่ม 1-Click แทรก Internal Link อัตโนมัติ
+              สแกนบทความทั้งหมดเพื่อตรวจนับ Inbound Links, Outbound Blog Links และ Pillar Service Links พร้อมปุ่ม 1-Click แทรก Internal Link อัตโนมัติ
             </p>
           </div>
 
