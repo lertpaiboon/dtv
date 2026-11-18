@@ -32,23 +32,33 @@ nano .env   # หรือใช้ Text Editor ปรับแต่งค่�
 # 1. การเชื่อมต่อฐานข้อมูล MySQL (รูปแบบ: mysql://USER:PASSWORD@HOST:PORT/DATABASE)
 DATABASE_URL="mysql://deethavorn_user:YourStrongPassword@127.0.0.1:3306/wealthi1_deethavorn"
 
-# 2. ตั้งค่า Node Environment
+# 2. ตั้งค่า Node Environment และ Canonical URL
 NODE_ENV="production"
 PORT=3000
+TZ="Asia/Bangkok"
+NEXT_PUBLIC_SITE_URL="https://www.deethavorn.com"
 
-# 3. SMTP Mail Server (ทางเลือก สำหรับระบบส่งแจ้งเตือนทีมงานเมื่อมีลูกค้าติดต่อเข้ามา)
+# 3. คีย์ความปลอดภัยสำหรับ Admin Session และการเข้ารหัสข้อมูลความลับ (บังคับอย่างน้อย 32 ตัวอักษร)
+# สร้างคีย์สุ่มด้วยคำสั่ง: openssl rand -hex 32
+JWT_SECRET="replace_with_64_char_hex_from_openssl_rand"
+SETTINGS_ENCRYPTION_KEY="replace_with_another_64_char_hex_from_openssl_rand"
+
+# 4. SMTP Mail Server (สำหรับส่งแจ้งเตือนทีมงานเมื่อมีลูกค้าติดต่อเข้ามา)
 SMTP_HOST="mail.deethavorn.com"
-SMTP_PORT=587
-SMTP_USER="info@deethavorn.com"
+SMTP_PORT=465
+SMTP_USER="no-reply@deethavorn.com"
 SMTP_PASS="YourEmailPassword"
-SMTP_FROM="บริษัท ดีถาวรการบัญชี จำกัด <info@deethavorn.com>"
-NOTIFICATION_EMAIL="contact@deethavorn.com"
+SMTP_FROM="บริษัท ดีถาวรการบัญชี จำกัด <no-reply@deethavorn.com>"
+NOTIFICATION_RECEIVER_EMAIL="dtv_accounting@hotmail.com, c.pimmphisa@gmail.com"
 
-# 4. LINE Notify Token (ทางเลือก สำหรับส่งแจ้งเตือนเข้ากลุ่มไลน์พนักงานทันที)
+# 5. LINE Notify Token (ทางเลือก สำหรับส่งแจ้งเตือนเข้ากลุ่มไลน์พนักงานทันที)
 LINE_NOTIFY_TOKEN="your_line_notify_token_here"
 
-# 5. Google Tag Manager (GTM) Container ID
+# 6. SEO, IndexNow & Google Tag Manager (ทางเลือก)
 NEXT_PUBLIC_GTM_ID="GTM-M2JQJX4Q"
+INDEXNOW_KEY="replace_with_32_char_hex_from_openssl_rand_hex_16"
+GSC_SERVICE_ACCOUNT_JSON=""
+GSC_SITE_URL="https://www.deethavorn.com/"
 ```
 
 ---
@@ -212,6 +222,11 @@ sudo certbot --nginx -d deethavorn.com -d www.deethavorn.com
 4. คลิกปุ่ม **NPM Install** แล้วคลิก **Run script** พิมพ์ `build`
 5. คลิก **Restart Application** เพื่อเริ่มรันระบบ
 6. ไปที่เมนู **SSL/TLS Certificates** ใน Plesk เพื่อสั่งออกใบรับรอง Let's Encrypt แบบ 1-Click
+7. ตั้งค่า **Scheduled Tasks (Cron Job)** เพื่อป้องกัน Phusion Passenger สั่ง Node.js พักตัว (Cold Start ใส่ Googlebot) หลังไม่มีผู้เข้าชม:
+   * ไปที่ **Websites & Domains** > **Scheduled Tasks** > **Add Task**
+   * เลือก **Task type**: `Run a command`
+   * **Command**: `curl -fsS https://www.deethavorn.com/api/health >/dev/null 2>&1`
+   * **Run**: `Cron style` -> `*/4 * * * *` (ทุกๆ 4 นาที)
 
 ---
 

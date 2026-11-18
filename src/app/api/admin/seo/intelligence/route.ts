@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { encryptSecret } from '@/lib/secret-crypto';
 import {
   GscDataSourceTier,
   GscQueryRow,
   SeoContentPlanItem,
   parseServiceAccountJson,
+  loadStoredOrEnvGscConfig,
   getGoogleAccessToken,
   fetchVerifiedGscSites,
   fetchGscSearchAnalytics,
@@ -95,30 +97,25 @@ export async function GET() {
   }
 
   try {
-    const [settings, articles, contentPlan, linkMatrix, brokenLinks] = await Promise.all([
-      prisma.systemSetting.findMany({
-        where: {
-          key: {
-            in: ['gsc_service_account_json', 'gsc_site_url', 'gsc_cached_rows'],
+    const [gscConfig, cachedSetting, articles, contentPlan, linkMatrix, brokenLinks] =
+      await Promise.all([
+        loadStoredOrEnvGscConfig(),
+        prisma.systemSetting.findUnique({
+          where: { key: 'gsc_cached_rows' },
+        }),
+        prisma.article.findMany({
+          include: {
+            faqs: { orderBy: { sortOrder: 'asc' } },
           },
-        },
-      }),
-      prisma.article.findMany({
-        include: {
-          faqs: { orderBy: { sortOrder: 'asc' } },
-        },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      getSyncedContentPlan(),
-      buildInternalLinkMatrix(),
-      scanBrokenLinksAndAssets(),
-    ]);
+          orderBy: { updatedAt: 'desc' },
+        }),
+        getSyncedContentPlan(),
+        buildInternalLinkMatrix(),
+        scanBrokenLinksAndAssets(),
+      ]);
 
-    const saRaw = settings.find((s) => s.key === 'gsc_service_account_json')?.value || '';
-    const siteUrlSetting = settings.find((s) => s.key === 'gsc_site_url')?.value || '';
-    const cachedRaw = settings.find((s) => s.key === 'gsc_cached_rows')?.value || '';
-
-    const creds = parseServiceAccountJson(saRaw);
+    const { creds, siteUrl: siteUrlSetting } = gscConfig;
+    const cachedRaw = cachedSetting?.value || '';
 
     let dataSourceTier: GscDataSourceTier = 'DEMO_SIMULATION';
     let lastSyncedAt: string | null = null;
@@ -170,9 +167,12 @@ export async function GET() {
         brokenLinks,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error loading SEO Intelligence:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'ไม่สามารถโหลดข้อมูลวิเคราะห์ SEO ได้ในขณะนี้' },
+      { status: 500 }
+    );
   }
 }
 
@@ -189,8 +189,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action } = body;
 
-    // 1. Save GSC Service Account & Sync Live
+    // 1. Save GSC Service Account & Sync Live (Super Admin ONLY, encrypted with AES-256-GCM)
     if (action === 'save_gsc_config') {
+      if (!hasPermission(session, '*')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'ต้องใช้สิทธิ์ผู้ดูแลระบบสูงสุด (Super Admin) ในการตั้งค่าคีย์เชื่อมต่อ Google Search Console',
+          },
+          { status: 403 }
+        );
+      }
+
       const { serviceAccountJson, siteUrl } = body;
       const creds = parseServiceAccountJson(serviceAccountJson || '');
       if (!creds) {
@@ -203,17 +214,32 @@ export async function POST(req: Request) {
         );
       }
 
+      let accessToken: string;
+      try {
+        accessToken = await getGoogleAccessToken(creds);
+      } catch (oauthErr) {
+        console.error('Google OAuth token verification failed:', oauthErr);
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'ไม่สามารถยืนยันตัวตนกับ Google Cloud ได้ กรุณาตรวจสอบว่าคีย์ Service Account ยังไม่ถูกเพิกถอน',
+          },
+          { status: 400 }
+        );
+      }
+
+      const encryptedPayload = encryptSecret(String(serviceAccountJson).trim());
       await prisma.systemSetting.upsert({
         where: { key: 'gsc_service_account_json' },
-        update: { value: serviceAccountJson.trim() },
+        update: { value: encryptedPayload },
         create: {
           key: 'gsc_service_account_json',
-          value: serviceAccountJson.trim(),
-          description: 'Google Cloud Service Account JSON for GSC & Indexing API',
+          value: encryptedPayload,
+          description: 'Encrypted Google Cloud Service Account JSON (AES-256-GCM)',
         },
       });
 
-      const accessToken = await getGoogleAccessToken(creds);
       const discovery = await fetchVerifiedGscSites(accessToken, creds.project_id);
 
       if (discovery.serviceDisabledUrl) {
@@ -265,14 +291,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Sync Live GSC Data using existing credentials
+    // 2. Sync Live GSC Data using existing credentials (encrypted DB or .env)
     if (action === 'sync_live_gsc') {
-      const settings = await prisma.systemSetting.findMany({
-        where: { key: { in: ['gsc_service_account_json', 'gsc_site_url'] } },
-      });
-      const saRaw = settings.find((s) => s.key === 'gsc_service_account_json')?.value || '';
-      const siteUrl = settings.find((s) => s.key === 'gsc_site_url')?.value || '';
-      const creds = parseServiceAccountJson(saRaw);
+      const { creds, siteUrl } = await loadStoredOrEnvGscConfig();
 
       if (!creds) {
         return NextResponse.json(
@@ -281,7 +302,19 @@ export async function POST(req: Request) {
         );
       }
 
-      const accessToken = await getGoogleAccessToken(creds);
+      let accessToken: string;
+      try {
+        accessToken = await getGoogleAccessToken(creds);
+      } catch (oauthErr) {
+        console.error('Google OAuth token refresh failed:', oauthErr);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'ไม่สามารถรับโทเคนจาก Google Cloud ได้ กรุณาตรวจสอบคีย์การเชื่อมต่อใหม่',
+          },
+          { status: 400 }
+        );
+      }
       const discovery = await fetchVerifiedGscSites(accessToken, creds.project_id);
       if (discovery.serviceDisabledUrl) {
         return NextResponse.json(
@@ -473,8 +506,11 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('SEO Intelligence POST error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'เกิดข้อผิดพลาดภายในระบบจัดการข้อมูล SEO กรุณาลองใหม่อีกครั้ง' },
+      { status: 500 }
+    );
   }
 }

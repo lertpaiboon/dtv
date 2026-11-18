@@ -6,7 +6,9 @@ import {
   TAX_TYPES,
   asTrimmedText,
   isOneOf,
+  isSafeSlipUrl,
   normalizeMoney,
+  normalizeSlipUrl,
   normalizeTaxMonth,
   normalizeTaxYear,
   parseDateOnly,
@@ -79,6 +81,12 @@ export async function PUT(req: Request, { params }: Context) {
       finalTaxMonth = String(monthNum).padStart(2, '0');
     }
 
+    if (body.slipUrl !== undefined && body.slipUrl !== null && String(body.slipUrl).trim() !== '') {
+      if (!isSafeSlipUrl(String(body.slipUrl))) {
+        return NextResponse.json({ success: false, error: 'พาธไฟล์สลิปไม่ถูกต้องหรือไม่ได้มาจากระบบอัปโหลด' }, { status: 400 });
+      }
+    }
+
     const updated = await prisma.taxPayment.update({
       where: { id: paymentId },
       data: {
@@ -92,8 +100,8 @@ export async function PUT(req: Request, { params }: Context) {
           ? existing.reimbursedAt || new Date()
           : billingStatus ? null : undefined,
         reimbursementRef: body.reimbursementRef === undefined ? undefined : (body.reimbursementRef ? String(body.reimbursementRef).trim() : null),
-        slipUrl: body.slipUrl === undefined ? undefined : (body.slipUrl ? String(body.slipUrl).trim() : null),
-        slipFileName: body.slipFileName === undefined ? undefined : (body.slipFileName ? String(body.slipFileName).trim() : null),
+        slipUrl: body.slipUrl === undefined ? undefined : normalizeSlipUrl(body.slipUrl),
+        slipFileName: body.slipFileName === undefined ? undefined : asTrimmedText(body.slipFileName, 255),
         note: body.note === undefined ? undefined : asTrimmedText(body.note, 2000),
         taxYear: taxYear ?? undefined,
         taxMonth: finalTaxMonth,

@@ -37,6 +37,28 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+export function isSafeHttpUrl(rawUrl: string | null | undefined): boolean {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const trimmed = rawUrl.trim();
+  if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+export function isSafeImageOrHttpUrl(rawUrl: string | null | undefined): boolean {
+  if (!rawUrl || typeof rawUrl !== 'string') return false;
+  const trimmed = rawUrl.trim();
+  if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) return false;
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return true;
+  }
+  return isSafeHttpUrl(trimmed);
+}
+
 /**
  * Validate article fields for saving or publishing
  */
@@ -53,6 +75,7 @@ export function validateArticlePayload(
     authorId?: number | null;
     canonicalUrl?: string | null;
     ogImage?: string | null;
+    citations?: Array<{ title?: string; url?: string }> | null;
   },
   isPublishing = false
 ): ArticleValidationResult {
@@ -103,12 +126,17 @@ export function validateArticlePayload(
     errors.push('ต้องระบุผู้เขียนบทความ (Author) ก่อนทำการเผยแพร่');
   }
 
-  // Cover image alt text check
-  if (payload.coverImage && (!payload.coverImageAlt || payload.coverImageAlt.trim().length === 0)) {
-    if (isPublishing) {
-      errors.push('หากมีภาพหน้าปก ต้องระบุคำอธิบายภาพ (Alt Text) เพื่อรองรับ Accessibility และ SEO');
-    } else {
-      warnings.push('แนะนำให้ระบุคำอธิบายภาพหน้าปก (Alt Text)');
+  // Cover image URL & alt text check
+  if (payload.coverImage && payload.coverImage.trim().length > 0) {
+    if (!isSafeImageOrHttpUrl(payload.coverImage)) {
+      errors.push('URL ภาพหน้าปกต้องขึ้นต้นด้วย / หรือเป็น http:// / https:// ที่ถูกต้องเท่านั้น');
+    }
+    if (!payload.coverImageAlt || payload.coverImageAlt.trim().length === 0) {
+      if (isPublishing) {
+        errors.push('หากมีภาพหน้าปก ต้องระบุคำอธิบายภาพ (Alt Text) เพื่อรองรับ Accessibility และ SEO');
+      } else {
+        warnings.push('แนะนำให้ระบุคำอธิบายภาพหน้าปก (Alt Text)');
+      }
     }
   }
 
@@ -119,22 +147,25 @@ export function validateArticlePayload(
 
   // Canonical URL validation
   if (payload.canonicalUrl && payload.canonicalUrl.trim().length > 0) {
-    const trimmed = payload.canonicalUrl.trim();
-    try {
-      const u = new URL(trimmed);
-      if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-        errors.push('Canonical URL ต้องขึ้นต้นด้วย http:// หรือ https://');
-      }
-    } catch {
-      errors.push('Canonical URL ไม่ถูกต้องตามรูปแบบ URL มาตรฐาน (เช่น https://www.deethavorn.com/...)');
+    if (!isSafeHttpUrl(payload.canonicalUrl)) {
+      errors.push('Canonical URL ต้องขึ้นต้นด้วย http:// หรือ https:// ที่ถูกต้องตามมาตรฐาน');
     }
   }
 
   // OG Image URL validation
   if (payload.ogImage && payload.ogImage.trim().length > 0) {
-    const trimmed = payload.ogImage.trim();
-    if (!trimmed.startsWith('/') && !trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    if (!isSafeImageOrHttpUrl(payload.ogImage)) {
       errors.push('Social Share Image (OG Image) ต้องเป็นพาธที่ขึ้นต้นด้วย / หรือ URL เต็ม (http/https)');
+    }
+  }
+
+  // Citations URL validation
+  if (Array.isArray(payload.citations)) {
+    for (const cite of payload.citations) {
+      if (cite && cite.url && cite.url.trim().length > 0 && !isSafeHttpUrl(cite.url)) {
+        errors.push('URL แหล่งอ้างอิงต้องขึ้นต้นด้วย http:// หรือ https:// ที่ถูกต้องเท่านั้น');
+        break;
+      }
     }
   }
 

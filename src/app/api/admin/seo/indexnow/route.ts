@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { submitToIndexNow, getSiteBaseUrl } from '@/lib/seo/indexnow';
-import { getIndexableArticles } from '@/lib/articles/queries';
-import { ArticleStatus } from '@prisma/client';
+import { submitToIndexNow } from '@/lib/seo/indexnow';
+import { getAllCanonicalSitemapUrls } from '@/lib/seo/sitemap-urls';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,14 +22,7 @@ export async function POST(req: Request) {
     let targetUrls: string[] = [];
 
     if (mode === 'bulk_published') {
-      const baseUrl = getSiteBaseUrl();
-      const indexableArticles = await getIndexableArticles();
-
-      targetUrls = [
-        `${baseUrl}/`,
-        `${baseUrl}/knowledge`,
-        ...indexableArticles.map((a) => `${baseUrl}/knowledge/${a.slug}`),
-      ];
+      targetUrls = await getAllCanonicalSitemapUrls();
     } else if (Array.isArray(urls) && urls.length > 0) {
       targetUrls = urls.map((u: string) => u.trim()).filter(Boolean);
     } else if (typeof urls === 'string' && urls.trim()) {
@@ -57,8 +48,11 @@ export async function POST(req: Request) {
       data: result,
       message: result.message,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error submitting to IndexNow:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'ไม่สามารถส่งคำขอแจ้งดัชนีได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง' },
+      { status: 500 }
+    );
   }
 }

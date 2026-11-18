@@ -37,9 +37,6 @@ export const metadata: Metadata = {
     'ผู้สอบบัญชีรับอนุญาต CPA'
   ],
   authors: [{ name: 'บริษัท ดีถาวรการบัญชี จำกัด' }],
-  alternates: {
-    canonical: '/',
-  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

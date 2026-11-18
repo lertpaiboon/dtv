@@ -55,8 +55,10 @@ export async function POST(
         data: { status: ArticleStatus.DRAFT },
       });
       try {
+        revalidatePath('/');
         revalidatePath('/knowledge');
         revalidatePath(`/knowledge/${article.slug}`);
+        revalidatePath('/sitemap.xml');
       } catch (e) {
         console.warn('Revalidation warning:', e);
       }
@@ -73,8 +75,10 @@ export async function POST(
         data: { status: ArticleStatus.ARCHIVED },
       });
       try {
+        revalidatePath('/');
         revalidatePath('/knowledge');
         revalidatePath(`/knowledge/${article.slug}`);
+        revalidatePath('/sitemap.xml');
       } catch (e) {
         console.warn('Revalidation warning:', e);
       }
@@ -137,8 +141,10 @@ export async function POST(
     getSyncedContentPlan().catch(() => null);
 
     try {
+      revalidatePath('/');
       revalidatePath('/knowledge');
       revalidatePath(`/knowledge/${article.slug}`);
+      revalidatePath('/sitemap.xml');
     } catch (e) {
       console.warn('Revalidation warning:', e);
     }

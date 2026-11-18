@@ -2,14 +2,15 @@ import { prisma } from '@/lib/prisma';
 import { getSiteUrl } from '@/lib/seo/site-url';
 import {
   getGoogleAccessToken,
-  parseServiceAccountJson,
+  loadStoredOrEnvGscConfig,
   fetchVerifiedGscSites,
 } from '@/lib/seo/gsc-intelligence';
 
-export const INDEXNOW_KEY = process.env.INDEXNOW_KEY || 'd9f8b4a2e5c1473682b09a71deethavorn';
+const rawIndexNowKey = (process.env.INDEXNOW_KEY || '').trim();
+export const INDEXNOW_KEY = /^[a-zA-Z0-9-]{8,128}$/.test(rawIndexNowKey) ? rawIndexNowKey : '';
 
 export function getIndexNowKeyPath(): string {
-  return `/${INDEXNOW_KEY}.txt`;
+  return INDEXNOW_KEY ? `/${INDEXNOW_KEY}.txt` : '';
 }
 
 export function getSiteBaseUrl(): string {
@@ -115,46 +116,92 @@ export async function callGoogleIndexingApi(
   }
 
   try {
-    // Submit up to first 5 URLs in parallel to avoid quota burst on bulk
-    const batch = normalizedUrls.slice(0, 5);
-    const responses = await Promise.all(
-      batch.map((u) =>
-        fetch('https://indexing.googleapis.com/v3/urlNotifications:publish', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: u, type: 'URL_UPDATED' }),
-        })
-      )
-    );
+    const batch = normalizedUrls.slice(0, 100);
+    const chunkSize = 5;
+    const logRows: Array<{
+      url: string;
+      engine: string;
+      status: string;
+      response: string;
+    }> = [];
 
-    const firstRes = responses[0];
-    const isSuccess = firstRes.status === 200;
-    const bodyText = await firstRes.text().catch(() => '');
+    let successCount = 0;
+    let firstSuccessStatus = 200;
+    let lastErrorStatus = 500;
+
+    for (let i = 0; i < batch.length; i += chunkSize) {
+      if (i > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+
+      const chunk = batch.slice(i, i + chunkSize);
+      const chunkResults = await Promise.all(
+        chunk.map(async (u) => {
+          try {
+            const res = await fetch('https://indexing.googleapis.com/v3/urlNotifications:publish', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ url: u, type: 'URL_UPDATED' }),
+              signal: AbortSignal.timeout(10000),
+            });
+            const bodyText = await res.text().catch(() => '');
+            return {
+              url: u,
+              status: res.status,
+              ok: res.status === 200,
+              bodyText,
+            };
+          } catch (fetchErr: any) {
+            return {
+              url: u,
+              status: 500,
+              ok: false,
+              bodyText: fetchErr?.message || 'Request timeout or network error',
+            };
+          }
+        })
+      );
+
+      for (const item of chunkResults) {
+        if (item.ok) {
+          successCount += 1;
+          firstSuccessStatus = item.status;
+          logRows.push({
+            url: item.url,
+            engine: engineLabel,
+            status: 'SUCCESS',
+            response: 'HTTP 200: URL_UPDATED notified to Googlebot',
+          });
+        } else {
+          lastErrorStatus = item.status;
+          logRows.push({
+            url: item.url,
+            engine: engineLabel,
+            status: 'FAILED',
+            response: `HTTP ${item.status}: ${item.bodyText.slice(0, 200)}`,
+          });
+        }
+      }
+    }
 
     await prisma.indexingLog
       .createMany({
-        data: batch.map((u) => ({
-          url: u,
-          engine: engineLabel,
-          status: isSuccess ? 'SUCCESS' : 'FAILED',
-          response: isSuccess
-            ? `HTTP 200: URL_UPDATED notified to Googlebot`
-            : `HTTP ${firstRes.status}: ${bodyText.slice(0, 200)}`,
-        })),
+        data: logRows,
       })
       .catch(() => null);
 
+    const isSuccess = successCount > 0;
     return {
       channel: 'GOOGLE_INDEXING_API',
       engineLabel,
       success: isSuccess,
-      status: firstRes.status,
+      status: isSuccess ? firstSuccessStatus : lastErrorStatus,
       message: isSuccess
-        ? `แจ้ง Google Indexing API สำเร็จ (${batch.length} URL)`
-        : `Google Indexing API ตอบกลับ HTTP ${firstRes.status}`,
+        ? `แจ้ง Google Indexing API สำเร็จ (${successCount}/${batch.length} URL)`
+        : `Google Indexing API ตอบกลับ HTTP ${lastErrorStatus}`,
     };
   } catch (err: any) {
     return {
@@ -268,6 +315,28 @@ export async function callIndexNowProtocol(normalizedUrls: string[]): Promise<Ch
   const engineLabel = 'IndexNow (Bing/ChatGPT/Perplexity)';
   const baseUrl = getSiteBaseUrl();
   const host = getHost();
+
+  if (!INDEXNOW_KEY) {
+    await prisma.indexingLog
+      .create({
+        data: {
+          url: normalizedUrls[0] || baseUrl,
+          engine: engineLabel,
+          status: 'SKIPPED',
+          response: 'ยังไม่ได้ตั้งค่า INDEXNOW_KEY ในไฟล์ .env (ข้ามการส่ง IndexNow)',
+        },
+      })
+      .catch(() => null);
+
+    return {
+      channel: 'INDEXNOW',
+      engineLabel,
+      success: false,
+      status: 0,
+      message: 'ยังไม่ได้ตั้งค่า INDEXNOW_KEY ใน .env',
+    };
+  }
+
   const keyLocation = `${baseUrl}${getIndexNowKeyPath()}`;
 
   const payload = {
@@ -363,24 +432,13 @@ export async function submitToIndexNow(urls: string[]): Promise<IndexNowResult> 
     };
   }
 
-  // Load Google Service Account credentials if configured in SystemSetting or env
+  // Load Google Service Account credentials if configured in SystemSetting (AES-256-GCM) or env
   let accessToken: string | null = null;
   let configuredSiteUrl: string | null = null;
 
   try {
-    const settings = await prisma.systemSetting.findMany({
-      where: { key: { in: ['gsc_service_account_json', 'gsc_site_url'] } },
-    });
-    const saRaw =
-      settings.find((s) => s.key === 'gsc_service_account_json')?.value ||
-      process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
-      '';
-    configuredSiteUrl =
-      settings.find((s) => s.key === 'gsc_site_url')?.value ||
-      process.env.GSC_SITE_URL ||
-      null;
-
-    const creds = parseServiceAccountJson(saRaw);
+    const { creds, siteUrl } = await loadStoredOrEnvGscConfig();
+    configuredSiteUrl = siteUrl || null;
     if (creds) {
       accessToken = await getGoogleAccessToken(creds).catch(() => null);
     }

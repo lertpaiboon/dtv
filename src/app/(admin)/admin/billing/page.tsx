@@ -27,6 +27,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
+import { isSafeSlipUrl } from '@/lib/admin-domain';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 
 interface TaxItem {
@@ -1616,7 +1617,11 @@ export default function ConsolidatedBillingPage() {
             </header>
 
             <div className="slip-viewer-content" style={{ padding: '20px' }}>
-              {slipViewerData.url.toLowerCase().endsWith('.pdf') ? (
+              {!isSafeSlipUrl(slipViewerData.url) ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: '#e11d48' }}>
+                  ไม่พบพาธไฟล์สลิปที่ปลอดภัยในระบบ
+                </div>
+              ) : slipViewerData.url.toLowerCase().endsWith('.pdf') ? (
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <FileText size={48} style={{ color: 'var(--dtv-primary)', marginBottom: '12px' }} />
                   <p style={{ margin: '0 0 16px 0', fontSize: '15px' }}>เอกสารแนบเป็นไฟล์ PDF</p>
@@ -1638,14 +1643,18 @@ export default function ConsolidatedBillingPage() {
             </div>
 
             <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid var(--dtv-line)' }}>
-              <a
-                href={slipViewerData.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--dtv-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <ExternalLink size={15} /> เปิดไฟล์ต้นฉบับในแท็บใหม่
-              </a>
+              {isSafeSlipUrl(slipViewerData.url) ? (
+                <a
+                  href={slipViewerData.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--dtv-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ExternalLink size={15} /> เปิดไฟล์ต้นฉบับในแท็บใหม่
+                </a>
+              ) : (
+                <span />
+              )}
               <button
                 type="button"
                 className="admin-secondary-button"

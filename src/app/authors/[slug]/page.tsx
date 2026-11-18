@@ -12,11 +12,12 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { getAuthorBySlug } from '@/lib/articles/queries';
+import { isSafeHttpUrl } from '@/lib/articles/validation';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
 import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleCard from '@/components/articles/ArticleCard';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 interface AuthorPageProps {
   params: Promise<{ slug: string }>;
@@ -93,7 +94,10 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
         url: siteUrl,
       },
       hasCredential: author.credentials,
-      sameAs: Array.isArray(author.sameAs) && author.sameAs.length > 0 ? author.sameAs : undefined,
+      sameAs:
+        Array.isArray(author.sameAs) && author.sameAs.filter((u) => isSafeHttpUrl(u)).length > 0
+          ? author.sameAs.filter((u) => isSafeHttpUrl(u)).map((u) => u.trim())
+          : undefined,
     },
   };
 
@@ -288,7 +292,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
               )}
 
               {/* External Profile Links (sameAs) */}
-              {Array.isArray(author.sameAs) && author.sameAs.length > 0 && (
+              {Array.isArray(author.sameAs) && author.sameAs.filter((u) => isSafeHttpUrl(u)).length > 0 && (
                 <div
                   style={{
                     display: 'flex',
@@ -302,10 +306,12 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-light)', fontWeight: 600 }}>
                     ข้อมูลอ้างอิงเพิ่มเติม:
                   </span>
-                  {author.sameAs.map((url, idx) => (
-                    <a
-                      key={idx}
-                      href={url}
+                  {author.sameAs
+                    .filter((u) => isSafeHttpUrl(u))
+                    .map((url, idx) => (
+                      <a
+                        key={idx}
+                        href={url.trim()}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
@@ -380,41 +386,43 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
         </div>
 
         {/* Section 1: Authored Articles */}
-        <section style={{ marginBottom: '60px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-            <BookOpen size={24} color="var(--primary)" />
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)', margin: 0 }}>
-              บทความที่เขียนโดย {author.name} ({authoredArticles.length})
-            </h2>
-          </div>
+        {(authoredArticles.length > 0 || reviewedArticles.length === 0) && (
+          <section style={{ marginBottom: '60px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+              <BookOpen size={24} color="var(--primary)" />
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)', margin: 0 }}>
+                บทความที่เขียนโดย {author.name} ({authoredArticles.length})
+              </h2>
+            </div>
 
-          {authoredArticles.length > 0 ? (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: '30px',
-              }}
-            >
-              {authoredArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} />
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                background: '#ffffff',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-              }}
-            >
-              ยังไม่มีบทความที่เขียนโดยผู้เชี่ยวชาญท่านนี้ที่เผยแพร่ในปัจจุบัน
-            </div>
-          )}
-        </section>
+            {authoredArticles.length > 0 ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '30px',
+                }}
+              >
+                {authoredArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  background: '#ffffff',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                ยังไม่มีบทความที่เขียนโดยผู้เชี่ยวชาญท่านนี้ที่เผยแพร่ในปัจจุบัน
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Section 2: Reviewed Articles (if any) */}
         {reviewedArticles.length > 0 && (

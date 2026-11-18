@@ -46,6 +46,9 @@ export function extractHeadings(markdown: string): TocHeading[] {
  */
 export function sanitizeImageUrl(url: string): string {
   const trimmed = url.trim();
+  if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) {
+    return '';
+  }
   if (
     trimmed.startsWith('https://') ||
     trimmed.startsWith('http://') ||
@@ -61,6 +64,9 @@ export function sanitizeImageUrl(url: string): string {
  */
 function sanitizeUrl(url: string): string {
   const trimmed = url.trim();
+  if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) {
+    return '#';
+  }
   if (
     trimmed.startsWith('https://') ||
     trimmed.startsWith('http://') ||
@@ -181,11 +187,12 @@ export function renderMarkdownToHtml(markdown: string): string {
       const rawUrl = imageMatch[2].trim();
       const safeSrc = sanitizeImageUrl(rawUrl);
       if (safeSrc) {
+        const cleanSrc = escapeHtml(safeSrc);
         const cleanAlt = escapeHtml(altText);
         htmlParts.push(
           `<figure class="article-figure">` +
             `<div class="article-image-wrap">` +
-              `<img src="${safeSrc}" alt="${cleanAlt}" class="article-image" loading="lazy" decoding="async" />` +
+              `<img src="${cleanSrc}" alt="${cleanAlt}" class="article-image" loading="lazy" decoding="async" />` +
             `</div>` +
             (cleanAlt ? `<figcaption class="article-figcaption">${cleanAlt}</figcaption>` : '') +
           `</figure>`

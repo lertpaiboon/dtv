@@ -4,12 +4,12 @@ import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 export const dynamic = 'force-dynamic';
 
 interface CatchAllPageProps {
-  params: Promise<{ catchAll: string[] }>;
+  params: Promise<{ catchall: string[] }>;
 }
 
 export default async function CatchAllRedirectOrNotFoundPage({ params }: CatchAllPageProps) {
-  const { catchAll } = await params;
-  const sourcePath = '/' + (catchAll || []).join('/');
+  const { catchall } = await params;
+  const sourcePath = '/' + (catchall || []).join('/');
 
   await executeServerRedirectIfMatched(sourcePath);
 

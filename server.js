@@ -27,5 +27,22 @@ app.prepare().then(() => {
     })
     .listen(port, () => {
       console.log(`> Deethavorn Accounting ready on http://${hostname}:${port} (mode: ${dev ? 'development' : 'production'})`);
+
+      if (!dev && process.env.DISABLE_KEEPALIVE !== 'true' && !global.__dtvKeepAliveStarted) {
+        global.__dtvKeepAliveStarted = true;
+        const healthUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.deethavorn.com').replace(/\/+$/, '') + '/api/health';
+        const timer = setInterval(() => {
+          fetch(healthUrl, {
+            headers: {
+              'User-Agent': 'Deethavorn-KeepAlive/1.0',
+              'Cache-Control': 'no-cache',
+            },
+            signal: AbortSignal.timeout(8000),
+          }).catch(() => {});
+        }, 210_000);
+        if (typeof timer.unref === 'function') {
+          timer.unref();
+        }
+      }
     });
 });

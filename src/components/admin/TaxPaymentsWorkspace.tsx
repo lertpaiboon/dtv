@@ -27,7 +27,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { permissionForTaxType, type TaxType } from '@/lib/admin-domain';
+import { isSafeSlipUrl, permissionForTaxType, type TaxType } from '@/lib/admin-domain';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 
 type TaxChoice = { value: string; label: string };
@@ -2441,7 +2441,11 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
             </header>
 
             <div className="slip-viewer-content">
-              {slipViewerData.url.toLowerCase().endsWith('.pdf') ? (
+              {!isSafeSlipUrl(slipViewerData.url) ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#e11d48' }}>
+                  ไม่พบพาธไฟล์สลิปที่ปลอดภัยในระบบ
+                </div>
+              ) : slipViewerData.url.toLowerCase().endsWith('.pdf') ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                   <FileText size={48} style={{ color: 'var(--dtv-primary)', margin: '0 auto 12px' }} />
                   <p style={{ fontSize: '14px', color: '#334155', marginBottom: '16px' }}>
@@ -2468,15 +2472,19 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
             </div>
 
             <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--dtv-line)', background: '#f8fafc' }}>
-              <a
-                href={slipViewerData.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="admin-text-button"
-                style={{ fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-              >
-                <ExternalLink size={14} /> เปิดไฟล์ต้นฉบับ
-              </a>
+              {isSafeSlipUrl(slipViewerData.url) ? (
+                <a
+                  href={slipViewerData.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-text-button"
+                  style={{ fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <ExternalLink size={14} /> เปิดไฟล์ต้นฉบับ
+                </a>
+              ) : (
+                <span />
+              )}
               <button
                 type="button"
                 className="admin-secondary-button"

@@ -140,8 +140,11 @@ export async function GET() {
         error404Logs,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching SEO stats:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'ไม่สามารถโหลดข้อมูลสถิติภาพรวม SEO ได้ในขณะนี้' },
+      { status: 500 }
+    );
   }
 }

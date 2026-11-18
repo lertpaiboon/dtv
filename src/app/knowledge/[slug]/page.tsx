@@ -18,7 +18,7 @@ interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 /**
  * 1. Dynamic Metadata for SEO, AEO, and Social Sharing

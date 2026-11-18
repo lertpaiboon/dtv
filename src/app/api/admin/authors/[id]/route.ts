@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
-import { slugify } from '@/lib/articles/validation';
+import { isSafeHttpUrl, isSafeImageOrHttpUrl, slugify } from '@/lib/articles/validation';
 
 export async function GET(
   req: Request,
@@ -96,11 +96,32 @@ export async function PUT(
       }
     }
 
-    const sameAs = Array.isArray(body.sameAs)
-      ? body.sameAs.filter((u: any) => typeof u === 'string' && u.trim().length > 0)
+    const parsedSameAs: string[] | undefined = Array.isArray(body.sameAs)
+      ? body.sameAs
+          .filter((u: unknown): u is string => typeof u === 'string' && u.trim().length > 0)
+          .map((u: string) => u.trim())
       : typeof body.sameAs === 'string'
       ? body.sameAs.split('\n').map((s: string) => s.trim()).filter(Boolean)
-      : existing.sameAs;
+      : undefined;
+
+    if (parsedSameAs && parsedSameAs.some((u) => !isSafeHttpUrl(u))) {
+      return NextResponse.json(
+        { success: false, error: 'ลิงก์โปรไฟล์อ้างอิง (sameAs) ต้องขึ้นต้นด้วย http:// หรือ https:// ที่ถูกต้องเท่านั้น' },
+        { status: 400 }
+      );
+    }
+
+    if (
+      body.profileImage !== undefined &&
+      body.profileImage &&
+      String(body.profileImage).trim() &&
+      !isSafeImageOrHttpUrl(String(body.profileImage))
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'URL รูปโปรไฟล์ผู้เขียนไม่ปลอดภัย' },
+        { status: 400 }
+      );
+    }
 
     const updated = await prisma.author.update({
       where: { id: authorId },
@@ -111,7 +132,7 @@ export async function PUT(
         credentials: body.credentials !== undefined ? (body.credentials ? body.credentials.trim() : null) : existing.credentials,
         bio: body.bio !== undefined ? (body.bio ? body.bio.trim() : null) : existing.bio,
         profileImage: body.profileImage !== undefined ? (body.profileImage ? body.profileImage.trim() : null) : existing.profileImage,
-        sameAs: sameAs !== undefined ? sameAs : existing.sameAs,
+        sameAs: parsedSameAs,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : existing.isActive,
       },
       include: {

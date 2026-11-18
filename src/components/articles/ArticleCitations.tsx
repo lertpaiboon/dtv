@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArticleCitationItem } from '@/lib/articles/types';
+import { isSafeHttpUrl } from '@/lib/articles/validation';
 import { Bookmark, ExternalLink } from 'lucide-react';
 
 interface ArticleCitationsProps {
@@ -54,9 +55,9 @@ export default function ArticleCitations({ citations }: ArticleCitationsProps) {
           <li key={cite.id || index}>
             <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{cite.title}</span>
             {cite.publisher && <span> — จัดทำโดย {cite.publisher}</span>}
-            {cite.url && (
+            {cite.url && isSafeHttpUrl(cite.url) && (
               <a
-                href={cite.url}
+                href={cite.url.trim()}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

@@ -57,3 +57,19 @@ export function asTrimmedText(value: unknown, maxLength: number): string | null 
   const text = String(value).trim();
   return text ? text.slice(0, maxLength) : null;
 }
+
+const SAFE_SLIP_URL_REGEX = /^\/uploads\/slips\/[a-zA-Z0-9._-]+$/;
+
+export function isSafeSlipUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.includes('..')) return false;
+  return SAFE_SLIP_URL_REGEX.test(trimmed);
+}
+
+export function normalizeSlipUrl(value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  return isSafeSlipUrl(trimmed) ? trimmed : null;
+}

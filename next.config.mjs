@@ -1,11 +1,15 @@
 /** @type {import('next').NextConfig} */
-const indexNowKey = process.env.INDEXNOW_KEY || 'd9f8b4a2e5c1473682b09a71deethavorn';
+const rawIndexNowKey = (process.env.INDEXNOW_KEY || '').trim();
+const indexNowKey = /^[a-zA-Z0-9-]{8,128}$/.test(rawIndexNowKey) ? rawIndexNowKey : '';
 
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
   images: {
+    dangerouslyAllowSVG: false,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -18,6 +22,9 @@ const nextConfig = {
     ],
   },
   async rewrites() {
+    if (!indexNowKey) {
+      return [];
+    }
     return [
       {
         source: `/${indexNowKey}.txt`,

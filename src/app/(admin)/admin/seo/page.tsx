@@ -195,6 +195,7 @@ export default function AdminSeoSuitePage() {
         throw new Error(json.error || 'เชื่อมต่อ GSC ไม่สำเร็จ');
       }
       setSuccessMsg(json.message);
+      setServiceAccountJson('');
       setGscModalOpen(false);
       fetchAllSeoData();
     } catch (err: any) {

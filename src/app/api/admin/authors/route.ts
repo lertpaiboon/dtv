@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
-import { slugify } from '@/lib/articles/validation';
+import { isSafeHttpUrl, isSafeImageOrHttpUrl, slugify } from '@/lib/articles/validation';
 
 export async function GET() {
   const session = await getAdminSession();
@@ -72,11 +72,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: `Slug "${slug}" มีอยู่แล้วในระบบ กรุณาใช้ชื่ออื่น` }, { status: 400 });
     }
 
-    const sameAs = Array.isArray(body.sameAs)
-      ? body.sameAs.filter((u: any) => typeof u === 'string' && u.trim().length > 0)
+    const sameAs: string[] = Array.isArray(body.sameAs)
+      ? body.sameAs
+          .filter((u: unknown): u is string => typeof u === 'string' && u.trim().length > 0)
+          .map((u: string) => u.trim())
       : typeof body.sameAs === 'string' && body.sameAs.trim()
       ? body.sameAs.split('\n').map((s: string) => s.trim()).filter(Boolean)
       : [];
+
+    if (sameAs.some((u) => !isSafeHttpUrl(u))) {
+      return NextResponse.json(
+        { success: false, error: 'ลิงก์โปรไฟล์อ้างอิง (sameAs) ต้องขึ้นต้นด้วย http:// หรือ https:// ที่ถูกต้องเท่านั้น' },
+        { status: 400 }
+      );
+    }
+
+    if (body.profileImage && String(body.profileImage).trim() && !isSafeImageOrHttpUrl(String(body.profileImage))) {
+      return NextResponse.json(
+        { success: false, error: 'URL รูปโปรไฟล์ผู้เขียนไม่ปลอดภัย' },
+        { status: 400 }
+      );
+    }
 
     const author = await prisma.author.create({
       data: {

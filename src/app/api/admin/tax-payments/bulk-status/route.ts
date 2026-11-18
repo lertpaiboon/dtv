@@ -4,7 +4,10 @@ import { getAdminSession, hasPermission } from '@/lib/auth';
 import {
   BILLING_STATUSES,
   TAX_TYPES,
+  asTrimmedText,
   isOneOf,
+  isSafeSlipUrl,
+  normalizeSlipUrl,
   parsePositiveId,
   permissionForTaxType,
   type TaxType,
@@ -85,10 +88,16 @@ export async function POST(req: Request) {
         updateData.reimbursementRef = reimbursementRef ? String(reimbursementRef).trim() : null;
       }
       if (slipUrl !== undefined) {
-        updateData.slipUrl = slipUrl ? String(slipUrl).trim() : null;
+        if (slipUrl !== null && String(slipUrl).trim() !== '' && !isSafeSlipUrl(String(slipUrl))) {
+          return NextResponse.json(
+            { success: false, error: 'พาธไฟล์สลิปไม่ถูกต้องหรือไม่ได้มาจากระบบอัปโหลด' },
+            { status: 400 }
+          );
+        }
+        updateData.slipUrl = normalizeSlipUrl(slipUrl);
       }
       if (slipFileName !== undefined) {
-        updateData.slipFileName = slipFileName ? String(slipFileName).trim() : null;
+        updateData.slipFileName = asTrimmedText(slipFileName, 255);
       }
     } else {
       updateData.reimbursedAt = null;

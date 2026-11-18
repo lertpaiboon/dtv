@@ -25,8 +25,9 @@ export async function GET() {
       success: true,
       data: logs,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error fetching 404 logs:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถโหลดประวัติหน้า 404 ได้' }, { status: 500 });
   }
 }
 
@@ -93,8 +94,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error converting 404 log to redirect:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถสร้าง Redirect จากรายการ 404 ได้' }, { status: 500 });
   }
 }
 
@@ -127,7 +129,8 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400 });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error deleting 404 log:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถลบประวัติหน้า 404 ได้' }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Hero from '@/components/Hero';
 import Services from '@/components/Services';
 import QuoteBand from '@/components/QuoteBand';
@@ -15,6 +16,15 @@ import {
   type FaqItem,
 } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
+import { toAbsoluteUrl } from '@/lib/seo/site-url';
+
+export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: toAbsoluteUrl('/'),
+  },
+};
 
 async function getHomeReviews(): Promise<CustomerReviewItem[]> {
   if (!process.env.DATABASE_URL) return defaultCustomerReviews;

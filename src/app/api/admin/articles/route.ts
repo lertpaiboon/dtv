@@ -133,6 +133,9 @@ export async function POST(req: Request) {
       coverImageAlt: body.coverImageAlt,
       quickAnswer: body.quickAnswer,
       authorId: body.authorId ? Number(body.authorId) : null,
+      canonicalUrl: body.canonicalUrl,
+      ogImage: body.ogImage,
+      citations: Array.isArray(body.citations) ? body.citations : null,
     });
 
     if (!validation.isValid) {

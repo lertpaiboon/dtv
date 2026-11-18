@@ -37,8 +37,9 @@ export async function GET() {
         articleRedirects,
       },
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error fetching redirects:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถโหลดรายการ Redirect ได้' }, { status: 500 });
   }
 }
 
@@ -134,8 +135,9 @@ export async function POST(req: Request) {
           ? `บันทึก ${code} Redirect (${sourcePath} ➔ ${flattenedTargetPath}) พร้อมยุบ Redirect Chain อัตโนมัติสำเร็จแล้ว`
           : `บันทึก ${code} Redirect (${sourcePath} ➔ ${flattenedTargetPath}) สำเร็จแล้ว`,
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error saving redirect:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถบันทึกรายการ Redirect ได้' }, { status: 500 });
   }
 }
 
@@ -166,7 +168,8 @@ export async function DELETE(req: Request) {
       success: true,
       message: 'ลบรายการ Redirect เรียบร้อยแล้ว',
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error deleting redirect:', error);
+    return NextResponse.json({ success: false, error: 'ไม่สามารถลบรายการ Redirect ได้' }, { status: 500 });
   }
 }

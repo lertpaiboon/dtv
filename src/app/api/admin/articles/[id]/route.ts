@@ -93,6 +93,9 @@ export async function PUT(
       coverImageAlt: body.coverImageAlt ?? existing.coverImageAlt,
       quickAnswer: body.quickAnswer ?? existing.quickAnswer,
       authorId: body.authorId ? Number(body.authorId) : existing.authorId,
+      canonicalUrl: body.canonicalUrl !== undefined ? body.canonicalUrl : existing.canonicalUrl,
+      ogImage: body.ogImage !== undefined ? body.ogImage : existing.ogImage,
+      citations: Array.isArray(body.citations) ? body.citations : null,
     });
 
     if (!validation.isValid) {
@@ -238,7 +241,9 @@ export async function PUT(
     });
 
     try {
+      revalidatePath('/');
       revalidatePath('/knowledge');
+      revalidatePath('/sitemap.xml');
       revalidatePath(`/knowledge/${updated.slug}`);
       if (oldSlugToRedirect) {
         revalidatePath(`/knowledge/${oldSlugToRedirect}`);
@@ -299,7 +304,9 @@ export async function DELETE(
 
       await prisma.article.delete({ where: { id: articleId } });
       try {
+        revalidatePath('/');
         revalidatePath('/knowledge');
+        revalidatePath('/sitemap.xml');
       } catch (e) {
         console.warn('Revalidation warning:', e);
       }
@@ -320,7 +327,9 @@ export async function DELETE(
     });
 
     try {
+      revalidatePath('/');
       revalidatePath('/knowledge');
+      revalidatePath('/sitemap.xml');
     } catch (e) {
       console.warn('Revalidation warning:', e);
     }

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
+import { decryptSecret, encryptSecret, isEncryptedSecret } from '@/lib/secret-crypto';
 import { getSiteUrl } from '@/lib/seo/site-url';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import { slugify } from '@/lib/articles/validation';
@@ -172,8 +173,11 @@ function base64UrlEncode(input: string | Buffer): string {
 
 export function parseServiceAccountJson(rawJson: string): ServiceAccountCredentials | null {
   if (!rawJson || !rawJson.trim()) return null;
+  const resolvedJson = isEncryptedSecret(rawJson) ? decryptSecret(rawJson) : rawJson;
+  if (!resolvedJson || !resolvedJson.trim()) return null;
+
   try {
-    const parsed = JSON.parse(rawJson.trim());
+    const parsed = JSON.parse(resolvedJson.trim());
     if (!parsed.client_email || !parsed.private_key) return null;
     return {
       client_email: String(parsed.client_email).trim(),
@@ -183,6 +187,52 @@ export function parseServiceAccountJson(rawJson: string): ServiceAccountCredenti
   } catch {
     return null;
   }
+}
+
+export async function loadStoredOrEnvGscConfig(): Promise<{
+  creds: ServiceAccountCredentials | null;
+  siteUrl: string;
+  source: 'DATABASE' | 'ENV' | 'NONE';
+}> {
+  const settings = await prisma.systemSetting.findMany({
+    where: {
+      key: { in: ['gsc_service_account_json', 'gsc_site_url'] },
+    },
+  });
+
+  const dbSaValue = settings.find((s) => s.key === 'gsc_service_account_json')?.value || '';
+  const dbSiteUrl = settings.find((s) => s.key === 'gsc_site_url')?.value || '';
+  const finalSiteUrl = dbSiteUrl || process.env.GSC_SITE_URL?.trim() || '';
+
+  if (dbSaValue.trim()) {
+    const dbCreds = parseServiceAccountJson(dbSaValue);
+    if (dbCreds) {
+      // Auto-upgrade legacy plaintext value in DB to AES-256-GCM at rest
+      if (!isEncryptedSecret(dbSaValue)) {
+        await prisma.systemSetting
+          .update({
+            where: { key: 'gsc_service_account_json' },
+            data: { value: encryptSecret(dbSaValue.trim()) },
+          })
+          .catch(() => null);
+      }
+      return { creds: dbCreds, siteUrl: finalSiteUrl, source: 'DATABASE' };
+    }
+  }
+
+  const envSaRaw =
+    process.env.GSC_SERVICE_ACCOUNT_JSON?.trim() ||
+    process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim() ||
+    '';
+
+  if (envSaRaw) {
+    const envCreds = parseServiceAccountJson(envSaRaw);
+    if (envCreds) {
+      return { creds: envCreds, siteUrl: finalSiteUrl, source: 'ENV' };
+    }
+  }
+
+  return { creds: null, siteUrl: finalSiteUrl, source: 'NONE' };
 }
 
 /**

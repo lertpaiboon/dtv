@@ -22,6 +22,9 @@ const DEFAULT_BANK_INFO = `ธนาคารกสิกรไทย (KBANK)
 เลขที่บัญชี: 055-8-12345-6
 ชื่อบัญชี: บจก. ดีถาวรการบัญชี`;
 
+const ALLOWED_SETTING_KEYS = ['billing_line_template', 'company_bank_info'] as const;
+const ALLOWED_SETTING_KEY_SET = new Set<string>(ALLOWED_SETTING_KEYS);
+
 export async function GET() {
   const session = await getAdminSession();
   if (!session) {
@@ -39,10 +42,16 @@ export async function GET() {
   }
 
   try {
-    const settings = await prisma.systemSetting.findMany();
+    const settings = await prisma.systemSetting.findMany({
+      where: {
+        key: { in: [...ALLOWED_SETTING_KEYS] },
+      },
+    });
     const settingsMap: Record<string, string> = {};
     for (const s of settings) {
-      settingsMap[s.key] = s.value;
+      if (ALLOWED_SETTING_KEY_SET.has(s.key)) {
+        settingsMap[s.key] = s.value;
+      }
     }
 
     // Populate defaults if not yet present
@@ -86,7 +95,12 @@ export async function PUT(req: Request) {
 
     const updates: Promise<unknown>[] = [];
     for (const [key, value] of Object.entries(body)) {
-      if (typeof key === 'string' && typeof value === 'string') {
+      if (
+        typeof key === 'string' &&
+        ALLOWED_SETTING_KEY_SET.has(key) &&
+        typeof value === 'string' &&
+        value.length <= 20000
+      ) {
         updates.push(
           prisma.systemSetting.upsert({
             where: { key },
@@ -95,6 +109,13 @@ export async function PUT(req: Request) {
           })
         );
       }
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'ไม่มีรายการตั้งค่าที่อนุญาตให้แก้ไข' },
+        { status: 400 }
+      );
     }
 
     await Promise.all(updates);
