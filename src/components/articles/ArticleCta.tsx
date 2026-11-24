@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, ArrowRight, CheckCircle2, QrCode, X, ExternalLink } from 'lucide-react';
+import { Phone, ArrowRight, QrCode, X, ExternalLink } from 'lucide-react';
 
 interface ArticleCtaProps {
   headline?: string;
@@ -93,33 +93,14 @@ export default function ArticleCta({
         style={{
           marginTop: '60px',
           padding: '44px 32px',
-          background: 'linear-gradient(135deg, var(--primary) 0%, #172a45 100%)',
-          borderRadius: 'var(--radius-lg)',
+          background: 'linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 100%)',
+          borderRadius: '16px',
           color: '#ffffff',
-          boxShadow: 'var(--shadow-md)',
+          boxShadow: 'var(--shadow-lg)',
           position: 'relative',
         }}
       >
         <div style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'center' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: 'var(--accent)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              padding: '5px 16px',
-              borderRadius: 'var(--radius-full)',
-              marginBottom: '18px',
-              letterSpacing: '0.05em',
-            }}
-          >
-            <CheckCircle2 size={15} aria-hidden="true" />
-            <span>DEETHAVORN ADVISORY SERVICES</span>
-          </div>
-
           <h3
             id="cta-headline"
             style={{
@@ -169,11 +150,11 @@ export default function ArticleCta({
                 color: '#ffffff',
                 border: 'none',
                 padding: '13px 22px',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(6, 199, 85, 0.4)',
+                boxShadow: '0 2px 10px rgba(6, 199, 85, 0.22)',
                 transition: 'var(--transition)',
               }}
               className="hover-lift"
@@ -191,14 +172,14 @@ export default function ArticleCta({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'var(--accent)',
-                color: '#0B192C',
+                background: 'var(--blue-600)',
+                color: '#ffffff',
                 padding: '13px 24px',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(197, 160, 89, 0.4)',
+                boxShadow: '0 2px 10px rgba(22, 137, 189, 0.28)',
                 transition: 'var(--transition)',
               }}
               className="hover-lift"
@@ -215,14 +196,14 @@ export default function ArticleCta({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'rgba(255, 255, 255, 0.12)',
+                background: 'rgba(255, 255, 255, 0.1)',
                 color: '#ffffff',
                 padding: '13px 20px',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: '0.92rem',
                 fontWeight: 600,
                 textDecoration: 'none',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
+                border: '1px solid rgba(255, 255, 255, 0.28)',
                 transition: 'var(--transition)',
               }}
               className="hover-lift"
@@ -245,7 +226,7 @@ export default function ArticleCta({
             <a
               href="tel:0919415656"
               onClick={() => trackCtaEvent('phone_secondary')}
-              style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+              style={{ color: 'var(--sky-500)', textDecoration: 'underline' }}
             >
               091-941-5656
             </a>{' '}
@@ -311,23 +292,6 @@ export default function ArticleCta({
             </button>
 
             {/* Modal Content */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: '#06C755',
-                color: '#ffffff',
-                padding: '4px 12px',
-                borderRadius: '999px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                marginBottom: '14px',
-              }}
-            >
-              LINE OFFICIAL CONTACT
-            </div>
-
             <h4
               id="qr-modal-title"
               style={{

@@ -37,7 +37,7 @@ export default function ArticleToc({ contentMarkdown }: ArticleTocProps) {
         }}
       >
         <ListOrdered size={18} color="var(--accent-dark)" aria-hidden="true" />
-        <span>สารบัญเนื้อหา (Table of Contents)</span>
+        <span>สารบัญเนื้อหา</span>
       </div>
 
       <ul

@@ -35,7 +35,7 @@ export default function ArticleCitations({ citations }: ArticleCitationsProps) {
       >
         <Bookmark size={18} color="var(--accent-dark)" aria-hidden="true" />
         <h3 id="citations-title" style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>
-          แหล่งอ้างอิงทางกฎหมายและเอกสารต้นทาง (Legal & Statutory References)
+          แหล่งอ้างอิงทางกฎหมายและเอกสารต้นทาง
         </h3>
       </div>
 

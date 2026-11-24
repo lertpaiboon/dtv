@@ -2,7 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck, Layers, ArrowUpRight } from 'lucide-react';
+import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect, getPillarHubForCategory } from '@/lib/articles/queries';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
 import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
@@ -279,9 +279,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 fontSize: '0.82rem',
                 fontWeight: 700,
                 color: 'var(--accent-dark)',
-                background: 'rgba(197, 160, 89, 0.14)',
+                background: 'var(--ice-100)',
                 padding: '4px 14px',
-                borderRadius: 'var(--radius-full)',
+                borderRadius: '999px',
               }}
             >
               <Tag size={13} aria-hidden="true" />
@@ -434,7 +434,6 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                   gap: '6px',
                 }}
               >
-                <span>📷</span>
                 <span>{article.coverImageAlt}</span>
               </figcaption>
             )}
@@ -466,7 +465,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               }}
             >
               <Zap size={18} color="#2563eb" aria-hidden="true" />
-              <span>สรุปประเด็นสำคัญใน 1 นาที (Quick Answer / Key Takeaways)</span>
+              <span>สรุปประเด็นสำคัญใน 1 นาที</span>
             </div>
             <p
               style={{
@@ -516,45 +515,34 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           category={article.category}
         />
 
-        {/* Automated Topic Cluster & Pillar Service Hub */}
+        {/* Related Service Hub */}
         <section
-          aria-labelledby="topic-cluster-hub-title"
+          aria-labelledby="related-services-title"
           style={{
-            marginTop: '64px',
-            padding: '32px',
-            background: 'linear-gradient(135deg, #091c3a 0%, #122b54 100%)',
-            borderRadius: '18px',
-            color: '#ffffff',
-            border: '1px solid rgba(197, 160, 89, 0.35)',
-            boxShadow: '0 16px 36px -10px rgba(9, 28, 58, 0.25)',
+            marginTop: '36px',
+            padding: '28px 32px',
+            background: 'var(--ice-50)',
+            borderRadius: '16px',
+            border: '1px solid var(--border)',
           }}
         >
           <div
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: '#e5c158',
-              background: 'rgba(197, 160, 89, 0.16)',
-              padding: '5px 12px',
-              borderRadius: '999px',
-              marginBottom: '14px',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              color: 'var(--blue-700)',
+              marginBottom: '8px',
             }}
           >
-            <Layers size={14} aria-hidden="true" />
-            <span>Pillar Service Hub · หมวด{article.category}</span>
+            บริการในหมวด{article.category}
           </div>
 
           <h2
-            id="topic-cluster-hub-title"
+            id="related-services-title"
             style={{
-              fontSize: 'clamp(1.35rem, 2.5vw, 1.7rem)',
-              fontWeight: 800,
-              color: '#ffffff',
+              fontSize: 'clamp(1.25rem, 2.4vw, 1.55rem)',
+              fontWeight: 700,
+              color: 'var(--navy-900)',
               marginBottom: '10px',
               lineHeight: 1.35,
             }}
@@ -564,10 +552,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
           <p
             style={{
-              fontSize: '0.96rem',
-              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '0.95rem',
+              color: 'var(--text-muted)',
               lineHeight: 1.7,
-              marginBottom: '22px',
+              marginBottom: '20px',
             }}
           >
             {pillarHub.description}
@@ -590,10 +578,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                   alignItems: 'center',
                   gap: '6px',
                   padding: '8px 14px',
-                  borderRadius: '10px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.18)',
-                  color: '#f8fafc',
+                  borderRadius: 'var(--radius-sm)',
+                  background: '#ffffff',
+                  border: '1px solid var(--border)',
+                  color: 'var(--navy-900)',
                   fontSize: '0.88rem',
                   fontWeight: 600,
                   textDecoration: 'none',
@@ -612,15 +600,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               alignItems: 'center',
               gap: '8px',
               padding: '11px 20px',
-              borderRadius: '10px',
-              background: '#c5a059',
-              color: '#091c3a',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--blue-700)',
+              color: '#ffffff',
               fontWeight: 700,
               fontSize: '0.92rem',
               textDecoration: 'none',
             }}
           >
-            <span>ดูรายละเอียดบริการหลักในหมวดนี้</span>
+            <span>ดูรายละเอียดบริการทั้งหมด</span>
             <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </section>
@@ -631,45 +619,17 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
             aria-labelledby="related-articles-title"
             style={{ marginTop: '56px', paddingTop: '40px', borderTop: '1px solid var(--border)' }}
           >
-            <div
+            <h3
+              id="related-articles-title"
               style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                marginBottom: '24px',
+                fontSize: '1.4rem',
+                fontWeight: 700,
+                color: 'var(--primary)',
+                margin: '0 0 24px 0',
               }}
             >
-              <h3
-                id="related-articles-title"
-                style={{
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  color: 'var(--primary)',
-                  margin: 0,
-                }}
-              >
-                บทความในคลัสเตอร์เดียวกัน ({article.category})
-              </h3>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  color: '#15803d',
-                  background: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  padding: '4px 12px',
-                  borderRadius: '999px',
-                }}
-              >
-                <ShieldCheck size={14} aria-hidden="true" />
-                <span>คัดสรรตามคุณภาพเนื้อหา E-E-A-T & SEO Score</span>
-              </span>
-            </div>
+              บทความที่เกี่ยวข้องในหมวด{article.category}
+            </h3>
 
             <div
               style={{
@@ -684,37 +644,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '8px',
+                      gap: '4px',
                       marginBottom: '8px',
                       fontSize: '0.78rem',
+                      color: '#166534',
+                      fontWeight: 600,
                     }}
                   >
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: '#166534',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <ShieldCheck size={13} aria-hidden="true" />
-                      <span>{rel.reviewer ? `สอบทานโดย ${rel.reviewer.name}` : 'E-E-A-T Verified'}</span>
-                    </span>
-                    {typeof rel.seoScore === 'number' && rel.seoScore > 0 && (
-                      <span
-                        style={{
-                          background: rel.seoScore >= 80 ? '#dcfce7' : '#fef9c3',
-                          color: rel.seoScore >= 80 ? '#166534' : '#854d0e',
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: '999px',
-                        }}
-                      >
-                        SEO {rel.seoScore}/100
-                      </span>
-                    )}
+                    <ShieldCheck size={13} aria-hidden="true" style={{ flexShrink: 0 }} />
+                    <span>{rel.reviewer ? `สอบทานโดย ${rel.reviewer.name}` : 'สอบทานโดยทีมผู้เชี่ยวชาญ'}</span>
                   </div>
                   <ArticleCard article={rel} />
                 </div>

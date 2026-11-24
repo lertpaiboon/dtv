@@ -80,8 +80,8 @@ export default function ArticleAuthor({
             <UserCheck size={24} aria-hidden="true" />
           </div>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--accent-dark)', fontWeight: 700, textTransform: 'uppercase' }}>
-              ผู้เขียนบทความ (Author)
+            <div style={{ fontSize: '0.8rem', color: 'var(--accent-dark)', fontWeight: 700 }}>
+              ผู้เขียนบทความ
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
               {author.slug ? (
@@ -105,7 +105,7 @@ export default function ArticleAuthor({
                 color: 'var(--accent-dark)',
                 fontWeight: 600,
                 marginTop: '6px',
-                background: 'rgba(197, 160, 89, 0.1)',
+                background: 'var(--ice-100)',
                 padding: '4px 8px',
                 borderRadius: '4px',
                 display: 'inline-block',
@@ -155,8 +155,8 @@ export default function ArticleAuthor({
               <ShieldCheck size={24} aria-hidden="true" />
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 700, textTransform: 'uppercase' }}>
-                ผู้สอบทานความถูกต้อง (Expert Reviewer)
+              <div style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: 700 }}>
+                ผู้สอบทานความถูกต้อง
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
                 {reviewer.slug ? (
@@ -216,8 +216,8 @@ export default function ArticleAuthor({
           color: 'var(--text-light)',
         }}
       >
-        <span>📅 วันที่เผยแพร่: {pubDateStr}</span>
-        {updateDateStr && <span>🔄 ปรับปรุงเนื้อหา: {updateDateStr}</span>}
+        <span>วันที่เผยแพร่: {pubDateStr}</span>
+        {updateDateStr && <span>ปรับปรุงเนื้อหาล่าสุด: {updateDateStr}</span>}
       </div>
 
       {/* Professional Legal Disclaimer */}

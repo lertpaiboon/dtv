@@ -24,7 +24,7 @@ export default function ArticleFaq({ faqs }: ArticleFaqProps) {
             width: '36px',
             height: '36px',
             borderRadius: '50%',
-            background: 'rgba(197, 160, 89, 0.15)',
+            background: 'var(--ice-100)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -42,7 +42,7 @@ export default function ArticleFaq({ faqs }: ArticleFaqProps) {
             margin: 0,
           }}
         >
-          คำถามที่พบบ่อย (Frequently Asked Questions)
+          คำถามที่พบบ่อย
         </h2>
       </div>
 
