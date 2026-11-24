@@ -475,28 +475,28 @@ export default function AdminArticlesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={{ padding: '14px 20px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   ชื่อบทความ & Slug
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   หมวดหมู่
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   ผู้เขียน / ผู้ตรวจ
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   สถานะ
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   SEO Score
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   วันที่เผยแพร่
                 </th>
-                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569' }}>
+                <th style={{ padding: '14px 12px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', whiteSpace: 'nowrap' }}>
                   กำหนดทบทวน
                 </th>
-                <th style={{ padding: '14px 20px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', textAlign: 'right' }}>
+                <th style={{ padding: '14px 16px', fontWeight: 600, fontSize: '0.88rem', color: '#475569', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   จัดการ
                 </th>
               </tr>
@@ -534,7 +534,7 @@ export default function AdminArticlesPage() {
                       className="hover-bg-slate"
                     >
                       {/* Title & Slug */}
-                      <td style={{ padding: '16px 20px', maxWidth: '340px' }}>
+                      <td style={{ padding: '14px 16px', minWidth: '240px', maxWidth: '320px' }}>
                         <div style={{ fontWeight: 600, color: 'var(--dtv-navy-950)', marginBottom: '4px' }}>
                           <Link
                             href={`/admin/articles/${art.id}`}
@@ -544,15 +544,20 @@ export default function AdminArticlesPage() {
                             {art.title}
                           </Link>
                         </div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>/knowledge/{art.slug}</span>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <span
+                            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            title={`/knowledge/${art.slug}`}
+                          >
+                            /knowledge/{art.slug}
+                          </span>
                           {art.status === 'PUBLISHED' && (
                             <a
                               href={`/knowledge/${art.slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               title="ดูหน้าบทความจริง"
-                              style={{ color: 'var(--dtv-blue-600)', display: 'inline-flex' }}
+                              style={{ color: 'var(--dtv-blue-600)', display: 'inline-flex', flexShrink: 0 }}
                             >
                               <ExternalLink size={13} />
                             </a>
@@ -561,15 +566,17 @@ export default function AdminArticlesPage() {
                       </td>
 
                       {/* Category */}
-                      <td style={{ padding: '16px 16px', fontSize: '0.88rem' }}>
+                      <td style={{ padding: '14px 12px', fontSize: '0.88rem', whiteSpace: 'nowrap' }}>
                         <span
                           style={{
+                            display: 'inline-block',
                             background: '#f1f5f9',
                             color: '#334155',
                             padding: '4px 10px',
                             borderRadius: '6px',
                             fontSize: '0.8rem',
                             fontWeight: 500,
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {art.category}
@@ -577,19 +584,25 @@ export default function AdminArticlesPage() {
                       </td>
 
                       {/* Author / Reviewer */}
-                      <td style={{ padding: '16px 16px', fontSize: '0.85rem', color: '#475569' }}>
-                        <div>
+                      <td style={{ padding: '14px 12px', fontSize: '0.85rem', color: '#475569', whiteSpace: 'nowrap' }}>
+                        <div
+                          style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          title={art.author?.name || 'ไม่ระบุผู้เขียน'}
+                        >
                           <strong>{art.author?.name || 'ไม่ระบุผู้เขียน'}</strong>
                         </div>
                         {art.reviewer && (
-                          <div style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: '2px' }}>
+                          <div
+                            style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: '2px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            title={`ตรวจ: ${art.reviewer.name}`}
+                          >
                             ตรวจ: {art.reviewer.name}
                           </div>
                         )}
                       </td>
 
                       {/* Status Badge */}
-                      <td style={{ padding: '16px 16px' }}>
+                      <td style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
                         <span
                           style={{
                             display: 'inline-flex',
@@ -602,6 +615,7 @@ export default function AdminArticlesPage() {
                             background: badge.bg,
                             color: badge.text,
                             border: `1px solid ${badge.border}`,
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {badge.label}
@@ -609,7 +623,7 @@ export default function AdminArticlesPage() {
                       </td>
 
                       {/* SEO Score Badge */}
-                      <td style={{ padding: '16px 16px' }}>
+                      <td style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
                         {typeof art.seoScore === 'number' && art.seoScore > 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             <span
@@ -625,6 +639,7 @@ export default function AdminArticlesPage() {
                                 color: art.seoScore >= 80 ? '#15803d' : art.seoScore >= 50 ? '#b45309' : '#b91c1c',
                                 border: `1px solid ${art.seoScore >= 80 ? '#bbf7d0' : art.seoScore >= 50 ? '#fde68a' : '#fecaca'}`,
                                 width: 'fit-content',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               <span>{art.seoScore} / 100</span>
@@ -641,12 +656,12 @@ export default function AdminArticlesPage() {
                       </td>
 
                       {/* Published Date */}
-                      <td style={{ padding: '16px 16px', fontSize: '0.85rem', color: '#475569' }}>
+                      <td style={{ padding: '14px 12px', fontSize: '0.85rem', color: '#475569', whiteSpace: 'nowrap' }}>
                         {formatDateThai(art.publishedAt)}
                       </td>
 
                       {/* Next Review Due Date */}
-                      <td style={{ padding: '16px 16px', fontSize: '0.85rem' }}>
+                      <td style={{ padding: '14px 12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                         {art.nextReviewAt ? (
                           <span
                             style={{
@@ -655,9 +670,10 @@ export default function AdminArticlesPage() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            {overdue && <AlertTriangle size={14} color="#dc2626" />}
+                            {overdue && <AlertTriangle size={14} color="#dc2626" style={{ flexShrink: 0 }} />}
                             {formatDateThai(art.nextReviewAt)}
                           </span>
                         ) : (
@@ -666,8 +682,8 @@ export default function AdminArticlesPage() {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap' }}>
                           {/* Quick Workflow Action Buttons */}
                           {art.status === 'DRAFT' && canEdit && (
                             <button
@@ -686,6 +702,8 @@ export default function AdminArticlesPage() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
                               <Send size={12} />
@@ -710,6 +728,8 @@ export default function AdminArticlesPage() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
                               <ShieldCheck size={12} />
@@ -734,6 +754,8 @@ export default function AdminArticlesPage() {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '4px',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
                               <CheckCircle2 size={12} />
@@ -756,6 +778,8 @@ export default function AdminArticlesPage() {
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
                             }}
                             title="แก้ไขบทความ"
                           >
@@ -776,6 +800,11 @@ export default function AdminArticlesPage() {
                                 borderRadius: '6px',
                                 color: '#dc2626',
                                 cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
                               <Archive size={14} />
@@ -794,6 +823,11 @@ export default function AdminArticlesPage() {
                                 borderRadius: '6px',
                                 color: '#dc2626',
                                 cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
                               }}
                             >
                               <Trash2 size={14} />

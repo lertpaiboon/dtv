@@ -17,6 +17,22 @@ export default function ArticleToc({ contentMarkdown }: ArticleTocProps) {
     return null;
   }
 
+  let h2Count = 0;
+  const tocItems = headings.map((item) => {
+    const hasLeadingNumber = /^\d+(?:\.\d+)*[.)]\s+/.test(item.text.trim());
+    if (item.level === 2) {
+      h2Count += 1;
+      return {
+        ...item,
+        marker: hasLeadingNumber ? null : `${h2Count}.`,
+      };
+    }
+    return {
+      ...item,
+      marker: hasLeadingNumber ? null : '•',
+    };
+  });
+
   return (
     <nav
       className="article-toc"
@@ -54,12 +70,13 @@ export default function ArticleToc({ contentMarkdown }: ArticleTocProps) {
           gap: '10px',
         }}
       >
-        {headings.map((item, idx) => (
+        {tocItems.map((item, idx) => (
           <li
-            key={item.id || idx}
+            key={`${item.id}-${idx}`}
             style={{
-              paddingLeft: item.level === 3 ? '20px' : '0',
+              paddingLeft: item.level === 3 ? '22px' : '0',
               fontSize: item.level === 3 ? '0.88rem' : '0.94rem',
+              fontWeight: item.level === 2 ? 500 : 400,
             }}
           >
             <a
@@ -74,15 +91,18 @@ export default function ArticleToc({ contentMarkdown }: ArticleTocProps) {
               }}
               className="hover-gold"
             >
-              <span
-                style={{
-                  color: 'var(--accent-dark)',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                }}
-              >
-                {idx + 1}.
-              </span>
+              {item.marker && (
+                <span
+                  style={{
+                    color: item.level === 3 ? '#94a3b8' : 'var(--accent-dark)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.marker}
+                </span>
+              )}
               <span>{item.text}</span>
             </a>
           </li>
