@@ -1,5 +1,6 @@
 :root {
   /* Deethavorn Accounting Design System Tokens */
+  --font-prompt: var(--font-prompt-thai), var(--font-prompt-latin);
   --primary: #1B2A80;
   --navy-950: #091c3a;
   --navy-900: #102a56;
