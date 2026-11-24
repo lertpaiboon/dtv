@@ -9,6 +9,8 @@ import { defaultCustomerReviews, type CustomerReviewItem } from '@/lib/default-c
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 
+export const revalidate = 3600;
+
 export const metadata = {
   title: 'ทำไมต้องดีถาวรการบัญชี | สำนักงานบัญชี อโศก–ดินแดง ใกล้ MRT เพชรบุรี',
   description:

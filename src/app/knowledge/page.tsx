@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { getPublishedArticles } from '@/lib/articles/queries';
+import { getPublishedArticleCards } from '@/lib/articles/queries';
 import KnowledgeListClient from '@/components/articles/KnowledgeListClient';
 
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
@@ -24,24 +24,12 @@ export const metadata = {
   },
 };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
-export default async function KnowledgePage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const resolvedParams = searchParams ? await searchParams : {};
-  const initialCategory = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
-  const initialAuthor = typeof resolvedParams.author === 'string' ? resolvedParams.author : undefined;
-  const initialQuery =
-    typeof resolvedParams.q === 'string'
-      ? resolvedParams.q
-      : typeof resolvedParams.search === 'string'
-        ? resolvedParams.search
-        : undefined;
-
-  const articles = await getPublishedArticles();
+export default async function KnowledgePage() {
+  const articles = process.env.DATABASE_URL
+    ? await getPublishedArticleCards().catch(() => [])
+    : [];
 
   return (
     <div style={{ padding: '80px 0 100px', background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)' }}>
@@ -58,12 +46,9 @@ export default async function KnowledgePage({
         </div>
 
         {/* Client-side Instant Filter List */}
-        <KnowledgeListClient
-          initialArticles={articles}
-          initialCategory={initialCategory}
-          initialAuthor={initialAuthor}
-          initialQuery={initialQuery}
-        />
+        <Suspense fallback={<div style={{ minHeight: '320px' }} />}>
+          <KnowledgeListClient initialArticles={articles} />
+        </Suspense>
 
         {/* Bottom Consulting Callout */}
         <div

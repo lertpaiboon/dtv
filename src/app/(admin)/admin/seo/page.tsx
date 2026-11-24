@@ -121,8 +121,9 @@ export default function AdminSeoSuitePage() {
 
       setStatsData(statsJson.data);
       setIntelData(intelJson.data);
-      if (intelJson.data?.connection?.siteUrl && !gscSiteUrlInput) {
-        setGscSiteUrlInput(intelJson.data.connection.siteUrl);
+      const fetchedSiteUrl = intelJson.data?.connection?.siteUrl;
+      if (fetchedSiteUrl) {
+        setGscSiteUrlInput((prev) => prev || fetchedSiteUrl);
       }
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -130,7 +131,7 @@ export default function AdminSeoSuitePage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [gscSiteUrlInput]);
+  }, []);
 
   useEffect(() => {
     fetchAllSeoData();

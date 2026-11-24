@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
-import { getArticleBySlug } from '@/lib/articles/queries';
+import { getArticleMetaForOg } from '@/lib/articles/queries';
 
+export const revalidate = 3600;
 export const alt = 'บริษัท ดีถาวรการบัญชี จำกัด | คลังความรู้';
 export const size = {
   width: 1200,
@@ -14,11 +15,11 @@ interface Props {
 
 export default async function Image({ params }: Props) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const article = await getArticleMetaForOg(slug);
 
   const title = article?.title || 'คลังความรู้บัญชีและภาษี';
   const category = article?.category || 'บทความวิชาชีพ';
-  const authorName = article?.author?.name || 'ทีมงานดีถาวรการบัญชี';
+  const authorName = article?.authorName || 'ทีมงานดีถาวรการบัญชี';
 
   return new ImageResponse(
     (

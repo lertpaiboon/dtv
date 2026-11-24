@@ -86,8 +86,16 @@ export default function AdminArticlesPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const canCreate = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:create'));
   const canEdit = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:edit'));
@@ -96,18 +104,18 @@ export default function AdminArticlesPage() {
   const canDelete = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:delete'));
   const canArchive = Boolean(user?.permissions.includes('*') || user?.permissions.includes('article:archive'));
 
-  const fetchArticles = useCallback(async () => {
+  const fetchArticles = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams();
       if (statusFilter !== 'ALL') params.set('status', statusFilter);
       if (categoryFilter !== 'ALL') params.set('category', categoryFilter);
-      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       params.set('page', page.toString());
       params.set('limit', '15');
 
-      const res = await fetch(`/api/admin/articles?${params.toString()}`);
+      const res = await fetch(`/api/admin/articles?${params.toString()}`, { signal });
       const json = await res.json();
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'ไม่สามารถโหลดรายการบทความได้');
@@ -117,14 +125,17 @@ export default function AdminArticlesPage() {
       setStats(json.stats || { TOTAL: 0, DRAFT: 0, IN_REVIEW: 0, APPROVED: 0, PUBLISHED: 0, ARCHIVED: 0 });
       setTotalPages(json.pagination?.totalPages || 1);
     } catch (err: any) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, categoryFilter, searchQuery, page]);
+  }, [statusFilter, categoryFilter, debouncedSearch, page]);
 
   useEffect(() => {
-    fetchArticles();
+    const controller = new AbortController();
+    fetchArticles(controller.signal);
+    return () => controller.abort();
   }, [fetchArticles]);
 
   const handleQuickAction = async (articleId: number, action: 'submit' | 'approve' | 'publish' | 'archive' | 'delete') => {

@@ -34,14 +34,10 @@ export default function ScrollObserver() {
       threshold: 0.08,
     });
 
-    // Small delay to ensure DOM is ready after navigation
-    const timeoutId = setTimeout(() => {
-      const elements = document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)');
-      elements.forEach((el) => observer.observe(el));
-    }, 50);
+    const elements = document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)');
+    elements.forEach((el) => observer.observe(el));
 
     return () => {
-      clearTimeout(timeoutId);
       observer.disconnect();
     };
   }, [pathname]);

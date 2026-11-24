@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminSession, hasPermission } from '@/lib/auth';
+import { detectAllowedFileType, generateSafeFileName } from '@/lib/upload-security';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -11,13 +12,6 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'application/pdf': '.pdf',
-};
 
 export async function POST(req: Request) {
   const session = await getAdminSession();
@@ -64,19 +58,23 @@ export async function POST(req: Request) {
       );
     }
 
-    const ext = MIME_TO_EXT[mimeType] || '.jpg';
-    const timestamp = Date.now();
-    const randomPart = Math.random().toString(36).substring(2, 8);
-    const uniqueFileName = `slip_${timestamp}_${randomPart}${ext}`;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const detected = detectAllowedFileType(buffer, ALLOWED_MIME_TYPES);
+    if (!detected) {
+      return NextResponse.json(
+        { success: false, error: 'เนื้อหาไฟล์ไม่ตรงกับรูปแบบ JPG, PNG, WEBP หรือ PDF ที่ปลอดภัย' },
+        { status: 400 }
+      );
+    }
+
+    const uniqueFileName = generateSafeFileName('slip', detected.ext);
 
     // บันทึกไฟล์ใน storage/uploads/slips นอก public/ เพื่อป้องกันการเปิดอ่านโดยตรงผ่าน Web Server
     const uploadDir = path.join(process.cwd(), 'storage', 'uploads', 'slips');
     await mkdir(uploadDir, { recursive: true });
 
     const filePath = path.join(uploadDir, uniqueFileName);
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     await writeFile(filePath, buffer);
 
     const publicUrl = `/uploads/slips/${uniqueFileName}`;
@@ -88,7 +86,7 @@ export async function POST(req: Request) {
         url: publicUrl,
         fileName: originalName,
         size: file.size,
-        mimeType,
+        mimeType: detected.mime,
       },
       message: 'อัปโหลดหลักฐานการโอนเงินเรียบร้อยแล้ว',
     });

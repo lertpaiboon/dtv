@@ -64,7 +64,7 @@ export default function TaxConsultingQuoteForm() {
         body: JSON.stringify({
           firstName,
           lastName,
-          email: 'lead@deethavorn.com',
+          email: '',
           phone: formData.phone.trim(),
           serviceType: 'ที่ปรึกษาภาษี',
           message: formattedMessage,

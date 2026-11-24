@@ -425,8 +425,8 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
       alert('กรุณาเลือกไฟล์ JPG, PNG, WEBP หรือ PDF เท่านั้น');
       return;
     }
-    if (selectedFile.size > 15 * 1024 * 1024) {
-      alert('ขนาดไฟล์ใหญ่เกินไป กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 15 MB');
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      alert('ขนาดไฟล์ใหญ่เกินไป กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 5 MB');
       return;
     }
 
@@ -1367,7 +1367,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
                           <span>สลิป</span>
                         </button>
                       )}
-                      {payment.billingStatus !== 'PAID' && (
+                      {canEdit && payment.billingStatus !== 'PAID' && (
                         <button
                           type="button"
                           className="btn-mark-paid"
@@ -2228,7 +2228,7 @@ export default function TaxPaymentsWorkspace({ config }: { config: WorkspaceConf
         </div>
       )}
       {/* Modal: Mark as PAID & Attach Slip */}
-      {paidModalOpen && paidTarget && (
+      {canEdit && paidModalOpen && paidTarget && (
         <div
           className="admin-dialog-layer"
           role="presentation"

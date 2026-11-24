@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getIndexableArticles, getAllActiveAuthors } from '@/lib/articles/queries';
+import { getIndexableArticleSummaries, getAllActiveAuthors } from '@/lib/articles/queries';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import { getSiteUrl } from '@/lib/seo/site-url';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 const CORE_PILLARS = [
   {
@@ -39,8 +39,12 @@ const CORE_PILLARS = [
 export async function GET() {
   const siteUrl = getSiteUrl();
   const [articles, authors] = await Promise.all([
-    getIndexableArticles(),
-    getAllActiveAuthors(),
+    getIndexableArticleSummaries().catch(
+      (): Awaited<ReturnType<typeof getIndexableArticleSummaries>> => []
+    ),
+    getAllActiveAuthors().catch(
+      (): Awaited<ReturnType<typeof getAllActiveAuthors>> => []
+    ),
   ]);
 
   const lines: string[] = [];

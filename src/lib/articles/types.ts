@@ -82,3 +82,31 @@ export interface Article {
     lineMessage: string;
   };
 }
+
+export interface ArticleCardItem {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  coverImage?: string;
+  coverImageAlt?: string;
+  publishedAt: string;
+  readTime: string;
+  focusKeyword?: string;
+  author: Pick<Author, 'id' | 'name' | 'slug' | 'role'>;
+  reviewer?: Pick<Author, 'id' | 'name' | 'slug' | 'role'>;
+}
+
+export interface IndexableArticleSummary {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  quickAnswer?: string;
+  category: string;
+  publishedAt: string;
+  contentUpdatedAt?: string;
+  canonicalUrl?: string;
+  focusKeyword?: string;
+}

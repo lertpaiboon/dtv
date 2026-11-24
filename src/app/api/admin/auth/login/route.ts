@@ -3,15 +3,52 @@ import { prisma } from '@/lib/prisma';
 import { comparePassword, signAdminToken } from '@/lib/auth';
 
 const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
+const MAX_IP_EMAIL_ATTEMPTS = 5;
+const MAX_EMAIL_ATTEMPTS = 10;
+const MAX_TRACKED_KEYS = 2000;
 const DUMMY_HASH = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
 type Attempt = { count: number; resetAt: number };
-const attempts = new Map<string, Attempt>();
+const ipEmailAttempts = new Map<string, Attempt>();
+const emailAttempts = new Map<string, Attempt>();
 
-function clientKey(req: Request, email: string) {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return `${forwarded || 'local'}:${email}`;
+function extractClientIp(req: Request): string {
+  const realIp = req.headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp.slice(0, 64);
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',').pop()?.trim();
+  return (forwarded || 'local').slice(0, 64);
+}
+
+function pruneMapIfFull(map: Map<string, Attempt>, now: number) {
+  if (map.size < MAX_TRACKED_KEYS) return;
+  for (const [k, v] of map.entries()) {
+    if (v.resetAt <= now) map.delete(k);
+  }
+  while (map.size >= MAX_TRACKED_KEYS) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey === undefined) break;
+    map.delete(oldestKey);
+  }
+}
+
+function getActiveAttempt(map: Map<string, Attempt>, key: string, now: number): Attempt | null {
+  const current = map.get(key);
+  if (!current || current.resetAt <= now) {
+    if (current) map.delete(key);
+    return null;
+  }
+  return current;
+}
+
+function recordFailedAttempt(map: Map<string, Attempt>, key: string, now: number) {
+  pruneMapIfFull(map, now);
+  const current = map.get(key);
+  if (!current || current.resetAt <= now) {
+    map.set(key, { count: 1, resetAt: now + WINDOW_MS });
+  } else {
+    current.count += 1;
+    map.set(key, current);
+  }
 }
 
 export async function POST(req: Request) {
@@ -29,20 +66,24 @@ export async function POST(req: Request) {
 
     const isDev = process.env.NODE_ENV !== 'production';
     const now = Date.now();
-    const key = clientKey(req, email);
+    const ip = extractClientIp(req);
+    const ipEmailKey = `${ip}:${email}`;
 
     if (isDev) {
-      attempts.delete(key);
+      ipEmailAttempts.delete(ipEmailKey);
+      emailAttempts.delete(email);
     } else {
-      const current = attempts.get(key);
-      const attempt = !current || current.resetAt <= now
-        ? { count: 0, resetAt: now + WINDOW_MS }
-        : current;
+      const ipAttempt = getActiveAttempt(ipEmailAttempts, ipEmailKey, now);
+      const acctAttempt = getActiveAttempt(emailAttempts, email, now);
 
-      if (attempt.count >= MAX_ATTEMPTS) {
+      if (
+        (ipAttempt && ipAttempt.count >= MAX_IP_EMAIL_ATTEMPTS) ||
+        (acctAttempt && acctAttempt.count >= MAX_EMAIL_ATTEMPTS)
+      ) {
+        const retryResetAt = Math.max(ipAttempt?.resetAt || 0, acctAttempt?.resetAt || 0);
         return NextResponse.json(
           { success: false, error: 'เข้าสู่ระบบไม่สำเร็จหลายครั้ง โปรดลองใหม่ในอีก 15 นาที' },
-          { status: 429, headers: { 'Retry-After': String(Math.ceil((attempt.resetAt - now) / 1000)) } }
+          { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((retryResetAt - now) / 1000))) } }
         );
       }
     }
@@ -55,9 +96,8 @@ export async function POST(req: Request) {
 
     if (!user || !user.isActive || !isMatch) {
       if (!isDev) {
-        const current = attempts.get(key) || { count: 0, resetAt: now + WINDOW_MS };
-        current.count += 1;
-        attempts.set(key, current);
+        recordFailedAttempt(ipEmailAttempts, ipEmailKey, now);
+        recordFailedAttempt(emailAttempts, email, now);
       }
       return NextResponse.json(
         { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' },
@@ -65,7 +105,8 @@ export async function POST(req: Request) {
       );
     }
 
-    attempts.delete(key);
+    ipEmailAttempts.delete(ipEmailKey);
+    emailAttempts.delete(email);
     const sessionUser = {
       id: user.id,
       email: user.email,

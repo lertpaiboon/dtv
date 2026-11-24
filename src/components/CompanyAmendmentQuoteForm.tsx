@@ -16,6 +16,7 @@ export default function CompanyAmendmentQuoteForm() {
   const [phone, setPhone] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>(['เปลี่ยนกรรมการ']);
   const [notes, setNotes] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -41,21 +42,27 @@ export default function CompanyAmendmentQuoteForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: companyName.trim(),
+          firstName: companyName.trim(),
+          lastName: '(แก้ไขข้อมูลบริษัท)',
+          email: '',
           phone: phone.trim(),
-          service: 'แก้ไขเปลี่ยนแปลงข้อมูลบริษัท (/services/company-amendment)',
+          serviceType: 'แก้ไขเปลี่ยนแปลงข้อมูลบริษัท',
           message: [
-            `ชื่อบริษัท: ${companyName.trim()}`,
-            `ต้องการแก้เรื่อง: ${topicsText}`,
-            notes.trim() ? `รายละเอียดเพิ่มเติม: ${notes.trim()}` : '',
+            `[สนใจบริการ: แก้ไขเปลี่ยนแปลงข้อมูลบริษัท (/services/company-amendment)]`,
+            `• ชื่อบริษัท: ${companyName.trim()}`,
+            `• เบอร์ติดต่อ: ${phone.trim()}`,
+            `• ต้องการแก้เรื่อง: ${topicsText}`,
+            notes.trim() ? `• รายละเอียดเพิ่มเติม: ${notes.trim()}` : '',
           ]
             .filter(Boolean)
             .join('\n'),
+          website: honeypot,
         }),
       });
 
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error('ไม่สามารถส่งข้อมูลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
+        throw new Error(data?.error || 'ไม่สามารถส่งข้อมูลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
       }
 
       setSubmitted(true);
@@ -97,12 +104,26 @@ export default function CompanyAmendmentQuoteForm() {
     <form className="ma-quote-form" onSubmit={handleSubmit}>
       <h3>ขอราคาแก้ไขข้อมูลบริษัท</h3>
 
+      <div className="honeypot" aria-hidden="true">
+        <label htmlFor="camd-website-field">เว็บไซต์</label>
+        <input
+          id="camd-website-field"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
+
       <div className="ma-quote-form__row">
         <label className="ma-quote-form__field">
           <span>ชื่อบริษัท *</span>
           <input
             type="text"
             required
+            disabled={submitting}
+            autoComplete="organization"
             placeholder="บริษัท ตัวอย่าง จำกัด"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
@@ -114,6 +135,9 @@ export default function CompanyAmendmentQuoteForm() {
           <input
             type="tel"
             required
+            disabled={submitting}
+            autoComplete="tel"
+            inputMode="tel"
             placeholder="081-234-5678"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -128,6 +152,7 @@ export default function CompanyAmendmentQuoteForm() {
             <label key={option} className="camd-quote-form__check-label">
               <input
                 type="checkbox"
+                disabled={submitting}
                 checked={selectedTopics.includes(option)}
                 onChange={() => toggleTopic(option)}
               />
@@ -141,6 +166,7 @@ export default function CompanyAmendmentQuoteForm() {
         <span>เล่าเพิ่มเติม (ไม่บังคับ)</span>
         <textarea
           rows={3}
+          disabled={submitting}
           placeholder="เช่น ย้ายสำนักงานไปจังหวัดนนทบุรีต้นเดือนหน้า"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

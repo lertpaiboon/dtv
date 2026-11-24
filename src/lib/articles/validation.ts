@@ -56,6 +56,10 @@ export function isSafeImageOrHttpUrl(rawUrl: string | null | undefined): boolean
   const trimmed = rawUrl.trim();
   if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) return false;
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    const cleanPath = trimmed.split(/[?#]/)[0];
+    if (cleanPath.split('/').some((seg) => seg === '..' || seg === '.')) {
+      return false;
+    }
     return true;
   }
   return isSafeHttpUrl(trimmed);

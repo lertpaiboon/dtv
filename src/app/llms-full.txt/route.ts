@@ -6,14 +6,18 @@ import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import { defaultFaqs } from '@/lib/default-content';
 import { getSiteUrl } from '@/lib/seo/site-url';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 export async function GET() {
   const siteUrl = getSiteUrl();
 
   const [articles, authors, dbFaqs] = await Promise.all([
-    getIndexableArticles(),
-    getAllActiveAuthors(),
+    getIndexableArticles().catch(
+      (): Awaited<ReturnType<typeof getIndexableArticles>> => []
+    ),
+    getAllActiveAuthors().catch(
+      (): Awaited<ReturnType<typeof getAllActiveAuthors>> => []
+    ),
     prisma.faq.findMany({ orderBy: { sortOrder: 'asc' } }).catch(() => []),
   ]);
 

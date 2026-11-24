@@ -67,7 +67,7 @@ export default function VatRegQuoteForm() {
         body: JSON.stringify({
           firstName: formData.companyName.trim(),
           lastName: '(จดทะเบียน VAT)',
-          email: 'lead@deethavorn.com',
+          email: '',
           phone: formData.phone.trim(),
           serviceType: 'รับจดทะเบียน VAT',
           message: formattedMessage,

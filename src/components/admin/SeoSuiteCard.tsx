@@ -92,7 +92,7 @@ export default function SeoSuiteCard({
       ? 'พอใช้ (Needs Improvement)'
       : 'ควรปรับปรุง (Poor)';
 
-  const activeOgImage = formData.ogImage || formData.coverImage || '/images/hero-tax.png';
+  const activeOgImage = formData.ogImage || formData.coverImage || '/images/hero_banner.png';
   const effectiveSeoTitle = (formData.seoTitle || '').trim() || formData.title;
   const effectiveSeoDescription = (formData.seoDescription || '').trim() || formData.summary;
 
@@ -192,7 +192,7 @@ export default function SeoSuiteCard({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
           gap: '24px',
           alignItems: 'start',
         }}

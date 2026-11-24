@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
     const taxYear = normalizeTaxYear(body.taxYear);
     const taxMonth = normalizeTaxMonth(body.taxMonth);
-    const duplicateStrategy = body.duplicateStrategy === 'SKIP' ? 'SKIP' : 'OVERWRITE';
+    const duplicateStrategy = body.duplicateStrategy === 'OVERWRITE' ? 'OVERWRITE' : 'SKIP';
     const items = body.items;
 
     if (!taxYear) {
@@ -63,6 +63,12 @@ export async function POST(req: Request) {
     }
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ success: false, error: 'ไม่มีรายการข้อมูลสำหรับนำเข้า' }, { status: 400 });
+    }
+    if (items.length > 500) {
+      return NextResponse.json(
+        { success: false, error: 'นำเข้าข้อมูลได้สูงสุดไม่เกิน 500 รายการต่อครั้ง' },
+        { status: 400 }
+      );
     }
 
     // Load active companies & payment methods to validate foreign keys
@@ -124,7 +130,19 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const rowTaxType = isOneOf(row.taxType, TAX_TYPES) ? (row.taxType as string) : taxType;
+      const rowTaxType = isOneOf(row.taxType, TAX_TYPES) ? (row.taxType as TaxType) : taxType;
+      if (!hasPermission(session, permissionForTaxType(rowTaxType, 'create'))) {
+        return NextResponse.json(
+          { success: false, error: `ไม่มีสิทธิ์นำเข้าข้อมูลประเภทภาษี ${rowTaxType} (แถวที่ ${rowNum})` },
+          { status: 403 }
+        );
+      }
+      if (duplicateStrategy === 'OVERWRITE' && !hasPermission(session, permissionForTaxType(rowTaxType, 'edit'))) {
+        return NextResponse.json(
+          { success: false, error: `ไม่มีสิทธิ์เขียนทับข้อมูลประเภทภาษี ${rowTaxType}` },
+          { status: 403 }
+        );
+      }
       const rowTaxYear = normalizeTaxYear(row.taxYear) || taxYear;
       const rowTaxMonth = rowTaxType === 'PND51' ? null : (normalizeTaxMonth(row.taxMonth) || taxMonth);
 

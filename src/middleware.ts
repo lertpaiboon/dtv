@@ -24,10 +24,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Guard for /admin pages, /api/admin endpoints, and sensitive /uploads/slips files
+  const lowerPath = pathname.toLowerCase();
+  const isSlipPath =
+    lowerPath.startsWith('/uploads/slips') ||
+    lowerPath.includes('/slips/');
+
   if (
     pathname.startsWith('/admin') ||
     pathname.startsWith('/api/admin') ||
-    pathname.startsWith('/uploads/slips')
+    isSlipPath
   ) {
     const token = request.cookies.get('dtv_admin_session')?.value;
 
@@ -43,7 +48,7 @@ export async function middleware(request: NextRequest) {
     try {
       const key = getJwtKey();
       if (!key) throw new Error('JWT_SECRET is not configured');
-      await jwtVerify(token, key);
+      await jwtVerify(token, key, { algorithms: ['HS256'] });
       return NextResponse.next();
     } catch {
       if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/')) {
@@ -61,5 +66,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*', '/uploads/slips/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*', '/uploads/:path*'],
 };

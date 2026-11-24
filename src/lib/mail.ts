@@ -70,7 +70,8 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
   const safeFullName = escapeHtml(rawFullName);
   const safePhoneLabel = lead.phone ? escapeHtml(lead.phone) : 'ไม่ได้ระบุ';
   const safePhoneHref = sanitizePhoneHref(lead.phone);
-  const safeEmail = escapeHtml(lead.email);
+  const hasRealEmail = Boolean(lead.email && lead.email.trim() && lead.email.trim().toLowerCase() !== 'lead@deethavorn.com');
+  const safeEmail = hasRealEmail ? escapeHtml(lead.email.trim()) : '';
   const safeMessage = escapeHtml(lead.message);
   const safeSubjectName = sanitizeHeaderText(rawFullName);
 
@@ -122,7 +123,11 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
             </tr>
             <tr>
               <td class="label">อีเมลลูกค้า:</td>
-              <td class="value"><a href="mailto:${safeEmail}" style="color: #1B2A80; text-decoration: none;">${safeEmail}</a></td>
+              <td class="value">${
+                hasRealEmail
+                  ? `<a href="mailto:${safeEmail}" style="color: #1B2A80; text-decoration: none;">${safeEmail}</a>`
+                  : 'ไม่ได้ระบุ (ขอติดต่อกลับทางโทรศัพท์)'
+              }</td>
             </tr>
             <tr>
               <td class="label">เวลาที่ติดต่อ:</td>
@@ -144,7 +149,7 @@ export async function sendAdminContactNotification(lead: ContactLeadData) {
     await transporter.sendMail({
       from: `"ดีถาวรการบัญชี (ระบบเว็บไซต์)" <${senderUser}>`,
       to: adminReceivers,
-      replyTo: sanitizeHeaderText(lead.email),
+      ...(hasRealEmail ? { replyTo: sanitizeHeaderText(lead.email) } : {}),
       subject: `🔔 มีผู้ติดต่อขอคำปรึกษาใหม่: คุณ ${safeSubjectName}`,
       html,
     });

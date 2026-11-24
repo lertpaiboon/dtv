@@ -3,7 +3,7 @@ import { getAdminSession, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ArticleStatus } from '@prisma/client';
 
-import { getIndexableArticles } from '@/lib/articles/queries';
+import { getIndexableArticleSummaries } from '@/lib/articles/queries';
 import { getIndexNowKeyPath } from '@/lib/seo/indexnow';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 
@@ -73,7 +73,7 @@ export async function GET() {
       }),
       prisma.errorLog404.count({ where: { isResolved: false } }),
       prisma.errorLog404.aggregate({ _sum: { hits: true } }),
-      getIndexableArticles(),
+      getIndexableArticleSummaries(),
       prisma.author.count({ where: { isActive: true } }),
     ]);
 

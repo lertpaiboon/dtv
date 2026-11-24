@@ -6,6 +6,19 @@ import ArticleEditorForm, { type ArticleFormData } from '@/components/admin/Arti
 import { ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
 import { RefreshCw } from 'lucide-react';
 
+function sanitizePrefillText(value: string | null | undefined, maxLen = 200): string {
+  if (!value) return '';
+  return value.replace(/[<>\u0000-\u001F\u007F]/g, '').trim().slice(0, maxLen);
+}
+
+function sanitizePrefillUrl(value: string | null | undefined): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed || /[\s"'<>\\`\u0000-\u001F\u007F]/.test(trimmed)) return '';
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed.slice(0, 300);
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed.slice(0, 300);
+  return '';
+}
+
 function NewArticlePageInner() {
   const searchParams = useSearchParams();
   const [authors, setAuthors] = useState<Array<{ id: number; name: string; role: string | null }>>([]);
@@ -32,15 +45,17 @@ function NewArticlePageInner() {
     );
   }
 
-  const paramTitle = searchParams.get('title')?.trim() || '';
-  const paramSlug = searchParams.get('slug')?.trim() || '';
-  const paramKeyword =
-    searchParams.get('keyword')?.trim() || searchParams.get('focusKeyword')?.trim() || '';
-  const paramCategory = searchParams.get('category')?.trim() || '';
-  const paramPillarUrl =
-    searchParams.get('pillarUrl')?.trim() || searchParams.get('pillar')?.trim() || '';
-  const paramPillarTitle =
-    searchParams.get('pillarTitle')?.trim() || 'บริการของเรา';
+  const paramTitle = sanitizePrefillText(searchParams.get('title'), 255);
+  const paramSlug = sanitizePrefillText(searchParams.get('slug'), 255);
+  const paramKeyword = sanitizePrefillText(
+    searchParams.get('keyword') || searchParams.get('focusKeyword'),
+    120
+  );
+  const paramCategory = sanitizePrefillText(searchParams.get('category'), 80);
+  const paramPillarUrl = sanitizePrefillUrl(
+    searchParams.get('pillarUrl') || searchParams.get('pillar')
+  );
+  const paramPillarTitle = sanitizePrefillText(searchParams.get('pillarTitle'), 160) || 'บริการของเรา';
 
   const hasPrefill = Boolean(paramTitle || paramSlug || paramKeyword || paramPillarUrl);
 

@@ -6,7 +6,7 @@ export default function Hero() {
   return (
     <section className="hero">
       <div className="container hero__grid">
-        <div className="hero__content reveal-on-scroll">
+        <div className="hero__content">
           <p className="section-kicker">สำนักงานบัญชี อโศก–ดินแดง ใกล้ MRT เพชรบุรี</p>
           <h1>
             <span className="hero__h1-brand">ดีถาวรการบัญชี</span>
@@ -51,7 +51,7 @@ export default function Hero() {
           </ul>
         </div>
 
-        <div className="hero__visual reveal-on-scroll delay-2">
+        <div className="hero__visual">
           <div className="hero__image-frame">
             <Image
               src="/images/graphic_abstract.png"

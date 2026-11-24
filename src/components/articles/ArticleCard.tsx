@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Calendar,
   Tag,
@@ -13,10 +14,11 @@ import {
   Users,
   FileText,
 } from 'lucide-react';
-import { Article } from '@/lib/articles/types';
+import { ArticleCardItem } from '@/lib/articles/types';
+import { isNextImageOptimizable } from '@/lib/image-utils';
 
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleCardItem;
 }
 
 function getCategoryIcon(category: string) {
@@ -79,21 +81,35 @@ export default function ArticleCard({ article }: ArticleCardProps) {
           }}
         >
           {hasCover ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={article.coverImage}
-              alt={article.coverImageAlt || article.title}
-              loading="lazy"
-              decoding="async"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                transition: 'transform 0.4s ease',
-              }}
-              className="article-card-cover-img"
-            />
+            isNextImageOptimizable(article.coverImage) ? (
+              <Image
+                src={article.coverImage!}
+                alt={article.coverImageAlt || article.title}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                style={{
+                  objectFit: 'cover',
+                  transition: 'transform 0.4s ease',
+                }}
+                className="article-card-cover-img"
+              />
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={article.coverImage}
+                alt={article.coverImageAlt || article.title}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  transition: 'transform 0.4s ease',
+                }}
+                className="article-card-cover-img"
+              />
+            )
           ) : (
             /* Branded Elegant Fallback Placeholder */
             <div

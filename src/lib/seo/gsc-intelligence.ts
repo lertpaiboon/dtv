@@ -1174,19 +1174,30 @@ export function buildPlainEnglishReport(items: AnalyzedOpportunityItem[]): Plain
 // Layer 3 Tab 4: SEO Content Plan Basket & Auto-Sync
 // ============================================================================
 
-export async function getSyncedContentPlan(): Promise<SeoContentPlanItem[]> {
+export async function getSyncedContentPlan(
+  preloadedArticles?: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    status: string;
+    focusKeyword: string | null;
+    seoTitle: string | null;
+  }>
+): Promise<SeoContentPlanItem[]> {
   const [setting, articles] = await Promise.all([
     prisma.systemSetting.findUnique({ where: { key: 'seo_content_plan' } }),
-    prisma.article.findMany({
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        status: true,
-        focusKeyword: true,
-        seoTitle: true,
-      },
-    }),
+    preloadedArticles
+      ? Promise.resolve(preloadedArticles)
+      : prisma.article.findMany({
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            status: true,
+            focusKeyword: true,
+            seoTitle: true,
+          },
+        }),
   ]);
 
   let planItems: SeoContentPlanItem[] = [];
@@ -1402,24 +1413,37 @@ export async function exploreThaiAutocompleteKeywords(
 // Layer 3 Tab 8: Internal Link Matrix, Orphan Detector & 1-Click Link Inserter
 // ============================================================================
 
-export async function buildInternalLinkMatrix(): Promise<{
+export async function buildInternalLinkMatrix(
+  preloadedArticles?: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    status: string;
+    category: string;
+    focusKeyword: string | null;
+    seoScore: number;
+    contentMarkdown: string;
+  }>
+): Promise<{
   matrix: ArticleLinkMatrixRow[];
   orphanCount: number;
   opportunities: InternalLinkOpportunity[];
 }> {
-  const articles = await prisma.article.findMany({
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      status: true,
-      category: true,
-      focusKeyword: true,
-      seoScore: true,
-      contentMarkdown: true,
-    },
-    orderBy: { publishedAt: 'desc' },
-  });
+  const articles = preloadedArticles
+    ? preloadedArticles
+    : await prisma.article.findMany({
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          status: true,
+          category: true,
+          focusKeyword: true,
+          seoScore: true,
+          contentMarkdown: true,
+        },
+        orderBy: { publishedAt: 'desc' },
+      });
 
   const inboundMap = new Map<string, Array<{ id: number; title: string; slug: string }>>();
   for (const a of articles) {
@@ -1640,10 +1664,24 @@ export async function insertInternalLinkBetweenArticles(
 // Layer 7: Broken Link, Citation & Missing Cover Asset Scanner
 // ============================================================================
 
-export async function scanBrokenLinksAndAssets(): Promise<BrokenLinkIssue[]> {
-  const articles = await prisma.article.findMany({
-    include: { citations: true },
-  });
+export async function scanBrokenLinksAndAssets(
+  preloadedArticles?: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+    coverImageAlt: string | null;
+    contentMarkdown: string;
+    citations: Array<{ title: string; url: string }>;
+  }>
+): Promise<BrokenLinkIssue[]> {
+  const articles = preloadedArticles
+    ? preloadedArticles
+    : await prisma.article.findMany({
+        include: { citations: true },
+      });
+
+  const publicImagesDir = path.resolve(process.cwd(), 'public', 'images');
 
   const validArticleSlugs = new Set(articles.map((a) => a.slug.toLowerCase()));
   const validServiceSlugs = new Set([
@@ -1672,8 +1710,18 @@ export async function scanBrokenLinksAndAssets(): Promise<BrokenLinkIssue[]> {
         fixActionUrl,
       });
     } else if (art.coverImage.startsWith('/images/')) {
-      const publicFilePath = path.join(process.cwd(), 'public', art.coverImage);
-      if (!fs.existsSync(publicFilePath)) {
+      const resolvedPath = path.resolve(process.cwd(), 'public', art.coverImage.replace(/^\/+/, ''));
+      const isInsideImages = resolvedPath.startsWith(publicImagesDir + path.sep);
+      let exists = false;
+      if (isInsideImages) {
+        try {
+          await fs.promises.access(resolvedPath);
+          exists = true;
+        } catch {
+          exists = false;
+        }
+      }
+      if (!exists) {
         issues.push({
           articleId: art.id,
           articleTitle: art.title,

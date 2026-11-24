@@ -1,8 +1,16 @@
 import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
 import { getSiteUrl } from '@/lib/seo/site-url';
-import { Article, Author, ArticleFaqItem, ArticleCitationItem } from './types';
+import {
+  Article,
+  ArticleCardItem,
+  Author,
+  ArticleFaqItem,
+  ArticleCitationItem,
+  IndexableArticleSummary,
+} from './types';
 import { stripContentToPlainText } from './markdown';
+import type { HomeArticleItem } from '@/components/HomeKnowledge';
 
 function calculateReadTime(markdown: string): string {
   // Average Thai reading speed ~400-500 chars/min
@@ -89,6 +97,214 @@ function mapArticle(raw: any): Article {
       buttonText: 'ขอคำปรึกษาเบื้องต้นฟรี',
       lineMessage: `สนใจขอคำปรึกษาเกี่ยวกับ ${raw.title}`,
     },
+  };
+}
+
+const ARTICLE_CARD_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  summary: true,
+  category: true,
+  coverImage: true,
+  coverImageAlt: true,
+  publishedAt: true,
+  createdAt: true,
+  focusKeyword: true,
+  contentMarkdown: true,
+  author: {
+    select: { id: true, name: true, slug: true, role: true },
+  },
+  reviewer: {
+    select: { id: true, name: true, slug: true, role: true },
+  },
+} as const;
+
+function mapArticleCard(raw: any): ArticleCardItem {
+  return {
+    id: raw.id,
+    title: raw.title,
+    slug: raw.slug,
+    summary: raw.summary,
+    category: raw.category,
+    coverImage: raw.coverImage || undefined,
+    coverImageAlt: raw.coverImageAlt || undefined,
+    publishedAt: raw.publishedAt ? raw.publishedAt.toISOString() : raw.createdAt.toISOString(),
+    readTime: calculateReadTime(raw.contentMarkdown || ''),
+    focusKeyword: raw.focusKeyword || undefined,
+    author: raw.author
+      ? {
+          id: raw.author.id,
+          name: raw.author.name,
+          slug: raw.author.slug,
+          role: raw.author.role || 'ผู้เชี่ยวชาญด้านบัญชีและภาษีอากร',
+        }
+      : {
+          id: 0,
+          name: 'บริษัท ดีถาวรการบัญชี จำกัด',
+          slug: 'deethavorn',
+          role: 'สำนักงานบัญชีและที่ปรึกษาภาษีอากร',
+        },
+    reviewer: raw.reviewer
+      ? {
+          id: raw.reviewer.id,
+          name: raw.reviewer.name,
+          slug: raw.reviewer.slug,
+          role: raw.reviewer.role || 'ผู้เชี่ยวชาญด้านบัญชีและภาษีอากร',
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Fetch lightweight published article cards (excludes LongText body, FAQs, and citations from client payload).
+ */
+export async function getPublishedArticleCards(category?: string): Promise<ArticleCardItem[]> {
+  const now = new Date();
+
+  const where: any = {
+    status: 'PUBLISHED',
+    publishedAt: { lte: now },
+  };
+
+  if (category && category !== 'ทั้งหมด') {
+    where.category = category;
+  }
+
+  const rawArticles = await prisma.article.findMany({
+    where,
+    select: ARTICLE_CARD_SELECT,
+    orderBy: { publishedAt: 'desc' },
+  });
+
+  return rawArticles.map(mapArticleCard);
+}
+
+/**
+ * Fetch latest published articles formatted for the homepage Knowledge section.
+ */
+export async function getLatestHomeArticles(limit = 3): Promise<HomeArticleItem[]> {
+  const now = new Date();
+  const rows = await prisma.article.findMany({
+    where: {
+      status: 'PUBLISHED',
+      publishedAt: { lte: now },
+    },
+    select: {
+      slug: true,
+      title: true,
+      category: true,
+      coverImage: true,
+      coverImageAlt: true,
+      publishedAt: true,
+      createdAt: true,
+    },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+  });
+
+  return rows.map((row) => {
+    const dt = row.publishedAt || row.createdAt;
+    return {
+      slug: row.slug,
+      title: row.title,
+      category: row.category,
+      dateLabel: dt.toLocaleDateString('th-TH', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+      coverImage: row.coverImage || '/images/hero_banner.png',
+      coverAlt: row.coverImageAlt || `ภาพปกบทความ ${row.title}`,
+    };
+  });
+}
+
+/**
+ * Fetch strictly indexable article metadata without LongText bodies (for Sitemap, /llms.txt, and SEO Stats).
+ */
+export async function getIndexableArticleSummaries(): Promise<IndexableArticleSummary[]> {
+  const now = new Date();
+  const siteUrl = getSiteUrl();
+
+  const rawArticles = await prisma.article.findMany({
+    where: {
+      status: 'PUBLISHED',
+      publishedAt: { lte: now },
+      isNoIndex: false,
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      summary: true,
+      quickAnswer: true,
+      category: true,
+      publishedAt: true,
+      contentUpdatedAt: true,
+      createdAt: true,
+      canonicalUrl: true,
+      focusKeyword: true,
+    },
+    orderBy: { publishedAt: 'desc' },
+  });
+
+  const filtered = rawArticles.filter((art) => {
+    if (!art.canonicalUrl) return true;
+    try {
+      const canonicalHost = new URL(art.canonicalUrl).host.toLowerCase();
+      const siteHost = new URL(siteUrl).host.toLowerCase();
+      return (
+        canonicalHost === siteHost ||
+        canonicalHost === siteHost.replace(/^www\./, '') ||
+        canonicalHost === `www.${siteHost}`
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  return filtered.map((art) => ({
+    id: art.id,
+    title: art.title,
+    slug: art.slug,
+    summary: art.summary,
+    quickAnswer: art.quickAnswer || undefined,
+    category: art.category,
+    publishedAt: art.publishedAt ? art.publishedAt.toISOString() : art.createdAt.toISOString(),
+    contentUpdatedAt: art.contentUpdatedAt ? art.contentUpdatedAt.toISOString() : undefined,
+    canonicalUrl: art.canonicalUrl || undefined,
+    focusKeyword: art.focusKeyword || undefined,
+  }));
+}
+
+/**
+ * Lightweight lookup for dynamic OpenGraph image generation (no LongText, FAQs, or citations).
+ */
+export async function getArticleMetaForOg(slug: string): Promise<{
+  title: string;
+  category: string;
+  authorName: string;
+} | null> {
+  const now = new Date();
+  const raw = await prisma.article.findUnique({
+    where: { slug },
+    select: {
+      title: true,
+      category: true,
+      status: true,
+      publishedAt: true,
+      author: { select: { name: true } },
+    },
+  });
+
+  if (!raw || raw.status !== 'PUBLISHED') return null;
+  if (raw.publishedAt && raw.publishedAt > now) return null;
+
+  return {
+    title: raw.title,
+    category: raw.category,
+    authorName: raw.author?.name || 'บริษัท ดีถาวรการบัญชี จำกัด',
   };
 }
 
@@ -214,7 +430,7 @@ export const getCachedArticleBySlug = cache(async (slug: string): Promise<Articl
 export async function getArticleRedirect(fromSlug: string): Promise<string | null> {
   const redirect = await prisma.articleRedirect.findUnique({
     where: { fromSlug },
-    include: { article: true },
+    include: { article: { select: { slug: true } } },
   });
 
   if (redirect?.article?.slug) {
@@ -224,13 +440,13 @@ export async function getArticleRedirect(fromSlug: string): Promise<string | nul
 }
 
 /**
- * Fetch related articles from MySQL in the same category or intent
+ * Fetch related article cards from MySQL in the same category or intent
  */
 export async function getRelatedArticles(
   currentSlug: string,
   category: string,
   limit = 3
-): Promise<Article[]> {
+): Promise<ArticleCardItem[]> {
   const now = new Date();
 
   const articles = await prisma.article.findMany({
@@ -240,12 +456,7 @@ export async function getRelatedArticles(
       slug: { not: currentSlug },
       category,
     },
-    include: {
-      author: true,
-      reviewer: true,
-      faqs: { orderBy: { sortOrder: 'asc' } },
-      citations: { orderBy: { sortOrder: 'asc' } },
-    },
+    select: ARTICLE_CARD_SELECT,
     take: limit,
     orderBy: [{ seoScore: 'desc' }, { publishedAt: 'desc' }],
   });
@@ -259,19 +470,14 @@ export async function getRelatedArticles(
         publishedAt: { lte: now },
         slug: { notIn: existingSlugs },
       },
-      include: {
-        author: true,
-        reviewer: true,
-        faqs: { orderBy: { sortOrder: 'asc' } },
-        citations: { orderBy: { sortOrder: 'asc' } },
-      },
+      select: ARTICLE_CARD_SELECT,
       take: limit - articles.length,
       orderBy: [{ seoScore: 'desc' }, { publishedAt: 'desc' }],
     });
-    return [...articles, ...additional].map(mapArticle);
+    return [...articles, ...additional].map(mapArticleCard);
   }
 
-  return articles.map(mapArticle);
+  return articles.map(mapArticleCard);
 }
 
 export interface PillarHubInfo {
@@ -376,14 +582,15 @@ export function getPillarHubForCategory(category: string): PillarHubInfo {
 
 export interface AuthorProfileData {
   author: Author;
-  authoredArticles: Article[];
-  reviewedArticles: Article[];
+  authoredArticles: ArticleCardItem[];
+  reviewedArticles: ArticleCardItem[];
 }
 
 /**
- * Fetch an author by slug along with their published authored and reviewed articles.
+ * Fetch an author by slug along with their published authored and reviewed article cards.
+ * Wrapped in React.cache() so generateMetadata() and AuthorProfilePage() share one DB roundtrip.
  */
-export async function getAuthorBySlug(slug: string): Promise<AuthorProfileData | null> {
+export const getAuthorBySlug = cache(async (slug: string): Promise<AuthorProfileData | null> => {
   const now = new Date();
 
   const rawAuthor = await prisma.author.findUnique({
@@ -394,12 +601,7 @@ export async function getAuthorBySlug(slug: string): Promise<AuthorProfileData |
           status: 'PUBLISHED',
           publishedAt: { lte: now },
         },
-        include: {
-          author: true,
-          reviewer: true,
-          faqs: { orderBy: { sortOrder: 'asc' } },
-          citations: { orderBy: { sortOrder: 'asc' } },
-        },
+        select: ARTICLE_CARD_SELECT,
         orderBy: { publishedAt: 'desc' },
       },
       reviewedArticles: {
@@ -407,12 +609,7 @@ export async function getAuthorBySlug(slug: string): Promise<AuthorProfileData |
           status: 'PUBLISHED',
           publishedAt: { lte: now },
         },
-        include: {
-          author: true,
-          reviewer: true,
-          faqs: { orderBy: { sortOrder: 'asc' } },
-          citations: { orderBy: { sortOrder: 'asc' } },
-        },
+        select: ARTICLE_CARD_SELECT,
         orderBy: { publishedAt: 'desc' },
       },
     },
@@ -422,10 +619,10 @@ export async function getAuthorBySlug(slug: string): Promise<AuthorProfileData |
 
   return {
     author: mapAuthor(rawAuthor),
-    authoredArticles: rawAuthor.authoredArticles.map(mapArticle),
-    reviewedArticles: rawAuthor.reviewedArticles.map(mapArticle),
+    authoredArticles: rawAuthor.authoredArticles.map(mapArticleCard),
+    reviewedArticles: rawAuthor.reviewedArticles.map(mapArticleCard),
   };
-}
+});
 
 /**
  * Fetch all active authors

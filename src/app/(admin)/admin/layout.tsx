@@ -52,9 +52,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [urgentCount, setUrgentCount] = useState<number>(0);
   const [unresolved404Count, setUnresolved404Count] = useState<number>(0);
+  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    if (pathname === '/admin/login') {
+    if (isLoginPage) {
       if (user) setUser(null);
       return;
     }
@@ -75,38 +76,30 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return () => {
       controller.abort();
     };
-  }, [pathname, router, user]);
+  }, [isLoginPage, pathname, router, user]);
 
   useEffect(() => {
-    if (pathname === '/admin/login' || !user) return;
-    const canViewBilling = user.permissions.includes('*') || ['vat:view', 'wht:view', 'pnd51:view'].some((permission) => user.permissions.includes(permission));
-    if (!canViewBilling) return;
+    if (!user || isLoginPage) return;
 
-    // Fetch urgent alerts for badge
-    fetch('/api/admin/billing/alerts')
+    const controller = new AbortController();
+    fetch('/api/admin/nav-badges', { signal: controller.signal, cache: 'no-store' })
       .then((r) => r.json())
       .then((res) => {
-        if (res.success && res.data?.urgentCount !== undefined) {
-          setUrgentCount(res.data.urgentCount);
+        if (res?.success && res.data) {
+          if (typeof res.data.urgentCount === 'number') {
+            setUrgentCount(res.data.urgentCount);
+          }
+          if (typeof res.data.unresolved404Count === 'number') {
+            setUnresolved404Count(res.data.unresolved404Count);
+          }
         }
       })
       .catch(() => null);
-  }, [pathname, user]);
 
-  useEffect(() => {
-    if (pathname === '/admin/login' || !user) return;
-    const canViewSeo = user.permissions.includes('*') || user.permissions.includes('article:view');
-    if (!canViewSeo) return;
-
-    fetch('/api/admin/seo/stats')
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.success && typeof res.data?.kpi?.unresolved404Count === 'number') {
-          setUnresolved404Count(res.data.kpi.unresolved404Count);
-        }
-      })
-      .catch(() => null);
-  }, [pathname, user]);
+    return () => {
+      controller.abort();
+    };
+  }, [user, isLoginPage]);
 
   const visibleItems = useMemo(() => {
     if (!user) return navItems.filter((item) => !('permission' in item) && !('permissionAny' in item));

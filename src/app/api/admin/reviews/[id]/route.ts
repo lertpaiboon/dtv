@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
+import { isSafeHttpUrl, isSafeImageOrHttpUrl } from '@/lib/articles/validation';
 import { prisma } from '@/lib/prisma';
 
 export async function PUT(
@@ -48,6 +49,28 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อผู้รีวิว (Author Name)' }, { status: 400 });
     }
 
+    const nextAuthorImage =
+      body.authorImage !== undefined
+        ? body.authorImage
+          ? String(body.authorImage).trim()
+          : null
+        : existing.authorImage;
+
+    if (nextAuthorImage && !isSafeImageOrHttpUrl(nextAuthorImage)) {
+      return NextResponse.json({ success: false, error: 'URL รูปลูกค้าไม่ปลอดภัย' }, { status: 400 });
+    }
+
+    const nextSourceUrl =
+      body.sourceUrl !== undefined
+        ? body.sourceUrl
+          ? String(body.sourceUrl).trim()
+          : null
+        : existing.sourceUrl;
+
+    if (nextSourceUrl && !isSafeHttpUrl(nextSourceUrl)) {
+      return NextResponse.json({ success: false, error: 'URL แหล่งอ้างอิงไม่ถูกต้อง (ต้องเป็น http/https)' }, { status: 400 });
+    }
+
     const parsedRating = body.rating !== undefined ? Number(body.rating) : existing.rating;
     const rating = Number.isFinite(parsedRating) ? Math.min(5, Math.max(1, Math.round(parsedRating))) : existing.rating;
 
@@ -60,12 +83,7 @@ export async function PUT(
         headline,
         quote,
         authorName,
-        authorImage:
-          body.authorImage !== undefined
-            ? body.authorImage
-              ? String(body.authorImage).trim()
-              : null
-            : existing.authorImage,
+        authorImage: nextAuthorImage,
         companyName:
           body.companyName !== undefined
             ? body.companyName
@@ -79,18 +97,15 @@ export async function PUT(
               : null
             : existing.businessType,
         rating,
-        sourceUrl:
-          body.sourceUrl !== undefined
-            ? body.sourceUrl
-              ? String(body.sourceUrl).trim()
-              : null
-            : existing.sourceUrl,
+        sourceUrl: nextSourceUrl,
         sortOrder,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : existing.isActive,
       },
     });
 
     revalidatePath('/');
+    revalidatePath('/about');
+    revalidatePath('/about');
 
     return NextResponse.json({
       success: true,
@@ -137,6 +152,7 @@ export async function DELETE(
     });
 
     revalidatePath('/');
+    revalidatePath('/about');
 
     return NextResponse.json({
       success: true,

@@ -61,7 +61,7 @@ export default function MonthlyQuoteForm() {
         body: JSON.stringify({
           firstName,
           lastName,
-          email: 'lead@deethavorn.com',
+          email: '',
           phone: formData.phone.trim(),
           serviceType: 'รับทำบัญชีรายเดือน',
           message: formattedMessage,

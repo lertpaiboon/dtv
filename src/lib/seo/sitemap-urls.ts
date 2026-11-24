@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getIndexableArticles, getAllActiveAuthors } from '@/lib/articles/queries';
+import { getIndexableArticleSummaries, getAllActiveAuthors } from '@/lib/articles/queries';
 import { getSiteUrl } from '@/lib/seo/site-url';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 
@@ -10,9 +10,9 @@ import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
 
-  // 1. Fetch strictly indexable articles and active author profiles
+  // 1. Fetch strictly indexable articles (without LongText bodies) and active author profiles
   const [articles, authors] = await Promise.all([
-    getIndexableArticles().catch(() => []),
+    getIndexableArticleSummaries().catch(() => []),
     getAllActiveAuthors().catch(() => []),
   ]);
 

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, X, RotateCcw, FileQuestion, User } from 'lucide-react';
-import { Article, ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
+import { ArticleCardItem, ARTICLE_CATEGORIES, normalizeArticleCategory } from '@/lib/articles/types';
 import ArticleCard from './ArticleCard';
 
 interface KnowledgeListClientProps {
-  initialArticles: Article[];
+  initialArticles: ArticleCardItem[];
   initialCategory?: string;
   initialAuthor?: string;
   initialQuery?: string;
@@ -20,33 +21,38 @@ export default function KnowledgeListClient({
   initialAuthor,
   initialQuery = '',
 }: KnowledgeListClientProps) {
+  const searchParams = useSearchParams();
+  const urlCategory = searchParams.get('category') || initialCategory;
+  const urlAuthor = searchParams.get('author') || initialAuthor;
+  const urlQuery = searchParams.get('q') || searchParams.get('search') || initialQuery;
+
   const [activeCategory, setActiveCategory] = useState<string>(() => {
-    if (!initialCategory) return 'ทั้งหมด';
-    const norm = normalizeArticleCategory(initialCategory);
+    if (!urlCategory) return 'ทั้งหมด';
+    const norm = normalizeArticleCategory(urlCategory);
     return CATEGORIES.includes(norm) ? norm : 'ทั้งหมด';
   });
 
-  const [activeAuthor, setActiveAuthor] = useState<string | null>(initialAuthor || null);
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [activeAuthor, setActiveAuthor] = useState<string | null>(urlAuthor || null);
+  const [searchQuery, setSearchQuery] = useState(urlQuery || '');
 
   useEffect(() => {
-    if (initialCategory) {
-      const norm = normalizeArticleCategory(initialCategory);
+    if (urlCategory) {
+      const norm = normalizeArticleCategory(urlCategory);
       if (CATEGORIES.includes(norm)) setActiveCategory(norm);
     }
-  }, [initialCategory]);
+  }, [urlCategory]);
 
   useEffect(() => {
-    if (initialAuthor !== undefined) {
-      setActiveAuthor(initialAuthor || null);
+    if (urlAuthor !== undefined) {
+      setActiveAuthor(urlAuthor || null);
     }
-  }, [initialAuthor]);
+  }, [urlAuthor]);
 
   useEffect(() => {
-    if (initialQuery !== undefined) {
-      setSearchQuery(initialQuery);
+    if (urlQuery !== undefined) {
+      setSearchQuery(urlQuery || '');
     }
-  }, [initialQuery]);
+  }, [urlQuery]);
 
   const authorDisplayName = useMemo(() => {
     if (!activeAuthor) return null;
@@ -147,6 +153,7 @@ export default function KnowledgeListClient({
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={handleClearSearch}
               style={{
                 background: '#f1f5f9',
@@ -188,6 +195,7 @@ export default function KnowledgeListClient({
               <strong style={{ color: 'var(--accent-dark)' }}>{filteredArticles.length}</strong> รายการ
             </span>
             <button
+              type="button"
               onClick={handleClearSearch}
               style={{
                 background: 'none',
@@ -234,6 +242,7 @@ export default function KnowledgeListClient({
             <User size={15} />
             <span>บทความโดย: {authorDisplayName}</span>
             <button
+              type="button"
               onClick={handleClearAuthor}
               style={{
                 background: '#bae6fd',
@@ -274,6 +283,7 @@ export default function KnowledgeListClient({
           return (
             <button
               key={cat}
+              type="button"
               role="tab"
               aria-selected={isActive}
               onClick={() => setActiveCategory(cat)}
@@ -301,7 +311,7 @@ export default function KnowledgeListClient({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
             gap: '30px',
           }}
         >
@@ -363,6 +373,7 @@ export default function KnowledgeListClient({
           </p>
 
           <button
+            type="button"
             onClick={handleResetAll}
             className="btn btn-outline"
             style={{

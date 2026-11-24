@@ -1,10 +1,13 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { ChevronRight, Calendar, Clock, Tag, Zap, ArrowLeft, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { getCachedArticleBySlug, getRelatedArticles, getArticleRedirect, getPillarHubForCategory } from '@/lib/articles/queries';
+import { prisma } from '@/lib/prisma';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
+import { isNextImageOptimizable } from '@/lib/image-utils';
 import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleBody from '@/components/articles/ArticleBody';
 import ArticleToc from '@/components/articles/ArticleToc';
@@ -19,6 +22,22 @@ interface ArticlePageProps {
 }
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  if (!process.env.DATABASE_URL) return [];
+  try {
+    const articles = await prisma.article.findMany({
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: { lte: new Date() },
+      },
+      select: { slug: true },
+    });
+    return articles.map((a) => ({ slug: a.slug }));
+  } catch {
+    return [];
+  }
+}
 
 /**
  * 1. Dynamic Metadata for SEO, AEO, and Social Sharing
@@ -36,7 +55,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 
   const siteUrl = getSiteUrl();
   const canonicalUrl = article.canonicalUrl || `${siteUrl}/knowledge/${article.slug}`;
-  const ogImageUrl = toAbsoluteUrl(article.ogImage || article.coverImage || '/images/hero-tax.png');
+  const ogImageUrl = toAbsoluteUrl(article.ogImage || article.coverImage || '/images/hero_banner.png');
   const metaTitle = article.seoTitle || `${article.title} | ดีถาวรการบัญชี`;
   const metaDescription = article.seoDescription || article.summary;
 
@@ -120,7 +139,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     '@type': 'Article',
     headline: article.title,
     description: article.summary,
-    image: [toAbsoluteUrl(article.coverImage || '/images/hero-tax.png')],
+    image: [toAbsoluteUrl(article.coverImage || '/images/hero_banner.png')],
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': canonicalUrl,
@@ -402,21 +421,42 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               background: '#f8fafc',
             }}
           >
-            <div style={{ position: 'relative', width: '100%', maxHeight: '460px', overflow: 'hidden' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={article.coverImage}
-                alt={article.coverImageAlt || article.title}
-                loading="eager"
-                decoding="async"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: '460px',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                aspectRatio: '16 / 9',
+                maxHeight: '460px',
+                overflow: 'hidden',
+              }}
+            >
+              {isNextImageOptimizable(article.coverImage) ? (
+                <Image
+                  src={article.coverImage}
+                  alt={article.coverImageAlt || article.title}
+                  fill
+                  priority
+                  sizes="(max-width: 860px) 100vw, 860px"
+                  style={{
+                    objectFit: 'cover',
+                  }}
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={article.coverImage}
+                  alt={article.coverImageAlt || article.title}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              )}
             </div>
             {article.coverImageAlt && (
               <figcaption

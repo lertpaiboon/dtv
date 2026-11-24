@@ -66,7 +66,7 @@ export default function WealthTransferQuoteForm() {
         body: JSON.stringify({
           firstName,
           lastName,
-          email: 'lead@deethavorn.com',
+          email: '',
           phone: formData.phone.trim(),
           serviceType: 'วางแผนมรดกและภาษี',
           message: formattedMessage,

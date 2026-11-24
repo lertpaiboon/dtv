@@ -97,22 +97,25 @@ export async function GET() {
   }
 
   try {
-    const [gscConfig, cachedSetting, articles, contentPlan, linkMatrix, brokenLinks] =
-      await Promise.all([
-        loadStoredOrEnvGscConfig(),
-        prisma.systemSetting.findUnique({
-          where: { key: 'gsc_cached_rows' },
-        }),
-        prisma.article.findMany({
-          include: {
-            faqs: { orderBy: { sortOrder: 'asc' } },
-          },
-          orderBy: { updatedAt: 'desc' },
-        }),
-        getSyncedContentPlan(),
-        buildInternalLinkMatrix(),
-        scanBrokenLinksAndAssets(),
-      ]);
+    const [gscConfig, cachedSetting, articles] = await Promise.all([
+      loadStoredOrEnvGscConfig(),
+      prisma.systemSetting.findUnique({
+        where: { key: 'gsc_cached_rows' },
+      }),
+      prisma.article.findMany({
+        include: {
+          faqs: { orderBy: { sortOrder: 'asc' } },
+          citations: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+
+    const [contentPlan, linkMatrix, brokenLinks] = await Promise.all([
+      getSyncedContentPlan(articles),
+      buildInternalLinkMatrix(articles),
+      scanBrokenLinksAndAssets(articles),
+    ]);
 
     const { creds, siteUrl: siteUrlSetting } = gscConfig;
     const cachedRaw = cachedSetting?.value || '';

@@ -43,14 +43,34 @@ export async function GET(req: Request) {
       ];
     }
 
-    // Parallel fetch: articles list, total count, counts by status, and active authors
+    // Parallel fetch: lightweight article list (excludes contentMarkdown LongText), total count, status counts, active authors
     const [articles, totalCount, statusCountsGroup, authors] = await Promise.all([
       prisma.article.findMany({
         where,
         skip,
         take: limit,
         orderBy: [{ updatedAt: 'desc' }],
-        include: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          summary: true,
+          category: true,
+          coverImage: true,
+          coverImageAlt: true,
+          status: true,
+          focusKeyword: true,
+          seoTitle: true,
+          seoScore: true,
+          isNoIndex: true,
+          authorId: true,
+          reviewerId: true,
+          reviewedAt: true,
+          publishedAt: true,
+          contentUpdatedAt: true,
+          nextReviewAt: true,
+          createdAt: true,
+          updatedAt: true,
           author: { select: { id: true, name: true, role: true } },
           reviewer: { select: { id: true, name: true, role: true } },
           _count: { select: { faqs: true, citations: true, redirects: true } },

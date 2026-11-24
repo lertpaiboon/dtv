@@ -5,18 +5,39 @@ import { getAdminSession, hasPermission } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// รองรับนามสกุลไฟล์สื่อหลักทั้งหมด
+// รองรับนามสกุลไฟล์สื่อที่ปลอดภัย (ไม่เสิร์ฟ SVG inline)
 const MIME_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
   '.avif': 'image/avif',
   '.ico': 'image/x-icon',
   '.pdf': 'application/pdf',
 };
+
+function hasUnsafePathSegments(segments: string[]): boolean {
+  return segments.some(
+    (seg) =>
+      !seg ||
+      seg === '.' ||
+      seg === '..' ||
+      seg.includes('/') ||
+      seg.includes('\\') ||
+      seg.includes('\0')
+  );
+}
+
+function isSlipSegmentsOrPath(segments: string[], resolvedPath?: string): boolean {
+  if (segments[0]?.toLowerCase() === 'slips') return true;
+  if (segments.some((s) => s.toLowerCase() === 'slips')) return true;
+  if (resolvedPath) {
+    const normalized = resolvedPath.replace(/\\/g, '/').toLowerCase();
+    if (normalized.includes('/uploads/slips/')) return true;
+  }
+  return false;
+}
 
 /**
  * ป้องกัน Directory Traversal Attack โดยตรวจสอบว่า target อยู่ภายใต้ baseDir จริงๆ
@@ -37,7 +58,7 @@ function resolveSafePath(baseDir: string, segments: string[]): string | null {
  * หากไม่พบจึงตรวจสอบใน public/uploads (สำหรับ public assets หรือ slips เดิม)
  */
 async function findUploadedFile(segments: string[]): Promise<{ filePath: string; isSlip: boolean } | null> {
-  const isSlip = segments[0] === 'slips';
+  const isSlip = isSlipSegmentsOrPath(segments);
 
   // ถ้าเป็น slip ให้ค้นหาใน storage/uploads/slips ก่อน
   if (isSlip) {
@@ -65,7 +86,7 @@ async function findUploadedFile(segments: string[]): Promise<{ filePath: string;
   try {
     const fileStat = await stat(publicPath);
     if (fileStat.isFile()) {
-      return { filePath: publicPath, isSlip };
+      return { filePath: publicPath, isSlip: isSlipSegmentsOrPath(segments, publicPath) };
     }
   } catch {
     return null;
@@ -108,11 +129,11 @@ export async function GET(
   try {
     const { path: segments } = await context.params;
 
-    if (!segments || segments.length === 0) {
+    if (!segments || segments.length === 0 || hasUnsafePathSegments(segments)) {
       return new NextResponse('Bad Request', { status: 400 });
     }
 
-    const isSlip = segments[0] === 'slips';
+    const isSlip = isSlipSegmentsOrPath(segments);
 
     // ถ้าเป็นสลิปโอนเงินภาษี ต้องยืนยันตัวตนและตรวจสิทธิ์ RBAC เสมอ
     if (isSlip) {
@@ -133,6 +154,19 @@ export async function GET(
       return new NextResponse('Not Found', { status: 404 });
     }
 
+    if (fileResult.isSlip && !isSlip) {
+      const authResult = await verifySlipAccess();
+      if (!authResult.authorized) {
+        return new NextResponse(authResult.error, {
+          status: authResult.status,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+          },
+        });
+      }
+    }
+
     const fileBuffer = await readFile(fileResult.filePath);
     const ext = path.extname(fileResult.filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -141,7 +175,12 @@ export async function GET(
       'Content-Type': contentType,
       'Content-Length': fileBuffer.byteLength.toString(),
       'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
     };
+
+    if (ext === '.pdf' || !MIME_TYPES[ext]) {
+      headers['Content-Disposition'] = 'attachment';
+    }
 
     if (fileResult.isSlip) {
       // ป้องกันการ Cache สลิปของลูกค้าบน Browser หรือ Shared CDN Cache อย่างเด็ดขาด
@@ -167,11 +206,11 @@ export async function HEAD(
 ) {
   try {
     const { path: segments } = await context.params;
-    if (!segments || segments.length === 0) {
+    if (!segments || segments.length === 0 || hasUnsafePathSegments(segments)) {
       return new NextResponse(null, { status: 400 });
     }
 
-    const isSlip = segments[0] === 'slips';
+    const isSlip = isSlipSegmentsOrPath(segments);
 
     if (isSlip) {
       const authResult = await verifySlipAccess();
@@ -190,6 +229,18 @@ export async function HEAD(
       return new NextResponse(null, { status: 404 });
     }
 
+    if (fileResult.isSlip && !isSlip) {
+      const authResult = await verifySlipAccess();
+      if (!authResult.authorized) {
+        return new NextResponse(null, {
+          status: authResult.status,
+          headers: {
+            'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+          },
+        });
+      }
+    }
+
     const fileStat = await stat(fileResult.filePath);
     const ext = path.extname(fileResult.filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -198,7 +249,12 @@ export async function HEAD(
       'Content-Type': contentType,
       'Content-Length': fileStat.size.toString(),
       'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
     };
+
+    if (ext === '.pdf' || !MIME_TYPES[ext]) {
+      headers['Content-Disposition'] = 'attachment';
+    }
 
     if (fileResult.isSlip) {
       headers['Cache-Control'] = 'private, no-store, no-cache, must-revalidate';

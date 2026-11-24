@@ -8,6 +8,8 @@ import { defaultFaqs, type FaqItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 
+export const revalidate = 3600;
+
 export const metadata = {
   title: 'ค่าบริการทำบัญชี ยื่นภาษี จดบริษัท และตรวจสอบบัญชี CPA | ดีถาวรการบัญชี',
   description:

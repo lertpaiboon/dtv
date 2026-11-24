@@ -125,7 +125,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params;
-    const companyId = parseInt(id, 10);
+    const companyId = parsePositiveId(id);
+    if (!companyId) {
+      return NextResponse.json({ success: false, error: 'รหัสบริษัทไม่ถูกต้อง' }, { status: 400 });
+    }
 
     // Check if company has linked tax payments
     const paymentsCount = await prisma.taxPayment.count({

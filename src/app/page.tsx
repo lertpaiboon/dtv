@@ -7,7 +7,7 @@ import WorkProcess from '@/components/WorkProcess';
 import CustomerReviews from '@/components/CustomerReviews';
 import Pricing from '@/components/Pricing';
 import FAQ from '@/components/FAQ';
-import HomeKnowledge from '@/components/HomeKnowledge';
+import HomeKnowledge, { defaultHomeArticles, type HomeArticleItem } from '@/components/HomeKnowledge';
 import ContactForm from '@/components/ContactForm';
 import {
   defaultCustomerReviews,
@@ -15,6 +15,7 @@ import {
   type CustomerReviewItem,
   type FaqItem,
 } from '@/lib/default-content';
+import { getLatestHomeArticles } from '@/lib/articles/queries';
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 
@@ -65,10 +66,21 @@ async function getHomeFaqs(): Promise<FaqItem[]> {
   }
 }
 
+async function getHomeArticles(): Promise<HomeArticleItem[]> {
+  if (!process.env.DATABASE_URL) return defaultHomeArticles;
+  try {
+    const rows = await getLatestHomeArticles(3);
+    return rows.length > 0 ? rows : defaultHomeArticles;
+  } catch {
+    return defaultHomeArticles;
+  }
+}
+
 export default async function HomePage() {
-  const [reviewItems, faqItems] = await Promise.all([
+  const [reviewItems, faqItems, homeArticles] = await Promise.all([
     getHomeReviews(),
     getHomeFaqs(),
+    getHomeArticles(),
   ]);
 
   return (
@@ -81,7 +93,7 @@ export default async function HomePage() {
       <CustomerReviews items={reviewItems} />
       <Pricing />
       <FAQ items={faqItems} />
-      <HomeKnowledge />
+      <HomeKnowledge items={homeArticles} />
       <ContactForm />
     </>
   );

@@ -30,6 +30,12 @@ export async function POST(req: Request) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ success: false, error: 'ไม่มีข้อมูลสำหรับนำเข้า' }, { status: 400 });
     }
+    if (items.length > 500) {
+      return NextResponse.json(
+        { success: false, error: 'นำเข้าข้อมูลบริษัทได้สูงสุดไม่เกิน 500 รายการต่อครั้ง' },
+        { status: 400 }
+      );
+    }
 
     // Get existing companies to avoid duplicate key errors
     const existingCompanies = await prisma.company.findMany({
@@ -70,7 +76,7 @@ export async function POST(req: Request) {
     }> = [];
 
     for (const item of items as ImportCompanyItem[]) {
-      const cleanName = item.name?.trim();
+      const cleanName = typeof item.name === 'string' ? item.name.trim().slice(0, 200) : '';
       if (!cleanName) {
         skippedCount++;
         skippedItems.push({ name: '(ไม่ระบุชื่อ)', reason: 'ไม่มีชื่อบริษัท' });
@@ -83,7 +89,10 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const cleanTaxId = item.taxId?.replace(/[^0-9]/g, '').trim() || null;
+      const cleanTaxId =
+        typeof item.taxId === 'string'
+          ? item.taxId.replace(/[^0-9]/g, '').trim().slice(0, 20) || null
+          : null;
       if (cleanTaxId && existingTaxIds.has(cleanTaxId)) {
         skippedCount++;
         skippedItems.push({ name: cleanName, reason: `เลขประจำตัวผู้เสียภาษี ${cleanTaxId} ซ้ำกับในระบบ` });
@@ -93,20 +102,29 @@ export async function POST(req: Request) {
       const companyBase = {
         name: cleanName,
         taxId: cleanTaxId,
-        email: item.email?.trim() || null,
-        phone: item.phone?.trim() || null,
-        address: item.address?.trim() || null,
+        email: typeof item.email === 'string' && item.email.trim() ? item.email.trim().slice(0, 150) : null,
+        phone: typeof item.phone === 'string' && item.phone.trim() ? item.phone.trim().slice(0, 50) : null,
+        address: typeof item.address === 'string' && item.address.trim() ? item.address.trim().slice(0, 1000) : null,
       };
 
-      if (item.contactName?.trim()) {
+      if (typeof item.contactName === 'string' && item.contactName.trim()) {
         companiesWithContacts.push({
           ...companyBase,
           contacts: [
             {
-              name: item.contactName.trim(),
-              roleTitle: item.contactRole?.trim() || 'ผู้ประสานงานหลัก',
-              phone: item.contactPhone?.trim() || null,
-              email: item.contactEmail?.trim() || null,
+              name: item.contactName.trim().slice(0, 100),
+              roleTitle:
+                typeof item.contactRole === 'string' && item.contactRole.trim()
+                  ? item.contactRole.trim().slice(0, 100)
+                  : 'ผู้ประสานงานหลัก',
+              phone:
+                typeof item.contactPhone === 'string' && item.contactPhone.trim()
+                  ? item.contactPhone.trim().slice(0, 50)
+                  : null,
+              email:
+                typeof item.contactEmail === 'string' && item.contactEmail.trim()
+                  ? item.contactEmail.trim().slice(0, 150)
+                  : null,
               isPrimary: true,
             },
           ],

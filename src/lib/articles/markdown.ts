@@ -1,7 +1,8 @@
 /**
  * Restricted Markdown & Sanitized HTML Parser / Content Extractors for Deethavorn Knowledge Hub
- * Zero-dependency, fast, OWASP-hardened HTML sanitization tailored for Server Components.
+ * Parser-backed OWASP-hardened HTML sanitization tailored for Server & Client Components.
  */
+import sanitizeHtml from 'sanitize-html';
 
 export interface TocHeading {
   id: string;
@@ -383,8 +384,6 @@ const ALLOWED_HTML_TAGS = new Set([
   'summary',
 ]);
 
-const VOID_HTML_TAGS = new Set(['br', 'hr', 'img', 'col']);
-
 const DANGEROUS_PAIRED_TAGS = [
   'script',
   'style',
@@ -440,13 +439,18 @@ function sanitizeInlineStyle(rawStyle: string): string {
 
 function stripDangerousTagsAndComments(rawHtml: string): string {
   let html = rawHtml || '';
-  for (const tag of DANGEROUS_PAIRED_TAGS) {
-    const pairedRe = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}\\s*>`, 'gi');
-    html = html.replace(pairedRe, '');
-    const strayRe = new RegExp(`<\\/?${tag}\\b[^>]*>`, 'gi');
-    html = html.replace(strayRe, '');
+  let previous = '';
+  // Strip comments first, then strip dangerous tags iteratively until fixed-point
+  while (html !== previous) {
+    previous = html;
+    html = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<!--[\s\S]*$/g, '');
+    for (const tag of DANGEROUS_PAIRED_TAGS) {
+      const pairedRe = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}\\s*>`, 'gi');
+      html = html.replace(pairedRe, '');
+      const strayRe = new RegExp(`<\\/?${tag}\\b[^>]*>`, 'gi');
+      html = html.replace(strayRe, '');
+    }
   }
-  html = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<!--[\s\S]*$/g, '');
   return html;
 }
 
@@ -498,218 +502,254 @@ function wrapBareHtmlTables(html: string): string {
   return result;
 }
 
+const ALLOWED_HTML_TAG_LIST = Array.from(ALLOWED_HTML_TAGS);
+
 /**
- * Sanitize raw HTML authored by the SEO team using strict OWASP tag/attribute/CSS allowlists.
+ * Sanitize raw HTML authored by the SEO team using strict parser-backed tag/attribute/CSS allowlists.
  */
 export function sanitizeArticleHtml(rawHtml: string): string {
-  let html = stripDangerousTagsAndComments(rawHtml);
-
-  const tagRe = /<\/?([a-zA-Z][a-zA-Z0-9-]*)((?:\s+(?:[^"'<>]|"[^"]*"|'[^']*')*)?)\s*(\/?)>/g;
-  const attrRe = /([a-zA-Z_:][a-zA-Z0-9_.:-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-
-  html = html.replace(tagRe, (fullTag, rawTagName, rawAttrs = '') => {
-    const isClosing = fullTag.startsWith('</');
-    let tagName = rawTagName.toLowerCase();
-
-    if (!ALLOWED_HTML_TAGS.has(tagName)) {
-      return '';
-    }
-
-    // Keep single-H1 rule on article page by mapping author <h1> to <h2>
-    if (tagName === 'h1') {
-      tagName = 'h2';
-    }
-
-    if (isClosing) {
-      if (VOID_HTML_TAGS.has(tagName)) {
-        return '';
+  let html = sanitizeHtml(rawHtml || '', {
+    allowedTags: ALLOWED_HTML_TAG_LIST,
+    disallowedTagsMode: 'discard',
+    parseStyleAttributes: false,
+    allowProtocolRelative: false,
+    allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+    allowedSchemesByTag: {
+      img: ['http', 'https'],
+    },
+    allowedAttributes: {
+      '*': ['id', 'title', 'dir', 'lang', 'aria-label', 'style'],
+      a: ['href', 'target', 'rel'],
+      img: ['src', 'alt', 'width', 'height', 'loading', 'decoding'],
+      th: ['colspan', 'rowspan', 'scope', 'align', 'valign'],
+      td: ['colspan', 'rowspan', 'scope', 'align', 'valign'],
+      col: ['span'],
+      colgroup: ['span'],
+      ol: ['start', 'type', 'reversed'],
+      details: ['open'],
+    },
+    exclusiveFilter: (frame) => {
+      if (frame.tag === 'img') {
+        const src = typeof frame.attribs.src === 'string' ? frame.attribs.src.trim() : '';
+        return !sanitizeImageUrl(src);
       }
-      return `</${tagName}>`;
-    }
+      return false;
+    },
+    transformTags: {
+      '*': (tagName, attribs) => {
+        const nextAttribs: Record<string, string> = {};
 
-    const attrsOut: Array<{ name: string; value: string | null }> = [];
-    const seenAttrs = new Set<string>();
-    const rawAttrMap = new Map<string, string | null>();
-
-    attrRe.lastIndex = 0;
-    let attrMatch: RegExpExecArray | null;
-    while ((attrMatch = attrRe.exec(rawAttrs)) !== null) {
-      const attrName = attrMatch[1].toLowerCase();
-      if (attrName.startsWith('on')) continue;
-      const attrVal =
-        attrMatch[2] !== undefined
-          ? attrMatch[2]
-          : attrMatch[3] !== undefined
-          ? attrMatch[3]
-          : attrMatch[4] !== undefined
-          ? attrMatch[4]
-          : null;
-      if (!rawAttrMap.has(attrName)) {
-        rawAttrMap.set(attrName, attrVal);
-      }
-    }
-
-    const pushAttr = (name: string, value: string | null) => {
-      if (seenAttrs.has(name)) return;
-      seenAttrs.add(name);
-      attrsOut.push({ name, value });
-    };
-
-    // Global allowed attributes
-    const idVal = rawAttrMap.get('id');
-    if (typeof idVal === 'string') {
-      const cleanId = decodeHtmlEntities(idVal).trim();
-      if (cleanId && /^[a-zA-Z0-9_\-\u0E00-\u0E7F]+$/.test(cleanId)) {
-        pushAttr('id', cleanId);
-      }
-    }
-
-    const titleVal = rawAttrMap.get('title');
-    if (typeof titleVal === 'string') {
-      const cleanTitle = decodeHtmlEntities(titleVal).trim();
-      if (cleanTitle) pushAttr('title', cleanTitle);
-    }
-
-    const dirVal = rawAttrMap.get('dir');
-    if (typeof dirVal === 'string') {
-      const cleanDir = dirVal.trim().toLowerCase();
-      if (cleanDir === 'ltr' || cleanDir === 'rtl' || cleanDir === 'auto') {
-        pushAttr('dir', cleanDir);
-      }
-    }
-
-    const langVal = rawAttrMap.get('lang');
-    if (typeof langVal === 'string') {
-      const cleanLang = langVal.trim();
-      if (/^[a-zA-Z0-9-]+$/.test(cleanLang)) {
-        pushAttr('lang', cleanLang);
-      }
-    }
-
-    const ariaLabelVal = rawAttrMap.get('aria-label');
-    if (typeof ariaLabelVal === 'string') {
-      const cleanAria = decodeHtmlEntities(ariaLabelVal).trim();
-      if (cleanAria) pushAttr('aria-label', cleanAria);
-    }
-
-    const styleVal = rawAttrMap.get('style');
-    if (typeof styleVal === 'string') {
-      const safeStyle = sanitizeInlineStyle(styleVal);
-      if (safeStyle) pushAttr('style', safeStyle);
-    }
-
-    // Tag-specific attributes
-    if (tagName === 'a') {
-      const hrefVal = rawAttrMap.get('href');
-      if (typeof hrefVal === 'string') {
-        const decodedHref = decodeHtmlEntities(hrefVal).trim();
-        const safeHref = sanitizeUrl(decodedHref);
-        if (decodedHref === '#' || safeHref !== '#') {
-          pushAttr('href', safeHref);
-        }
-      }
-
-      const targetVal = rawAttrMap.get('target');
-      const isBlankTarget = typeof targetVal === 'string' && targetVal.trim().toLowerCase() === '_blank';
-      if (isBlankTarget) {
-        pushAttr('target', '_blank');
-      }
-
-      const relVal = rawAttrMap.get('rel');
-      const relTokens = new Set<string>();
-      if (typeof relVal === 'string') {
-        for (const token of relVal.trim().toLowerCase().split(/\s+/)) {
-          if (SAFE_REL_TOKENS.has(token)) {
-            relTokens.add(token);
+        if (typeof attribs.id === 'string') {
+          const cleanId = attribs.id.trim();
+          if (cleanId && /^[a-zA-Z0-9_\-\u0E00-\u0E7F]+$/.test(cleanId)) {
+            nextAttribs.id = cleanId;
           }
         }
-      }
-      if (isBlankTarget) {
-        relTokens.add('noopener');
-        relTokens.add('noreferrer');
-      }
-      if (relTokens.size > 0) {
-        pushAttr('rel', Array.from(relTokens).join(' '));
-      }
-    } else if (tagName === 'img') {
-      const srcVal = rawAttrMap.get('src');
-      const decodedSrc = typeof srcVal === 'string' ? decodeHtmlEntities(srcVal).trim() : '';
-      const safeSrc = sanitizeImageUrl(decodedSrc);
-      if (!safeSrc) {
-        return '';
-      }
-      pushAttr('src', safeSrc);
+        if (typeof attribs.title === 'string') {
+          const cleanTitle = attribs.title.trim();
+          if (cleanTitle) nextAttribs.title = cleanTitle;
+        }
+        if (typeof attribs.dir === 'string') {
+          const cleanDir = attribs.dir.trim().toLowerCase();
+          if (cleanDir === 'ltr' || cleanDir === 'rtl' || cleanDir === 'auto') {
+            nextAttribs.dir = cleanDir;
+          }
+        }
+        if (typeof attribs.lang === 'string') {
+          const cleanLang = attribs.lang.trim();
+          if (/^[a-zA-Z0-9-]+$/.test(cleanLang)) {
+            nextAttribs.lang = cleanLang;
+          }
+        }
+        if (typeof attribs['aria-label'] === 'string') {
+          const cleanAria = attribs['aria-label'].trim();
+          if (cleanAria) nextAttribs['aria-label'] = cleanAria;
+        }
+        if (typeof attribs.style === 'string') {
+          const safeStyle = sanitizeInlineStyle(attribs.style);
+          if (safeStyle) nextAttribs.style = safeStyle;
+        }
 
-      const altVal = rawAttrMap.get('alt');
-      if (typeof altVal === 'string') {
-        pushAttr('alt', decodeHtmlEntities(altVal).trim());
-      }
+        // Preserve tag-specific attributes validated by tag transformers so '*' doesn't drop them
+        if (tagName === 'a') {
+          if (attribs.href !== undefined) nextAttribs.href = attribs.href;
+          if (attribs.target !== undefined) nextAttribs.target = attribs.target;
+          if (attribs.rel !== undefined) nextAttribs.rel = attribs.rel;
+        } else if (tagName === 'img') {
+          if (attribs.src !== undefined) nextAttribs.src = attribs.src;
+          if (attribs.alt !== undefined) nextAttribs.alt = attribs.alt;
+          if (attribs.width !== undefined) nextAttribs.width = attribs.width;
+          if (attribs.height !== undefined) nextAttribs.height = attribs.height;
+          if (attribs.loading !== undefined) nextAttribs.loading = attribs.loading;
+          if (attribs.decoding !== undefined) nextAttribs.decoding = attribs.decoding;
+        } else if (tagName === 'th' || tagName === 'td') {
+          if (attribs.colspan !== undefined) nextAttribs.colspan = attribs.colspan;
+          if (attribs.rowspan !== undefined) nextAttribs.rowspan = attribs.rowspan;
+          if (attribs.scope !== undefined) nextAttribs.scope = attribs.scope;
+          if (attribs.align !== undefined) nextAttribs.align = attribs.align;
+          if (attribs.valign !== undefined) nextAttribs.valign = attribs.valign;
+        } else if (tagName === 'col' || tagName === 'colgroup') {
+          if (attribs.span !== undefined) nextAttribs.span = attribs.span;
+        } else if (tagName === 'ol') {
+          if (attribs.start !== undefined) nextAttribs.start = attribs.start;
+          if (attribs.type !== undefined) nextAttribs.type = attribs.type;
+          if (attribs.reversed !== undefined) nextAttribs.reversed = attribs.reversed;
+        } else if (tagName === 'details') {
+          if (attribs.open !== undefined) nextAttribs.open = attribs.open;
+        }
 
-      const widthVal = rawAttrMap.get('width');
-      if (typeof widthVal === 'string' && /^\d{1,5}(?:px|%)?$/i.test(widthVal.trim())) {
-        pushAttr('width', widthVal.trim());
-      }
-
-      const heightVal = rawAttrMap.get('height');
-      if (typeof heightVal === 'string' && /^\d{1,5}(?:px|%)?$/i.test(heightVal.trim())) {
-        pushAttr('height', heightVal.trim());
-      }
-
-      const loadingVal = rawAttrMap.get('loading')?.trim().toLowerCase();
-      pushAttr('loading', loadingVal === 'eager' ? 'eager' : 'lazy');
-      pushAttr('decoding', 'async');
-    } else if (tagName === 'th' || tagName === 'td') {
-      const colspanVal = rawAttrMap.get('colspan');
-      if (typeof colspanVal === 'string' && /^[1-9]\d*$/.test(colspanVal.trim())) {
-        pushAttr('colspan', colspanVal.trim());
-      }
-      const rowspanVal = rawAttrMap.get('rowspan');
-      if (typeof rowspanVal === 'string' && /^[1-9]\d*$/.test(rowspanVal.trim())) {
-        pushAttr('rowspan', rowspanVal.trim());
-      }
-      const scopeVal = rawAttrMap.get('scope')?.trim().toLowerCase();
-      if (scopeVal && ['col', 'row', 'colgroup', 'rowgroup'].includes(scopeVal)) {
-        pushAttr('scope', scopeVal);
-      }
-      const alignVal = rawAttrMap.get('align')?.trim().toLowerCase();
-      if (alignVal && ['left', 'center', 'right'].includes(alignVal)) {
-        pushAttr('align', alignVal);
-      }
-      const valignVal = rawAttrMap.get('valign')?.trim().toLowerCase();
-      if (valignVal && ['top', 'middle', 'bottom'].includes(valignVal)) {
-        pushAttr('valign', valignVal);
-      }
-    } else if (tagName === 'col' || tagName === 'colgroup') {
-      const spanVal = rawAttrMap.get('span');
-      if (typeof spanVal === 'string' && /^[1-9]\d*$/.test(spanVal.trim())) {
-        pushAttr('span', spanVal.trim());
-      }
-    } else if (tagName === 'ol') {
-      const startVal = rawAttrMap.get('start');
-      if (typeof startVal === 'string' && /^-?\d+$/.test(startVal.trim())) {
-        pushAttr('start', startVal.trim());
-      }
-      const typeVal = rawAttrMap.get('type')?.trim();
-      if (typeVal && ['1', 'a', 'A', 'i', 'I'].includes(typeVal)) {
-        pushAttr('type', typeVal);
-      }
-      if (rawAttrMap.has('reversed')) {
-        pushAttr('reversed', null);
-      }
-    } else if (tagName === 'details') {
-      if (rawAttrMap.has('open')) {
-        pushAttr('open', null);
-      }
-    }
-
-    const serializedAttrs = attrsOut
-      .map((a) => (a.value === null ? ` ${a.name}` : ` ${a.name}="${escapeHtmlAttr(a.value)}"`))
-      .join('');
-
-    if (VOID_HTML_TAGS.has(tagName)) {
-      return `<${tagName}${serializedAttrs} />`;
-    }
-    return `<${tagName}${serializedAttrs}>`;
+        return { tagName, attribs: nextAttribs };
+      },
+      // Keep single-H1 rule on article page by mapping author <h1> to <h2>
+      h1: (_tagName, attribs) => ({
+        tagName: 'h2',
+        attribs,
+      }),
+      a: (_tagName, attribs) => {
+        const next = { ...attribs };
+        if (typeof next.href === 'string') {
+          const rawHref = next.href.trim();
+          const safeHref = sanitizeUrl(rawHref);
+          if (rawHref === '#' || safeHref !== '#') {
+            next.href = safeHref;
+          } else {
+            delete next.href;
+          }
+        }
+        const isBlankTarget = typeof next.target === 'string' && next.target.trim().toLowerCase() === '_blank';
+        if (isBlankTarget) {
+          next.target = '_blank';
+        } else {
+          delete next.target;
+        }
+        const relTokens = new Set<string>();
+        if (typeof next.rel === 'string') {
+          for (const token of next.rel.trim().toLowerCase().split(/\s+/)) {
+            if (SAFE_REL_TOKENS.has(token)) {
+              relTokens.add(token);
+            }
+          }
+        }
+        if (isBlankTarget) {
+          relTokens.add('noopener');
+          relTokens.add('noreferrer');
+        }
+        if (relTokens.size > 0) {
+          next.rel = Array.from(relTokens).join(' ');
+        } else {
+          delete next.rel;
+        }
+        return { tagName: 'a', attribs: next };
+      },
+      img: (_tagName, attribs) => {
+        const next = { ...attribs };
+        const safeSrc = typeof next.src === 'string' ? sanitizeImageUrl(next.src.trim()) : '';
+        if (safeSrc) {
+          next.src = safeSrc;
+        } else {
+          delete next.src;
+        }
+        if (typeof next.alt === 'string') {
+          next.alt = next.alt.trim();
+        }
+        if (typeof next.width === 'string' && /^\d{1,5}(?:px|%)?$/i.test(next.width.trim())) {
+          next.width = next.width.trim();
+        } else {
+          delete next.width;
+        }
+        if (typeof next.height === 'string' && /^\d{1,5}(?:px|%)?$/i.test(next.height.trim())) {
+          next.height = next.height.trim();
+        } else {
+          delete next.height;
+        }
+        const loadingVal = typeof next.loading === 'string' ? next.loading.trim().toLowerCase() : '';
+        next.loading = loadingVal === 'eager' ? 'eager' : 'lazy';
+        next.decoding = 'async';
+        return { tagName: 'img', attribs: next };
+      },
+      th: (tagName, attribs) => {
+        const next = { ...attribs };
+        if (!(typeof next.colspan === 'string' && /^[1-9]\d*$/.test(next.colspan.trim()))) {
+          delete next.colspan;
+        } else {
+          next.colspan = next.colspan.trim();
+        }
+        if (!(typeof next.rowspan === 'string' && /^[1-9]\d*$/.test(next.rowspan.trim()))) {
+          delete next.rowspan;
+        } else {
+          next.rowspan = next.rowspan.trim();
+        }
+        const scopeVal = typeof next.scope === 'string' ? next.scope.trim().toLowerCase() : '';
+        if (['col', 'row', 'colgroup', 'rowgroup'].includes(scopeVal)) next.scope = scopeVal;
+        else delete next.scope;
+        const alignVal = typeof next.align === 'string' ? next.align.trim().toLowerCase() : '';
+        if (['left', 'center', 'right'].includes(alignVal)) next.align = alignVal;
+        else delete next.align;
+        const valignVal = typeof next.valign === 'string' ? next.valign.trim().toLowerCase() : '';
+        if (['top', 'middle', 'bottom'].includes(valignVal)) next.valign = valignVal;
+        else delete next.valign;
+        return { tagName, attribs: next };
+      },
+      td: (tagName, attribs) => {
+        const next = { ...attribs };
+        if (!(typeof next.colspan === 'string' && /^[1-9]\d*$/.test(next.colspan.trim()))) {
+          delete next.colspan;
+        } else {
+          next.colspan = next.colspan.trim();
+        }
+        if (!(typeof next.rowspan === 'string' && /^[1-9]\d*$/.test(next.rowspan.trim()))) {
+          delete next.rowspan;
+        } else {
+          next.rowspan = next.rowspan.trim();
+        }
+        const scopeVal = typeof next.scope === 'string' ? next.scope.trim().toLowerCase() : '';
+        if (['col', 'row', 'colgroup', 'rowgroup'].includes(scopeVal)) next.scope = scopeVal;
+        else delete next.scope;
+        const alignVal = typeof next.align === 'string' ? next.align.trim().toLowerCase() : '';
+        if (['left', 'center', 'right'].includes(alignVal)) next.align = alignVal;
+        else delete next.align;
+        const valignVal = typeof next.valign === 'string' ? next.valign.trim().toLowerCase() : '';
+        if (['top', 'middle', 'bottom'].includes(valignVal)) next.valign = valignVal;
+        else delete next.valign;
+        return { tagName, attribs: next };
+      },
+      col: (tagName, attribs) => {
+        const next = { ...attribs };
+        if (typeof next.span === 'string' && /^[1-9]\d*$/.test(next.span.trim())) {
+          next.span = next.span.trim();
+        } else {
+          delete next.span;
+        }
+        return { tagName, attribs: next };
+      },
+      colgroup: (tagName, attribs) => {
+        const next = { ...attribs };
+        if (typeof next.span === 'string' && /^[1-9]\d*$/.test(next.span.trim())) {
+          next.span = next.span.trim();
+        } else {
+          delete next.span;
+        }
+        return { tagName, attribs: next };
+      },
+      ol: (_tagName, attribs) => {
+        const next = { ...attribs };
+        if (typeof next.start === 'string' && /^-?\d+$/.test(next.start.trim())) {
+          next.start = next.start.trim();
+        } else {
+          delete next.start;
+        }
+        const typeVal = typeof next.type === 'string' ? next.type.trim() : '';
+        if (['1', 'a', 'A', 'i', 'I'].includes(typeVal)) next.type = typeVal;
+        else delete next.type;
+        if (next.reversed !== undefined) next.reversed = '';
+        return { tagName: 'ol', attribs: next };
+      },
+      details: (_tagName, attribs) => {
+        const next = { ...attribs };
+        if (next.open !== undefined) next.open = '';
+        return { tagName: 'details', attribs: next };
+      },
+    },
   });
 
   // Ensure every H2/H3/H4 has an anchor id for Table of Contents navigation

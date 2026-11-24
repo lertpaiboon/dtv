@@ -62,7 +62,6 @@ export default function Header() {
                 width={3508}
                 height={2480}
                 sizes="58px"
-                priority
               />
             </span>
             <span className="brand__copy">

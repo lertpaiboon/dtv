@@ -6,13 +6,19 @@ export const dynamic = 'force-dynamic';
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_SUBMISSIONS_PER_WINDOW = 5;
+const MAX_RATE_LIMIT_ENTRIES = 2000;
 const contactRateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkContactRateLimit(ip: string): boolean {
   const now = Date.now();
-  if (contactRateLimitMap.size > 1000) {
+  if (contactRateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
     for (const [key, val] of contactRateLimitMap.entries()) {
       if (val.resetAt <= now) contactRateLimitMap.delete(key);
+    }
+    while (contactRateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = contactRateLimitMap.keys().next().value;
+      if (oldestKey === undefined) break;
+      contactRateLimitMap.delete(oldestKey);
     }
   }
   const existing = contactRateLimitMap.get(ip);
@@ -28,8 +34,8 @@ export async function POST(req: Request) {
   try {
     const ip =
       (
-        req.headers.get('x-forwarded-for')?.split(',')[0] ||
         req.headers.get('x-real-ip') ||
+        req.headers.get('x-forwarded-for')?.split(',').pop() ||
         'unknown'
       )
         .trim()
@@ -56,15 +62,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Validation
+    // 1. Validation (allow callback-only quote forms with phone when email is omitted)
     if (
       typeof firstName !== 'string' ||
-      typeof lastName !== 'string' ||
-      typeof email !== 'string' ||
       typeof message !== 'string' ||
       !firstName.trim() ||
-      !lastName.trim() ||
-      !email.trim() ||
       !message.trim()
     ) {
       return NextResponse.json(
@@ -74,13 +76,22 @@ export async function POST(req: Request) {
     }
 
     const cleanFirstName = firstName.trim().slice(0, 100);
-    const cleanLastName = lastName.trim().slice(0, 100);
-    const cleanEmail = email.trim().toLowerCase().slice(0, 150);
+    const cleanLastName = typeof lastName === 'string' ? lastName.trim().slice(0, 100) : '';
+    const rawEmail = typeof email === 'string' ? email.trim().toLowerCase().slice(0, 150) : '';
+    const hasRealEmail = Boolean(rawEmail && rawEmail !== 'lead@deethavorn.com');
+    const cleanEmail = hasRealEmail ? rawEmail : '';
     const cleanPhone = typeof phone === 'string' && phone.trim() ? phone.trim().slice(0, 50) : null;
     const cleanMessage = message.trim().slice(0, 5000);
 
+    if (!hasRealEmail && !cleanPhone) {
+      return NextResponse.json(
+        { error: 'กรุณาระบุอีเมลหรือเบอร์โทรศัพท์เพื่อให้ทีมงานติดต่อกลับได้' },
+        { status: 400 }
+      );
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
+    if (hasRealEmail && !emailRegex.test(cleanEmail)) {
       return NextResponse.json(
         { error: 'รูปแบบอีเมลไม่ถูกต้อง' },
         { status: 400 }
@@ -126,10 +137,11 @@ export async function POST(req: Request) {
     };
 
     try {
-      await Promise.allSettled([
-        sendAdminContactNotification(leadData),
-        sendClientConfirmation(leadData),
-      ]);
+      const mailTasks: Array<Promise<boolean>> = [sendAdminContactNotification(leadData)];
+      if (hasRealEmail) {
+        mailTasks.push(sendClientConfirmation(leadData));
+      }
+      await Promise.allSettled(mailTasks);
     } catch (mailError) {
       console.error('Email dispatch error:', mailError);
     }
@@ -138,14 +150,15 @@ export async function POST(req: Request) {
     const lineNotifyToken = process.env.LINE_NOTIFY_TOKEN;
     if (lineNotifyToken) {
       try {
-        const lineMessage = `\n🔔 มีผู้ติดต่อใหม่จากหน้าเว็บดีถาวรการบัญชี!\nชื่อ: ${cleanFirstName} ${cleanLastName}\nอีเมล: ${cleanEmail}\nเบอร์โทร: ${cleanPhone || '-'}\nข้อความ: ${cleanMessage}`;
+        const lineMessage = `\n🔔 มีผู้ติดต่อใหม่จากหน้าเว็บดีถาวรการบัญชี!\nชื่อ: ${cleanFirstName} ${cleanLastName}\nอีเมล: ${cleanEmail || '-'}\nเบอร์โทร: ${cleanPhone || '-'}\nข้อความ: ${cleanMessage}`;
         await fetch('https://notify-api.line.me/api/notify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': `Bearer ${lineNotifyToken}`
           },
-          body: new URLSearchParams({ message: lineMessage })
+          body: new URLSearchParams({ message: lineMessage }),
+          signal: AbortSignal.timeout(5000),
         });
       } catch (lineErr) {
         console.error('Line notify error:', lineErr);

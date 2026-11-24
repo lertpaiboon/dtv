@@ -9,7 +9,7 @@ import { getSiteUrl } from '@/lib/seo/site-url';
 export function sanitizeRedirectTarget(rawTarget: string): string | null {
   if (!rawTarget || typeof rawTarget !== 'string') return null;
   const trimmed = rawTarget.trim();
-  if (!trimmed) return null;
+  if (!trimmed || /[\u0000-\u001F\u007F\\]/.test(trimmed)) return null;
 
   // Disallow dangerous protocols or protocol-relative external URLs
   const lower = trimmed.toLowerCase();
@@ -22,24 +22,29 @@ export function sanitizeRedirectTarget(rawTarget: string): string | null {
     return null;
   }
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    try {
+  try {
+    const siteUrl = new URL(getSiteUrl());
+    const siteHost = siteUrl.host.toLowerCase().replace(/^www\./, '');
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       const targetUrl = new URL(trimmed);
-      const siteUrl = new URL(getSiteUrl());
       const targetHost = targetUrl.host.toLowerCase().replace(/^www\./, '');
-      const siteHost = siteUrl.host.toLowerCase().replace(/^www\./, '');
       if (targetHost !== siteHost) {
         return null;
       }
       return `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}` || '/';
-    } catch {
+    }
+
+    const normalized = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    if (normalized.startsWith('//')) return null;
+    const parsed = new URL(normalized, siteUrl.origin);
+    if (parsed.origin !== siteUrl.origin) {
       return null;
     }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || '/';
+  } catch {
+    return null;
   }
-
-  const normalized = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  if (normalized.startsWith('//')) return null;
-  return normalized;
 }
 
 /**

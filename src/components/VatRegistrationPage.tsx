@@ -383,8 +383,8 @@ export default function VatRegistrationPage({ data }: { data: SubServiceDetailCo
                   src="/images/service_reg.png"
                   alt="เอกสารจดทะเบียนภาษีมูลค่าเพิ่ม ภ.พ.01 และ ภ.พ.20"
                   fill
-                  sizes="100vw"
-                  quality={95}
+                  sizes="(max-width: 960px) 100vw, 50vw"
+                  quality={80}
                   className="aud-scope__img"
                 />
               </div>
@@ -694,8 +694,8 @@ export default function VatRegistrationPage({ data }: { data: SubServiceDetailCo
               src="/images/process_meeting.jpg"
               alt="ทีมงานดีถาวรการบัญชีที่ดูแลงานภาษีมูลค่าเพิ่ม"
               fill
-              sizes="100vw"
-              quality={90}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              quality={80}
               className="ma-trust__img"
             />
             <blockquote className="ma-trust__quote">
@@ -814,7 +814,7 @@ export default function VatRegistrationPage({ data }: { data: SubServiceDetailCo
                   alt="ภาพปกบทความเรื่องการจด VAT"
                   fill
                   sizes="(max-width: 920px) 100vw, 960px"
-                  quality={90}
+                  quality={80}
                   className="ma-kb-card__img"
                 />
                 <span className="ma-kb-card__tag">ภาษีอากร</span>
@@ -841,7 +841,7 @@ export default function VatRegistrationPage({ data }: { data: SubServiceDetailCo
                     alt="ภาพปกบทความเรื่องจดทะเบียนบริษัท"
                     fill
                     sizes="(max-width: 920px) 100vw, 640px"
-                    quality={90}
+                    quality={80}
                     className="ma-kb-card__img"
                   />
                 </div>
@@ -866,7 +866,7 @@ export default function VatRegistrationPage({ data }: { data: SubServiceDetailCo
                     alt="ภาพปกบทความเรื่อง CPA และ TA"
                     fill
                     sizes="(max-width: 920px) 100vw, 640px"
-                    quality={90}
+                    quality={80}
                     className="ma-kb-card__img"
                   />
                 </div>

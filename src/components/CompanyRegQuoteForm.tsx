@@ -71,7 +71,7 @@ export default function CompanyRegQuoteForm() {
         body: JSON.stringify({
           firstName,
           lastName,
-          email: 'lead@deethavorn.com',
+          email: '',
           phone: formData.phone.trim(),
           serviceType: formData.serviceOption,
           message: formattedMessage,

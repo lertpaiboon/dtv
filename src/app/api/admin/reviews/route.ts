@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
+import { isSafeHttpUrl, isSafeImageOrHttpUrl } from '@/lib/articles/validation';
 import { prisma } from '@/lib/prisma';
 import { defaultCustomerReviews } from '@/lib/default-content';
 
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       });
 
       revalidatePath('/');
+      revalidatePath('/about');
       const seeded = await prisma.customerReview.findMany({
         orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       });
@@ -91,6 +93,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'กรุณาระบุชื่อผู้รีวิว (Author Name)' }, { status: 400 });
     }
 
+    const authorImage = body.authorImage ? String(body.authorImage).trim() : null;
+    if (authorImage && !isSafeImageOrHttpUrl(authorImage)) {
+      return NextResponse.json({ success: false, error: 'URL รูปลูกค้าไม่ปลอดภัย' }, { status: 400 });
+    }
+
+    const sourceUrl = body.sourceUrl ? String(body.sourceUrl).trim() : null;
+    if (sourceUrl && !isSafeHttpUrl(sourceUrl)) {
+      return NextResponse.json({ success: false, error: 'URL แหล่งอ้างอิงไม่ถูกต้อง (ต้องเป็น http/https)' }, { status: 400 });
+    }
+
     const parsedRating = Number(body.rating);
     const rating = Number.isFinite(parsedRating) ? Math.min(5, Math.max(1, Math.round(parsedRating))) : 5;
     const parsedSortOrder = Number(body.sortOrder);
@@ -101,17 +113,18 @@ export async function POST(req: Request) {
         headline,
         quote,
         authorName,
-        authorImage: body.authorImage ? String(body.authorImage).trim() : null,
+        authorImage,
         companyName: body.companyName ? String(body.companyName).trim() : null,
         businessType: body.businessType ? String(body.businessType).trim() : null,
         rating,
-        sourceUrl: body.sourceUrl ? String(body.sourceUrl).trim() : null,
+        sourceUrl,
         sortOrder,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
       },
     });
 
     revalidatePath('/');
+    revalidatePath('/about');
 
     return NextResponse.json({
       success: true,

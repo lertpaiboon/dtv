@@ -365,7 +365,7 @@ export default function SettingsPage() {
       )}
 
       {errorMsg && (
-        <div className="admin-alert admin-alert--danger" role="alert" style={{ margin: 0 }}>
+        <div className="admin-alert admin-alert--error" role="alert" style={{ margin: 0 }}>
           <AlertCircle size={18} />
           <span>{errorMsg}</span>
           <button

@@ -12,6 +12,7 @@ import {
   Edit,
   Trash2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface RoleItem {
@@ -266,6 +267,13 @@ export default function RolesPage() {
         <button type="button" className="admin-secondary-button" onClick={() => void loadRoles()}>ลองใหม่</button>
       </div>}
 
+      {loading && (
+        <div className="admin-inline-state" role="status" aria-live="polite">
+          <RefreshCw className="animate-spin" size={20} aria-hidden="true" />
+          <span>กำลังโหลดข้อมูลบทบาทและสิทธิ์การใช้งาน...</span>
+        </div>
+      )}
+
       {/* Role Selection Tabs */}
       {!loading && !loadError && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 admin-role-selector">
         {roles.map((r) => {
@@ -273,6 +281,7 @@ export default function RolesPage() {
           return (
             <button
               key={r.id}
+              type="button"
               onClick={() => handleSelectRole(r)}
               className={`p-4 rounded-2xl border text-left transition-all relative cursor-pointer ${
                 isSelected

@@ -458,8 +458,8 @@ export default function CompanyAmendmentPage({ data }: CompanyAmendmentPageProps
               src="/images/office_atmosphere.png"
               alt="อาคารสำนักงานของบริษัทที่กำลังปรับข้อมูลทะเบียน"
               fill
-              sizes="100vw"
-              quality={95}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              quality={80}
               className="camd-for__img"
             />
           </div>
@@ -747,8 +747,8 @@ export default function CompanyAmendmentPage({ data }: CompanyAmendmentPageProps
               src="/images/process_meeting.jpg"
               alt="ทีมงานดีถาวรการบัญชีที่ดูแลงานทะเบียนเปลี่ยนแปลงบริษัท"
               fill
-              sizes="100vw"
-              quality={90}
+              sizes="(max-width: 960px) 100vw, 50vw"
+              quality={80}
               className="ma-trust__img"
             />
             <blockquote className="ma-trust__quote">
@@ -822,7 +822,7 @@ export default function CompanyAmendmentPage({ data }: CompanyAmendmentPageProps
                   alt="ภาพปกบทความเรื่องจดทะเบียนบริษัท"
                   fill
                   sizes="(max-width: 920px) 100vw, 960px"
-                  quality={90}
+                  quality={80}
                   className="ma-kb-card__img"
                 />
                 <span className="ma-kb-card__tag">จดทะเบียนธุรกิจ</span>
@@ -848,7 +848,7 @@ export default function CompanyAmendmentPage({ data }: CompanyAmendmentPageProps
                     alt="ภาพปกบทความเรื่องการจด VAT"
                     fill
                     sizes="(max-width: 920px) 100vw, 640px"
-                    quality={90}
+                    quality={80}
                     className="ma-kb-card__img"
                   />
                 </div>
@@ -874,7 +874,7 @@ export default function CompanyAmendmentPage({ data }: CompanyAmendmentPageProps
                     alt="ภาพปกบทความเรื่อง CPA และ TA"
                     fill
                     sizes="(max-width: 920px) 100vw, 640px"
-                    quality={90}
+                    quality={80}
                     className="ma-kb-card__img"
                   />
                 </div>

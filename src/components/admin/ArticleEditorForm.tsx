@@ -634,25 +634,9 @@ export default function ArticleEditorForm({
   };
 
   return (
-    <div style={{ padding: '0 32px 48px' }}>
+    <div className="admin-editor-wrap">
       {/* 1. Sticky Top Action Bar */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-          background: '#ffffff',
-          borderBottom: '1px solid #e2e8f0',
-          padding: '14px 32px',
-          margin: '0 -32px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '14px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-        }}
-      >
+      <div className="admin-editor-sticky">
         {/* Left: Back Link & Status Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <Link
@@ -1556,13 +1540,11 @@ export default function ArticleEditorForm({
                 </div>
 
                 <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                      markdownViewMode === 'split' ? '1fr 1fr' : '1fr',
-                    gap: '16px',
-                    minHeight: '480px',
-                  }}
+                  className={
+                    markdownViewMode === 'split'
+                      ? 'admin-editor-split admin-editor-split--dual'
+                      : 'admin-editor-split'
+                  }
                 >
                   {/* Editor Column with Visual Toolbar + Textarea */}
                   {(markdownViewMode === 'edit' || markdownViewMode === 'split') && (

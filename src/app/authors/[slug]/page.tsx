@@ -1,6 +1,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Metadata } from 'next';
 import {
   ChevronRight,
@@ -12,12 +13,27 @@ import {
   FileCheck2,
 } from 'lucide-react';
 import { getAuthorBySlug } from '@/lib/articles/queries';
+import { prisma } from '@/lib/prisma';
 import { isSafeHttpUrl } from '@/lib/articles/validation';
+import { isNextImageOptimizable } from '@/lib/image-utils';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/seo/site-url';
 import { executeServerRedirectIfMatched } from '@/lib/seo/redirects';
 import ArticleCard from '@/components/articles/ArticleCard';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  if (!process.env.DATABASE_URL) return [];
+  try {
+    const authors = await prisma.author.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    });
+    return authors.map((a) => ({ slug: a.slug }));
+  } catch {
+    return [];
+  }
+}
 
 interface AuthorPageProps {
   params: Promise<{ slug: string }>;
@@ -217,12 +233,22 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
               {author.profileImage &&
               !author.profileImage.includes('DTV') &&
               !author.profileImage.includes('LOGO') ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={author.profileImage}
-                  alt={author.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                isNextImageOptimizable(author.profileImage) ? (
+                  <Image
+                    src={author.profileImage}
+                    alt={author.name}
+                    fill
+                    sizes="130px"
+                    style={{ objectFit: 'cover' }}
+                  />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={author.profileImage}
+                    alt={author.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )
               ) : (
                 <UserCheck size={60} aria-hidden="true" />
               )}
@@ -399,7 +425,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
                   gap: '30px',
                 }}
               >
@@ -442,7 +468,7 @@ export default async function AuthorProfilePage({ params }: AuthorPageProps) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
                 gap: '30px',
               }}
             >

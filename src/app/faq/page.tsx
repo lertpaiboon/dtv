@@ -6,6 +6,8 @@ import { defaultFaqs, type FaqItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
 import { toAbsoluteUrl } from '@/lib/seo/site-url';
 
+export const revalidate = 3600;
+
 export const metadata = {
   title: 'คำถามที่พบบ่อย (FAQ) ก่อนใช้บริการทำบัญชีและยื่นภาษี | ดีถาวรการบัญชี',
   description:
@@ -48,7 +50,7 @@ export default async function FaqPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
       />
 
       <section className="page-hero">
