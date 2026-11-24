@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -48,6 +48,9 @@ import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import ArticleBody from '@/components/articles/ArticleBody';
 import { useAdminSession } from '@/components/admin/AdminSessionContext';
 import SeoSuiteCard from '@/components/admin/SeoSuiteCard';
+import { isHtmlContent, hasEmbeddedToc } from '@/lib/articles/markdown';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface AuthorOption {
   id: number;
@@ -149,6 +152,9 @@ export default function ArticleEditorForm({
   const [activeTab, setActiveTab] = useState<'content' | 'faqs' | 'citations' | 'seo' | 'editorial'>('content');
   const [metaCollapsed, setMetaCollapsed] = useState(true);
   const [markdownViewMode, setMarkdownViewMode] = useState<'split' | 'edit' | 'preview'>('split');
+  const [editorFormat, setEditorFormat] = useState<'markdown' | 'html'>(() =>
+    isHtmlContent(initialData?.contentMarkdown || '') ? 'html' : 'markdown'
+  );
   const [isSlugManual, setIsSlugManual] = useState(!isNew);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -156,6 +162,23 @@ export default function ArticleEditorForm({
   const [successMessage, setSuccessMessage] = useState('');
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingSelectionRef = useRef<{
+    start: number;
+    end: number;
+    scrollTop: number;
+    wasAtBottom: boolean;
+  } | null>(null);
+
+  useIsomorphicLayoutEffect(() => {
+    const pending = pendingSelectionRef.current;
+    const textarea = textareaRef.current;
+    if (!pending || !textarea) return;
+    pendingSelectionRef.current = null;
+
+    textarea.setSelectionRange(pending.start, pending.end);
+    textarea.focus({ preventScroll: true });
+    textarea.scrollTop = pending.wasAtBottom ? textarea.scrollHeight : pending.scrollTop;
+  }, [formData.contentMarkdown]);
 
   // Body Image Insertion Modal State
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -265,37 +288,43 @@ export default function ArticleEditorForm({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const currentText = formData.contentMarkdown || '';
+    const prevScrollTop = textarea.scrollTop;
+    const wasAtBottom = prevScrollTop + textarea.clientHeight >= textarea.scrollHeight - 24;
+    const currentText = textarea.value;
     const selectedText = currentText.substring(start, end);
 
     const replacement = selectedText ? `${prefix}${selectedText}${suffix}` : `${prefix}${defaultText}${suffix}`;
     const newContent = currentText.substring(0, start) + replacement + currentText.substring(end);
+    const nextStart = start + prefix.length;
+    const nextEnd = nextStart + (selectedText ? selectedText.length : defaultText.length);
+
+    pendingSelectionRef.current = {
+      start: nextStart,
+      end: nextEnd,
+      scrollTop: prevScrollTop,
+      wasAtBottom,
+    };
 
     setFormData((prev) => ({ ...prev, contentMarkdown: newContent }));
-
-    setTimeout(() => {
-      textarea.focus();
-      if (selectedText) {
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
-      } else {
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length + defaultText.length);
-      }
-    }, 40);
   };
 
   const insertTable = () => {
-    const tableTemplate = `\n| หัวข้อคอลัมน์ 1 | หัวข้อคอลัมน์ 2 | รายละเอียด |\n| :--- | :--- | :--- |\n| ข้อมูลแถวที่ 1 | 100,000 | อัตราปกติ |\n| ข้อมูลแถวที่ 2 | 200,000 | ได้รับการยกเว้น |\n`;
+    const tableTemplate =
+      editorFormat === 'html'
+        ? `\n<div style="overflow-x: auto; margin: 8px 0 32px;">\n<table style="width: 100%; border-collapse: collapse; line-height: 1.6;">\n<thead>\n<tr>\n  <th style="background: #f1f5f9; color: #102a56; text-align: left; padding: 10px 14px; border: 1px solid #dbe5e9;">หัวข้อ</th>\n  <th style="background: #f1f5f9; color: #102a56; text-align: left; padding: 10px 14px; border: 1px solid #dbe5e9;">รายละเอียด</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n  <td style="padding: 10px 14px; border: 1px solid #dbe5e9;">รายการที่ 1</td>\n  <td style="padding: 10px 14px; border: 1px solid #dbe5e9;">คำอธิบาย</td>\n</tr>\n</tbody>\n</table>\n</div>\n`
+        : `\n| หัวข้อคอลัมน์ 1 | หัวข้อคอลัมน์ 2 | รายละเอียด |\n| :--- | :--- | :--- |\n| ข้อมูลแถวที่ 1 | 100,000 | อัตราปกติ |\n| ข้อมูลแถวที่ 2 | 200,000 | ได้รับการยกเว้น |\n`;
     insertMarkdown(tableTemplate, '', '');
   };
 
   const insertLink = () => {
-    const url = window.prompt('กรุณากรอก URL ลิงก์ปลายทาง:', 'https://');
+    const rawUrl = window.prompt('กรุณากรอก URL ลิงก์ปลายทาง:', 'https://');
+    const url = rawUrl?.trim();
     if (!url) return;
-    const textarea = textareaRef.current;
-    const start = textarea?.selectionStart || 0;
-    const end = textarea?.selectionEnd || 0;
-    const selectedText = (formData.contentMarkdown || '').substring(start, end) || 'ข้อความลิงก์';
-    insertMarkdown(`[${selectedText}](${url})`, '', '');
+    if (editorFormat === 'html') {
+      insertMarkdown(`<a href="${url}">`, '</a>', 'ข้อความลิงก์');
+    } else {
+      insertMarkdown('[', `](${url})`, 'ข้อความลิงก์');
+    }
   };
 
   // Upload image to be inserted into body content
@@ -327,14 +356,18 @@ export default function ArticleEditorForm({
     }
   };
 
-  // Insert image markdown into textarea
+  // Insert image markdown or HTML figure into textarea
   const handleInsertImage = () => {
     if (!bodyImageUrl.trim()) {
       setBodyImageUploadError('กรุณาระบุ URL ของรูปภาพ หรืออัปโหลดไฟล์ภาพก่อนแทรก');
       return;
     }
     const altText = bodyImageAlt.trim() || 'ภาพประกอบบทความ';
-    insertMarkdown(`\n\n![${altText}](${bodyImageUrl.trim()})\n\n`, '', '');
+    const snippet =
+      editorFormat === 'html'
+        ? `\n<figure style="margin: 24px 0;">\n  <img src="${bodyImageUrl.trim()}" alt="${altText}" style="max-width: 100%; height: auto; border-radius: 8px;" />\n  <figcaption style="margin-top: 8px; font-size: 0.86rem; color: #64748b; text-align: center;">${altText}</figcaption>\n</figure>\n`
+        : `\n\n![${altText}](${bodyImageUrl.trim()})\n\n`;
+    insertMarkdown(snippet, '', '');
     setImageModalOpen(false);
     setBodyImageUrl('');
     setBodyImageAlt('');
@@ -344,10 +377,18 @@ export default function ArticleEditorForm({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
       e.preventDefault();
-      insertMarkdown('**', '**', 'ข้อความตัวหนา');
+      if (editorFormat === 'html') {
+        insertMarkdown('<strong>', '</strong>', 'ข้อความตัวหนา');
+      } else {
+        insertMarkdown('**', '**', 'ข้อความตัวหนา');
+      }
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
       e.preventDefault();
-      insertMarkdown('*', '*', 'ข้อความตัวเอียง');
+      if (editorFormat === 'html') {
+        insertMarkdown('<em>', '</em>', 'ข้อความตัวเอียง');
+      } else {
+        insertMarkdown('*', '*', 'ข้อความตัวเอียง');
+      }
     }
   };
 
@@ -1418,10 +1459,50 @@ export default function ArticleEditorForm({
                   boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                    เนื้อหาบทความ (Restricted Markdown) *
-                  </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <label style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                      เนื้อหาบทความ *
+                    </label>
+                    <div
+                      role="group"
+                      aria-label="รูปแบบตัวแก้ไขบทความ"
+                      style={{ display: 'inline-flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '6px' }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setEditorFormat('markdown')}
+                        style={{
+                          padding: '4px 11px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: editorFormat === 'markdown' ? '#102a56' : 'transparent',
+                          color: editorFormat === 'markdown' ? '#ffffff' : '#475569',
+                          fontWeight: 600,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Markdown
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditorFormat('html')}
+                        style={{
+                          padding: '4px 11px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: editorFormat === 'html' ? '#146fa8' : 'transparent',
+                          color: editorFormat === 'html' ? '#ffffff' : '#475569',
+                          fontWeight: 600,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        HTML (Code)
+                      </button>
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '6px' }}>
                     <button
                       type="button"
@@ -1500,279 +1581,440 @@ export default function ArticleEditorForm({
                           gap: '6px',
                         }}
                       >
-                        {/* Heading Group */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n## ', '\n', 'หัวข้อย่อยหลัก')}
-                            title="หัวข้อย่อยหลัก (H2)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                            }}
-                          >
-                            <Heading2 size={15} />
-                            <span>H2</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n### ', '\n', 'หัวข้อย่อยรอง')}
-                            title="หัวข้อย่อยรอง (H3)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                            }}
-                          >
-                            <Heading3 size={15} />
-                            <span>H3</span>
-                          </button>
-                        </div>
+                        {editorFormat === 'html' ? (
+                          <>
+                            {/* HTML Quicktags (WordPress Code View style) */}
+                            {[
+                              { label: 'H2', title: 'หัวข้อย่อยหลัก (<h2>)', prefix: '\n<h2>', suffix: '</h2>\n', def: 'หัวข้อย่อยหลัก', bold: true },
+                              { label: 'H3', title: 'หัวข้อย่อยรอง (<h3>)', prefix: '\n<h3>', suffix: '</h3>\n', def: 'หัวข้อย่อยรอง', bold: true },
+                              { label: 'p', title: 'ย่อหน้า (<p>)', prefix: '\n<p>', suffix: '</p>\n', def: 'ย่อหน้าเนื้อหา' },
+                              { label: 'b', title: 'ตัวหนา (<strong>)', prefix: '<strong>', suffix: '</strong>', def: 'ข้อความตัวหนา', bold: true },
+                              { label: 'i', title: 'ตัวเอียง (<em>)', prefix: '<em>', suffix: '</em>', def: 'ข้อความตัวเอียง', italic: true },
+                              { label: 'del', title: 'ขีดฆ่า (<del>)', prefix: '<del>', suffix: '</del>', def: 'ข้อความขีดฆ่า' },
+                              { label: 'ins', title: 'ขีดเส้นใต้ / เพิ่มข้อความ (<ins>)', prefix: '<ins>', suffix: '</ins>', def: 'ข้อความเพิ่มเติม' },
+                              { label: 'code', title: 'โค้ด / คำศัพท์ (<code>)', prefix: '<code>', suffix: '</code>', def: 'คำศัพท์เฉพาะ' },
+                            ].map((tag) => (
+                              <button
+                                key={tag.label}
+                                type="button"
+                                onClick={() => insertMarkdown(tag.prefix, tag.suffix, tag.def)}
+                                title={tag.title}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 9px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontWeight: tag.bold ? 700 : 500,
+                                  fontStyle: tag.italic ? 'italic' : 'normal',
+                                  fontFamily: 'Consolas, Monaco, monospace',
+                                }}
+                              >
+                                {tag.label}
+                              </button>
+                            ))}
 
-                        <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 2px' }} />
 
-                        {/* Inline Formatting Group */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('**', '**', 'ข้อความตัวหนา')}
-                            title="ตัวหนา (Bold - Ctrl+B)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Bold size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('*', '*', 'ข้อความตัวเอียง')}
-                            title="ตัวเอียง (Italic - Ctrl+I)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Italic size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('`', '`', 'คำศัพท์เฉพาะ')}
-                            title="เน้นคำศัพท์ (Code/Tag)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Code size={15} />
-                          </button>
-                        </div>
+                            <button
+                              type="button"
+                              onClick={insertLink}
+                              title="แทรกลิงก์ (<a href>)"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 9px',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '5px',
+                                color: '#334155',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                              }}
+                            >
+                              <Link2 size={14} />
+                              <span>ลิงก์</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setInternalLinkPanelOpen((prev) => !prev)}
+                              title="1-Click แทรก Internal Link เชื่อมหน้าบริการหลัก (Pillar Pages) และบทความในคลัสเตอร์"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 10px',
+                                background: internalLinkPanelOpen ? '#dcfce7' : '#f0fdf4',
+                                border: '1px solid #86efac',
+                                borderRadius: '5px',
+                                color: '#15803d',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              <Sparkles size={13} />
+                              <span>1-Click Internal Link</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={insertTable}
+                              title="แทรกตาราง HTML (<table>)"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 9px',
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '5px',
+                                color: '#334155',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                              }}
+                            >
+                              <Table size={14} />
+                              <span>ตาราง</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBodyImageUploadError('');
+                                setImageModalOpen(true);
+                              }}
+                              title="แทรกรูปภาพ (<figure> + <img>)"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '5px 9px',
+                                background: '#f0f9ff',
+                                border: '1px solid #bae6fd',
+                                borderRadius: '5px',
+                                color: '#0284c7',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                              }}
+                            >
+                              <ImageIcon size={14} />
+                              <span>รูปภาพ</span>
+                            </button>
 
-                        <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 2px' }} />
 
-                        {/* Link & Table Group */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <button
-                            type="button"
-                            onClick={insertLink}
-                            title="แทรกลิงก์ (Insert Link)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 9px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                            }}
-                          >
-                            <Link2 size={14} />
-                            <span>ลิงก์</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setInternalLinkPanelOpen((prev) => !prev)}
-                            title="1-Click แทรก Internal Link เชื่อมหน้าบริการหลัก (Pillar Pages) และบทความในคลัสเตอร์"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 10px',
-                              background: internalLinkPanelOpen ? '#dcfce7' : '#f0fdf4',
-                              border: '1px solid #86efac',
-                              borderRadius: '5px',
-                              color: '#15803d',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                            }}
-                          >
-                            <Sparkles size={13} />
-                            <span>1-Click Internal Link</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={insertTable}
-                            title="แทรกตารางข้อมูล (Insert Table)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 9px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                            }}
-                          >
-                            <Table size={14} />
-                            <span>ตาราง</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setBodyImageUploadError('');
-                              setImageModalOpen(true);
-                            }}
-                            title="แทรกรูปภาพประกอบในเนื้อหา (Insert Image)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 9px',
-                              background: '#f0f9ff',
-                              border: '1px solid #bae6fd',
-                              borderRadius: '5px',
-                              color: '#0284c7',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              fontWeight: 600,
-                            }}
-                          >
-                            <ImageIcon size={14} />
-                            <span>รูปภาพ</span>
-                          </button>
-                        </div>
+                            {[
+                              { label: 'ul', title: 'รายการจุด (<ul>)', prefix: '\n<ul>\n  <li>', suffix: '</li>\n</ul>\n', def: 'รายการหัวข้อย่อย' },
+                              { label: 'ol', title: 'รายการตัวเลข (<ol>)', prefix: '\n<ol>\n  <li>', suffix: '</li>\n</ol>\n', def: 'รายการลำดับที่ 1' },
+                              { label: 'li', title: 'เพิ่มข้อรายการ (<li>)', prefix: '\n  <li>', suffix: '</li>', def: 'รายการ' },
+                              { label: 'b-quote', title: 'กล่องอ้างอิง (<blockquote>)', prefix: '\n<blockquote>\n  <p>', suffix: '</p>\n</blockquote>\n', def: 'ข้อคิดเห็นหรือประเด็นสำคัญ' },
+                              { label: 'div', title: 'กล่องเน้นข้อความ (<div>)', prefix: '\n<div style="border: 1px solid #dbe5e9; border-radius: 8px; padding: 16px 20px; margin: 16px 0; background: #f5fafb;">\n  ', suffix: '\n</div>\n', def: 'เนื้อหาในกล่อง' },
+                              { label: 'hr', title: 'เส้นคั่น (<hr />)', prefix: '\n<hr />\n', suffix: '', def: '' },
+                            ].map((tag) => (
+                              <button
+                                key={tag.label}
+                                type="button"
+                                onClick={() => insertMarkdown(tag.prefix, tag.suffix, tag.def)}
+                                title={tag.title}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 9px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontFamily: 'Consolas, Monaco, monospace',
+                                }}
+                              >
+                                {tag.label}
+                              </button>
+                            ))}
+                          </>
+                        ) : (
+                          <>
+                            {/* Heading Group */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n## ', '\n', 'หัวข้อย่อยหลัก')}
+                                title="หัวข้อย่อยหลัก (H2)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <Heading2 size={15} />
+                                <span>H2</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n### ', '\n', 'หัวข้อย่อยรอง')}
+                                title="หัวข้อย่อยรอง (H3)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <Heading3 size={15} />
+                                <span>H3</span>
+                              </button>
+                            </div>
 
-                        <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
 
-                        {/* Lists Group */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n- ', '', 'รายการหัวข้อย่อย')}
-                            title="รายการแบบจุดไข่ปลา (Bullet List)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <List size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n1. ', '', 'รายการลำดับที่ 1')}
-                            title="รายการแบบตัวเลข (Numbered List)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <ListOrdered size={15} />
-                          </button>
-                        </div>
+                            {/* Inline Formatting Group */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('**', '**', 'ข้อความตัวหนา')}
+                                title="ตัวหนา (Bold - Ctrl+B)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Bold size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('*', '*', 'ข้อความตัวเอียง')}
+                                title="ตัวเอียง (Italic - Ctrl+I)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Italic size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('`', '`', 'คำศัพท์เฉพาะ')}
+                                title="เน้นคำศัพท์ (Code/Tag)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Code size={15} />
+                              </button>
+                            </div>
 
-                        <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
 
-                        {/* Callout & Divider */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n> ', '', 'ข้อคิดเห็นหรือประเด็นทางภาษีสำคัญ')}
-                            title="กล่องข้อความเน้น (Quote / Callout)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Quote size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => insertMarkdown('\n\n---\n\n', '', '')}
-                            title="เส้นคั่นแบ่งส่วนเนื้อหา (Horizontal Divider)"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '5px 8px',
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '5px',
-                              color: '#334155',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Minus size={15} />
-                          </button>
-                        </div>
+                            {/* Link & Table Group */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <button
+                                type="button"
+                                onClick={insertLink}
+                                title="แทรกลิงก์ (Insert Link)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '5px 9px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                }}
+                              >
+                                <Link2 size={14} />
+                                <span>ลิงก์</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setInternalLinkPanelOpen((prev) => !prev)}
+                                title="1-Click แทรก Internal Link เชื่อมหน้าบริการหลัก (Pillar Pages) และบทความในคลัสเตอร์"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '5px 10px',
+                                  background: internalLinkPanelOpen ? '#dcfce7' : '#f0fdf4',
+                                  border: '1px solid #86efac',
+                                  borderRadius: '5px',
+                                  color: '#15803d',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <Sparkles size={13} />
+                                <span>1-Click Internal Link</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={insertTable}
+                                title="แทรกตารางข้อมูล (Insert Table)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '5px 9px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                }}
+                              >
+                                <Table size={14} />
+                                <span>ตาราง</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBodyImageUploadError('');
+                                  setImageModalOpen(true);
+                                }}
+                                title="แทรกรูปภาพประกอบในเนื้อหา (Insert Image)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '5px 9px',
+                                  background: '#f0f9ff',
+                                  border: '1px solid #bae6fd',
+                                  borderRadius: '5px',
+                                  color: '#0284c7',
+                                  cursor: 'pointer',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <ImageIcon size={14} />
+                                <span>รูปภาพ</span>
+                              </button>
+                            </div>
+
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+
+                            {/* Lists Group */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n- ', '', 'รายการหัวข้อย่อย')}
+                                title="รายการแบบจุดไข่ปลา (Bullet List)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <List size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n1. ', '', 'รายการลำดับที่ 1')}
+                                title="รายการแบบตัวเลข (Numbered List)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <ListOrdered size={15} />
+                              </button>
+                            </div>
+
+                            <div style={{ width: '1px', height: '18px', background: '#cbd5e1', margin: '0 3px' }} />
+
+                            {/* Callout & Divider */}
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n> ', '', 'ข้อคิดเห็นหรือประเด็นทางภาษีสำคัญ')}
+                                title="กล่องข้อความเน้น (Quote / Callout)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Quote size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => insertMarkdown('\n\n---\n\n', '', '')}
+                                title="เส้นคั่นแบ่งส่วนเนื้อหา (Horizontal Divider)"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '5px 8px',
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '5px',
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Minus size={15} />
+                              </button>
+                            </div>
+                          </>
+                        )}
 
                         {/* Help Toggle */}
                         <div style={{ marginLeft: 'auto' }}>
@@ -1845,7 +2087,11 @@ export default function ArticleEditorForm({
                                   key={p.url}
                                   type="button"
                                   onClick={() => {
-                                    insertMarkdown(`[${p.label}](${p.url})`, '', '');
+                                    const snippet =
+                                      editorFormat === 'html'
+                                        ? `<a href="${p.url}">${p.label}</a>`
+                                        : `[${p.label}](${p.url})`;
+                                    insertMarkdown(snippet, '', '');
                                     setInternalLinkPanelOpen(false);
                                   }}
                                   style={{
@@ -1879,7 +2125,11 @@ export default function ArticleEditorForm({
                                       key={art.id}
                                       type="button"
                                       onClick={() => {
-                                        insertMarkdown(`[${art.title}](/knowledge/${art.slug})`, '', '');
+                                        const snippet =
+                                          editorFormat === 'html'
+                                            ? `<a href="/knowledge/${art.slug}">${art.title}</a>`
+                                            : `[${art.title}](/knowledge/${art.slug})`;
+                                        insertMarkdown(snippet, '', '');
                                         setInternalLinkPanelOpen(false);
                                       }}
                                       style={{
@@ -1915,13 +2165,27 @@ export default function ArticleEditorForm({
                             lineHeight: 1.5,
                           }}
                         >
-                          <strong>💡 เคล็ดลับการจัดรูปแบบ:</strong>
-                          <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
-                            <li>ใช้เมาส์<strong>คลุมดำข้อความ</strong> แล้วกดปุ่มบนแถบเครื่องมือ เช่น [B] ตัวหนา หรือ [H2] เพื่อจัดรูปแบบทันที</li>
-                            <li>คลิกปุ่ม <strong>[รูปภาพ]</strong> เพื่ออัปโหลดภาพแบบฟอร์ม/Infographic หรือใส่ URL พร้อมระบุคำอธิบาย Alt Text ช่วยดันคะแนน Image SEO</li>
-                            <li>หากใครถนัดพิมพ์โค้ด <code>##</code>, <code>**</code>, <code>-</code>, <code>![คำอธิบาย](url)</code> หรือตาราง Markdown โดยตรง ก็สามารถพิมพ์ได้ตามปกติ</li>
-                            <li>รองรับคีย์ลัด <code>Ctrl+B</code> (ตัวหนา) และ <code>Ctrl+I</code> (ตัวเอียง) เหมือนใน Microsoft Word</li>
-                          </ul>
+                          {editorFormat === 'html' ? (
+                            <>
+                              <strong>💡 เคล็ดลับการใช้งานโหมด HTML (Code):</strong>
+                              <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
+                                <li>วางโค้ด HTML (เช่นจาก WordPress Code View พร้อม <code>style=&quot;...&quot;</code>, <code>&lt;table&gt;</code>, <code>&lt;ol&gt;</code>, <code>&lt;h2 id=&quot;...&quot;&gt;</code>) ได้ทันที และดูผลลัพธ์ด้านขวาแบบเรียลไทม์</li>
+                                <li>หากในโค้ด HTML มีกล่องสารบัญ (เช่น <code>&lt;!-- สารบัญ --&gt;</code> หรือลิงก์สารบัญ) อยู่แล้ว ระบบจะซ่อนสารบัญอัตโนมัติของเว็บให้เพื่อไม่ให้ซ้อนกัน</li>
+                                <li>เพื่อความปลอดภัย แท็กอันตรายอย่าง <code>&lt;script&gt;</code> และแอตทริบิวต์ <code>on*</code> จะถูกกรองออกอัตโนมัติ</li>
+                                <li>รองรับคีย์ลัด <code>Ctrl+B</code> (<code>&lt;strong&gt;</code>) และ <code>Ctrl+I</code> (<code>&lt;em&gt;</code>) และปุ่มลัดแทรกแท็กด้านบน</li>
+                              </ul>
+                            </>
+                          ) : (
+                            <>
+                              <strong>💡 เคล็ดลับการจัดรูปแบบ:</strong>
+                              <ul style={{ margin: '4px 0 0', paddingLeft: '18px' }}>
+                                <li>ใช้เมาส์<strong>คลุมดำข้อความ</strong> แล้วกดปุ่มบนแถบเครื่องมือ เช่น [B] ตัวหนา หรือ [H2] เพื่อจัดรูปแบบทันที</li>
+                                <li>คลิกปุ่ม <strong>[รูปภาพ]</strong> เพื่ออัปโหลดภาพแบบฟอร์ม/Infographic หรือใส่ URL พร้อมระบุคำอธิบาย Alt Text ช่วยดันคะแนน Image SEO</li>
+                                <li>หากใครถนัดพิมพ์โค้ด <code>##</code>, <code>**</code>, <code>-</code>, <code>![คำอธิบาย](url)</code> หรือตาราง Markdown โดยตรง ก็สามารถพิมพ์ได้ตามปกติ</li>
+                                <li>หากวางโค้ด HTML ลงมา ระบบจะสลับเป็นโหมด HTML (Code) ให้อัตโนมัติ</li>
+                              </ul>
+                            </>
+                          )}
                         </div>
                       )}
 
@@ -1929,9 +2193,19 @@ export default function ArticleEditorForm({
                       <textarea
                         ref={textareaRef}
                         rows={22}
-                        placeholder="พิมพ์เนื้อหาบทความ: สามารถคลิกปุ่มบนแถบเครื่องมือด้านบนเพื่อจัดรูปแบบ หรือพิมพ์โค้ด Markdown (##, **, -, ตาราง) ได้โดยตรง..."
+                        placeholder={
+                          editorFormat === 'html'
+                            ? 'วางหรือพิมพ์โค้ด HTML บทความ (เช่น <h2>, <p>, <table>, <div style="...">, <!-- สารบัญ -->) หรือใช้ปุ่มแทรกแท็กด้านบน...'
+                            : 'พิมพ์เนื้อหาบทความ: สามารถคลิกปุ่มบนแถบเครื่องมือด้านบนเพื่อจัดรูปแบบ หรือพิมพ์โค้ด Markdown (##, **, -, ตาราง) ได้โดยตรง...'
+                        }
                         value={formData.contentMarkdown}
-                        onChange={(e) => setFormData({ ...formData, contentMarkdown: e.target.value })}
+                        onChange={(e) => {
+                          const nextVal = e.target.value;
+                          if (editorFormat === 'markdown' && isHtmlContent(nextVal)) {
+                            setEditorFormat('html');
+                          }
+                          setFormData({ ...formData, contentMarkdown: nextVal });
+                        }}
                         onKeyDown={handleKeyDown}
                         style={{
                           width: '100%',
@@ -1950,7 +2224,7 @@ export default function ArticleEditorForm({
                     </div>
                   )}
 
-                  {/* Live Rendered Markdown Preview */}
+                  {/* Live Rendered Markdown / HTML Preview */}
                   {(markdownViewMode === 'preview' || markdownViewMode === 'split') && (
                     <div
                       style={{
@@ -1962,8 +2236,49 @@ export default function ArticleEditorForm({
                         maxHeight: '600px',
                       }}
                     >
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Live Reader Preview
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          marginBottom: '12px',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Live Reader Preview
+                        </div>
+                        {isHtmlContent(formData.contentMarkdown) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                color: '#146fa8',
+                                background: '#eaf5f8',
+                                padding: '2px 8px',
+                                borderRadius: '999px',
+                              }}
+                            >
+                              HTML Mode
+                            </span>
+                            {hasEmbeddedToc(formData.contentMarkdown) && (
+                              <span
+                                style={{
+                                  fontSize: '0.74rem',
+                                  fontWeight: 600,
+                                  color: '#157a55',
+                                  background: '#ecfdf5',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                }}
+                              >
+                                ตรวจพบสารบัญใน HTML — ซ่อนสารบัญอัตโนมัติให้แล้ว
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {formData.contentMarkdown ? (
                         <ArticleBody contentMarkdown={formData.contentMarkdown} />

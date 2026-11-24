@@ -1,5 +1,5 @@
 import React from 'react';
-import { extractHeadings, TocHeading } from '@/lib/articles/markdown';
+import { extractHeadings, hasEmbeddedToc, TocHeading } from '@/lib/articles/markdown';
 import { ListOrdered } from 'lucide-react';
 
 interface ArticleTocProps {
@@ -7,6 +7,10 @@ interface ArticleTocProps {
 }
 
 export default function ArticleToc({ contentMarkdown }: ArticleTocProps) {
+  if (hasEmbeddedToc(contentMarkdown)) {
+    return null;
+  }
+
   const headings: TocHeading[] = extractHeadings(contentMarkdown);
 
   if (headings.length < 2) {

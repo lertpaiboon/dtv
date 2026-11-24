@@ -1,3 +1,5 @@
+import { stripContentToPlainText, extractAllHeadingTexts } from '@/lib/articles/markdown';
+
 export interface ArticleValidationResult {
   isValid: boolean;
   errors: string[];
@@ -112,10 +114,11 @@ export function validateArticlePayload(
     errors.push('บทสรุปบทความต้องไม่เกิน 500 ตัวอักษร');
   }
 
-  // Content Markdown checks
-  if (!payload.contentMarkdown || payload.contentMarkdown.trim().length < 100) {
+  // Content checks (supports Markdown and HTML)
+  const plainBody = stripContentToPlainText(payload.contentMarkdown || '');
+  if (plainBody.length < 100) {
     if (isPublishing) {
-      errors.push('เนื้อหาบทความ (Markdown) ต้องมีเนื้อหาอย่างน้อย 100 ตัวอักษรสำหรับการเผยแพร่');
+      errors.push('เนื้อหาบทความต้องมีเนื้อหาอย่างน้อย 100 ตัวอักษรสำหรับการเผยแพร่');
     } else {
       warnings.push('เนื้อหาบทความยังสั้นเกินไป (แนะนำอย่างน้อย 100 ตัวอักษร)');
     }
@@ -215,15 +218,12 @@ export function analyzeContentQuality(article: {
     summaryMessage = 'คำอธิบายยาวเกินไป อาจถูกตัดทอนในผลการค้นหา (แนะนำ 100–160 ตัวอักษร)';
   }
 
-  // Count Markdown headings
-  const h1Matches = markdown.match(/^#\s+[^\n]+/gm) || [];
-  const h2Matches = markdown.match(/^##\s+[^\n]+/gm) || [];
-  const h3Matches = markdown.match(/^###\s+[^\n]+/gm) || [];
-
+  // Count Markdown or HTML headings
+  const headingGroups = extractAllHeadingTexts(markdown);
   const headingsCount = {
-    h1: h1Matches.length,
-    h2: h2Matches.length,
-    h3: h3Matches.length,
+    h1: headingGroups.h1.length,
+    h2: headingGroups.h2.length,
+    h3: headingGroups.h3.length,
   };
 
   const hasQuickAnswer = Boolean(article.quickAnswer && article.quickAnswer.trim().length >= 20);

@@ -6,6 +6,11 @@ import { decryptSecret, encryptSecret, isEncryptedSecret } from '@/lib/secret-cr
 import { getSiteUrl } from '@/lib/seo/site-url';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import { slugify } from '@/lib/articles/validation';
+import {
+  isHtmlContent,
+  extractAllHeadingTexts,
+  extractContentLinks,
+} from '@/lib/articles/markdown';
 
 // ============================================================================
 // Types & Interfaces (7-Layer SEO Intelligence Framework)
@@ -690,8 +695,8 @@ export function isQueryAlreadyOptimizedInPost(
   const qNorm = normalizeThaiText(query);
   if (!qNorm) return false;
 
-  const h2h3Matches = article.contentMarkdown.match(/^#{2,3}\s+[^\n]+/gm) || [];
-  const headingsCombined = normalizeThaiText(h2h3Matches.join(' '));
+  const headingGroups = extractAllHeadingTexts(article.contentMarkdown);
+  const headingsCombined = normalizeThaiText([...headingGroups.h2, ...headingGroups.h3].join(' '));
   const faqCombined = normalizeThaiText(
     (article.faqs || []).map((f) => `${f.question} ${f.answer}`).join(' ')
   );
@@ -1429,16 +1434,14 @@ export async function buildInternalLinkMatrix(): Promise<{
     }
   >();
 
-  const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-
   for (const art of articles) {
     const outboundTo: Array<{ slug: string; anchor: string }> = [];
     const pillarLinks: Array<{ url: string; anchor: string }> = [];
-    const matches = Array.from(art.contentMarkdown.matchAll(mdLinkRegex));
+    const matches = extractContentLinks(art.contentMarkdown);
 
     for (const m of matches) {
-      const anchor = m[1].trim();
-      const rawUrl = m[2].trim();
+      const anchor = m.anchor.trim();
+      const rawUrl = m.href.trim();
       let pathname = rawUrl;
       try {
         if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
@@ -1583,10 +1586,11 @@ export async function insertInternalLinkBetweenArticles(
 
   let updatedMarkdown = source.contentMarkdown;
   const phraseToLink = (matchedPhrase || target.focusKeyword || '').trim();
+  const isSourceHtml = isHtmlContent(updatedMarkdown);
   let replacedInline = false;
 
-  if (phraseToLink && phraseToLink.length >= 3) {
-    // Replace first unlinked occurrence in a regular paragraph
+  if (!isSourceHtml && phraseToLink && phraseToLink.length >= 3) {
+    // Replace first unlinked occurrence in a regular paragraph (Markdown only; avoid corrupting HTML tags/attrs)
     const lines = updatedMarkdown.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -1607,7 +1611,15 @@ export async function insertInternalLinkBetweenArticles(
   }
 
   if (!replacedInline) {
-    updatedMarkdown = `${updatedMarkdown.trim()}\n\n> **อ่านบทความที่เกี่ยวข้องเพิ่มเติม:** [${target.title}](${targetUrl})\n`;
+    if (isSourceHtml) {
+      const safeTitle = target.title
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      updatedMarkdown = `${updatedMarkdown.trim()}\n\n<blockquote style="margin: 24px 0; padding: 14px 18px; background: #f5fafb; border-left: 4px solid #1689bd;"><p style="margin: 0;"><strong>อ่านบทความที่เกี่ยวข้องเพิ่มเติม:</strong> <a href="${targetUrl}">${safeTitle}</a></p></blockquote>\n`;
+    } else {
+      updatedMarkdown = `${updatedMarkdown.trim()}\n\n> **อ่านบทความที่เกี่ยวข้องเพิ่มเติม:** [${target.title}](${targetUrl})\n`;
+    }
   }
 
   await prisma.article.update({
@@ -1643,7 +1655,6 @@ export async function scanBrokenLinksAndAssets(): Promise<BrokenLinkIssue[]> {
   ]);
 
   const issues: BrokenLinkIssue[] = [];
-  const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
   for (const art of articles) {
     const fixActionUrl = `/admin/articles/${art.id}`;
@@ -1689,10 +1700,10 @@ export async function scanBrokenLinksAndAssets(): Promise<BrokenLinkIssue[]> {
       });
     }
 
-    // 2. Check Internal Links in Markdown
-    const matches = Array.from(art.contentMarkdown.matchAll(mdLinkRegex));
+    // 2. Check Internal Links in Markdown or HTML
+    const matches = extractContentLinks(art.contentMarkdown);
     for (const m of matches) {
-      const rawUrl = m[2].trim();
+      const rawUrl = m.href.trim();
       if (rawUrl.startsWith('/knowledge/')) {
         const slug = rawUrl.replace('/knowledge/', '').split(/[?#]/)[0].trim().toLowerCase();
         if (slug && !validArticleSlugs.has(slug)) {

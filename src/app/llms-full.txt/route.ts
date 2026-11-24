@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getIndexableArticles, getAllActiveAuthors } from '@/lib/articles/queries';
+import { convertHtmlToCleanLlmText } from '@/lib/articles/markdown';
 import { SUB_SERVICES } from '@/lib/services/sub-services-data';
 import { defaultFaqs } from '@/lib/default-content';
 import { getSiteUrl } from '@/lib/seo/site-url';
@@ -139,7 +140,7 @@ export async function GET() {
     }
 
     lines.push('#### เนื้อหาฉบับเต็ม (Full Article Content)');
-    lines.push(article.contentMarkdown.trim());
+    lines.push(convertHtmlToCleanLlmText(article.contentMarkdown));
     lines.push('');
 
     if (article.faqs && article.faqs.length > 0) {

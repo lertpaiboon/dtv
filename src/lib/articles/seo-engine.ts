@@ -1,4 +1,10 @@
 import { slugify } from '@/lib/articles/validation';
+import {
+  stripContentToPlainText,
+  extractAllHeadingTexts,
+  extractContentImageAlts,
+  extractContentLinks,
+} from '@/lib/articles/markdown';
 
 export interface SeoEngineInput {
   title: string;
@@ -59,24 +65,6 @@ export interface SeoAnalysisResult {
 }
 
 /**
- * Strips markdown markup to count plain text and words accurately
- */
-function cleanMarkdown(md: string): string {
-  return md
-    .replace(/^#{1,6}\s+/gm, '') // Remove heading tags
-    .replace(/\!\[([^\]]*)\]\([^)]*\)/g, '$1') // Image alt
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // Link text
-    .replace(/(\*\*|__)(.*?)\1/g, '$2') // Bold
-    .replace(/(\*|_)(.*?)\1/g, '$2') // Italic
-    .replace(/`{1,3}[^`]*`{1,3}/g, '') // Code blocks
-    .replace(/^\s*[-*+]\s+/gm, '') // Bullet lists
-    .replace(/^\s*\d+\.\s+/gm, '') // Numbered lists
-    .replace(/^\s*>\s+/gm, '') // Blockquotes
-    .replace(/\|/g, ' ') // Table bars
-    .trim();
-}
-
-/**
  * Estimates words in Thai/English mixed content
  */
 function estimateWords(text: string): number {
@@ -114,14 +102,15 @@ export function analyzeSeoScore(input: SeoEngineInput): SeoAnalysisResult {
   const faqs = input.faqs || [];
   const citations = input.citations || [];
 
-  const plainContent = cleanMarkdown(content);
+  const plainContent = stripContentToPlainText(content);
   const wordCount = estimateWords(plainContent);
   const charCount = plainContent.length;
 
-  // Extract headings
-  const h1Matches = content.match(/^#\s+[^\n]+/gm) || [];
-  const h2Matches = content.match(/^##\s+[^\n]+/gm) || [];
-  const h3Matches = content.match(/^###\s+[^\n]+/gm) || [];
+  // Extract headings (supports both Markdown and HTML)
+  const headingGroups = extractAllHeadingTexts(content);
+  const h1Matches = headingGroups.h1;
+  const h2Matches = headingGroups.h2;
+  const h3Matches = headingGroups.h3;
   const subheadingsCount = h2Matches.length + h3Matches.length;
   const headingsText = [...h2Matches, ...h3Matches].join(' ');
 
@@ -151,22 +140,20 @@ export function analyzeSeoScore(input: SeoEngineInput): SeoAnalysisResult {
     : false;
   const keywordInHeadings = hasKeyword ? headingsText.toLowerCase().includes(kw) : false;
 
-  // Extract alt texts from cover image and all images in content markdown
-  const bodyImgAltMatches = Array.from(content.matchAll(/!\[(.*?)\]\((.+?)\)/g)).map((m) =>
-    m[1].trim()
-  );
+  // Extract alt texts from cover image and all images in content (Markdown or HTML)
+  const bodyImgAltMatches = extractContentImageAlts(content);
   const allAltTexts = [coverAlt, ...bodyImgAltMatches].filter(Boolean);
   const keywordInAltText = hasKeyword
     ? allAltTexts.some((alt) => alt.toLowerCase().includes(kw))
     : false;
   const hasAnyAltText = allAltTexts.length > 0;
 
-  // Count internal links in markdown (`[...](/...)` or `[...](https://deethavorn.com/...)`)
-  const mdLinks = Array.from(content.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
-  const internalLinks = mdLinks.filter((m) => {
-    const href = m[2].trim();
+  // Count internal links in content (Markdown `[...](/...)` or HTML `<a href="/...">`; exclude TOC `#anchor` links)
+  const extractedLinks = extractContentLinks(content);
+  const internalLinks = extractedLinks.filter((link) => {
+    const href = link.href.trim();
     return (
-      href.startsWith('/') ||
+      (href.startsWith('/') && !href.startsWith('//')) ||
       href.includes('deethavorn.com')
     );
   });

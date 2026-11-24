@@ -2,10 +2,11 @@ import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
 import { getSiteUrl } from '@/lib/seo/site-url';
 import { Article, Author, ArticleFaqItem, ArticleCitationItem } from './types';
+import { stripContentToPlainText } from './markdown';
 
 function calculateReadTime(markdown: string): string {
   // Average Thai reading speed ~400-500 chars/min
-  const length = markdown.trim().length;
+  const length = stripContentToPlainText(markdown).length;
   const minutes = Math.max(3, Math.ceil(length / 500));
   return `${minutes} นาที`;
 }

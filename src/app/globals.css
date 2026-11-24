@@ -7758,20 +7758,6 @@ button.admin-btn-primary * {
   margin-bottom: 12px;
 }
 
-.article-prose .heading-anchor {
-  position: absolute;
-  left: -24px;
-  color: var(--accent);
-  opacity: 0;
-  text-decoration: none;
-  font-weight: 400;
-  transition: opacity 0.2s;
-}
-
-.article-prose .article-heading:hover .heading-anchor {
-  opacity: 1;
-}
-
 .article-prose .article-paragraph {
   margin-bottom: 22px;
 }
@@ -7930,6 +7916,139 @@ details.article-faq-item[open] .faq-arrow {
   border-radius: 8px;
   margin: 8px 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Low-specificity defaults for SEO-authored HTML articles (inline style="" overrides cleanly) */
+.article-prose {
+  overflow-wrap: break-word;
+}
+
+.article-prose :where(h2, h3, h4, h5, h6) {
+  color: var(--primary);
+  font-weight: 800;
+  line-height: 1.35;
+  scroll-margin-top: 100px;
+}
+
+.article-prose :where(h2) {
+  font-size: 1.55rem;
+  margin: 40px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.article-prose :where(h3) {
+  font-size: 1.28rem;
+  margin: 30px 0 12px;
+}
+
+.article-prose :where(h4) {
+  font-size: 1.12rem;
+  margin: 24px 0 10px;
+}
+
+.article-prose :where(p) {
+  margin-bottom: 18px;
+}
+
+.article-prose :where(ul, ol) {
+  margin: 0 0 22px;
+  padding-left: 24px;
+}
+
+.article-prose :where(li) {
+  line-height: 1.75;
+  margin-bottom: 6px;
+}
+
+.article-prose :where(a) {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-prose :where(blockquote) {
+  margin: 24px 0;
+  padding: 16px 22px;
+  background: var(--ice-50);
+  border-left: 4px solid var(--blue-600);
+  border-radius: 0 10px 10px 0;
+  color: #334155;
+}
+
+.article-prose :where(code) {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+.article-prose :where(pre) {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 20px 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.article-prose :where(pre code) {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.article-prose .article-html-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 24px 0;
+}
+
+.article-prose :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.article-prose :where(th, td) {
+  padding: 10px 14px;
+  border: 1px solid #dbe5e9;
+  vertical-align: top;
+  text-align: left;
+}
+
+.article-prose :where(th) {
+  background: #f8fafc;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.article-prose :where(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.article-prose :where(hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+.article-prose :where(figure) {
+  margin: 24px 0;
+}
+
+.article-prose :where(figcaption) {
+  margin-top: 8px;
+  font-size: 0.86rem;
+  color: #64748b;
+  text-align: center;
 }
 
 /* Knowledge Hub Card Cover Hover Effect */
