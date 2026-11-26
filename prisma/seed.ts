@@ -91,7 +91,7 @@ async function main() {
       credentials: 'ผู้สอบบัญชีรับอนุญาต (CPA Thailand) และที่ปรึกษาภาษีอากรอาวุโส ประสบการณ์กว่า 20 ปี',
       bio: 'ผู้เชี่ยวชาญด้านการวางแผนภาษีนิติบุคคล การตรวจสอบบัญชีตามมาตรฐานการรายงานทางการเงิน (TFRS for NPAEs) และการวางระบบควบคุมภายในสำหรับ SME',
       profileImage: '/images/DTV%20LOGO.png',
-      sameAs: ['https://deethavorn.com/#why-us'],
+      sameAs: ['https://www.deethavorn.com/about'],
     },
     create: {
       name: 'คุณวิเชียร ดีถาวร',
@@ -100,7 +100,7 @@ async function main() {
       credentials: 'ผู้สอบบัญชีรับอนุญาต (CPA Thailand) และที่ปรึกษาภาษีอากรอาวุโส ประสบการณ์กว่า 20 ปี',
       bio: 'ผู้เชี่ยวชาญด้านการวางแผนภาษีนิติบุคคล การตรวจสอบบัญชีตามมาตรฐานการรายงานทางการเงิน (TFRS for NPAEs) และการวางระบบควบคุมภายในสำหรับ SME',
       profileImage: '/images/DTV%20LOGO.png',
-      sameAs: ['https://deethavorn.com/#why-us'],
+      sameAs: ['https://www.deethavorn.com/about'],
     },
   });
 

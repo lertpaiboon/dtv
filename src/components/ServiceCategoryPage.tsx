@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, CheckCircle2, ChevronRight, MessageCircle, Sh
 import WorkProcess from '@/components/WorkProcess';
 import FAQ, { FaqItem } from '@/components/FAQ';
 import ContactForm from '@/components/ContactForm';
+import { buildServiceCategoryJsonLd, serializeJsonLd } from '@/lib/seo/service-schema';
 
 export interface SubServiceCardItem {
   title: string;
@@ -35,6 +36,13 @@ export interface CategoryPillarConfig {
 }
 
 export default function ServiceCategoryPage({ data }: { data: CategoryPillarConfig }) {
+  const { breadcrumbJsonLd, serviceJsonLd } = buildServiceCategoryJsonLd({
+    slug: data.slug,
+    name: data.title,
+    description: data.lead,
+    serviceType: data.kicker,
+  });
+
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -52,7 +60,15 @@ export default function ServiceCategoryPage({ data }: { data: CategoryPillarConf
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
       />
 
       {/* Pillar Hero */}

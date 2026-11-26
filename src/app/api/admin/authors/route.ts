@@ -3,6 +3,7 @@ import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
 import { isSafeHttpUrl, isSafeImageOrHttpUrl, slugify } from '@/lib/articles/validation';
+import { normalizeAuthorSameAsUrl } from '@/lib/seo/site-url';
 
 export async function GET() {
   const session = await getAdminSession();
@@ -87,6 +88,8 @@ export async function POST(req: Request) {
       );
     }
 
+    const normalizedSameAs = Array.from(new Set(sameAs.map(normalizeAuthorSameAsUrl)));
+
     if (body.profileImage && String(body.profileImage).trim() && !isSafeImageOrHttpUrl(String(body.profileImage))) {
       return NextResponse.json(
         { success: false, error: 'URL รูปโปรไฟล์ผู้เขียนไม่ปลอดภัย' },
@@ -102,7 +105,7 @@ export async function POST(req: Request) {
         credentials: body.credentials ? body.credentials.trim() : null,
         bio: body.bio ? body.bio.trim() : null,
         profileImage: body.profileImage ? body.profileImage.trim() : null,
-        sameAs: sameAs.length > 0 ? sameAs : undefined,
+        sameAs: normalizedSameAs.length > 0 ? normalizedSameAs : undefined,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
       },
       include: {

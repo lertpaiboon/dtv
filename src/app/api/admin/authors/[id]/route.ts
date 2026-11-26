@@ -4,6 +4,7 @@ import { getAdminSession } from '@/lib/auth';
 import { hasArticlePermission, ARTICLE_PERMISSIONS } from '@/lib/articles/permissions';
 import { prisma } from '@/lib/prisma';
 import { isSafeHttpUrl, isSafeImageOrHttpUrl, slugify } from '@/lib/articles/validation';
+import { normalizeAuthorSameAsUrl } from '@/lib/seo/site-url';
 
 export async function GET(
   req: Request,
@@ -111,6 +112,10 @@ export async function PUT(
       );
     }
 
+    const normalizedSameAs = parsedSameAs
+      ? Array.from(new Set(parsedSameAs.map(normalizeAuthorSameAsUrl)))
+      : undefined;
+
     if (
       body.profileImage !== undefined &&
       body.profileImage &&
@@ -132,7 +137,7 @@ export async function PUT(
         credentials: body.credentials !== undefined ? (body.credentials ? body.credentials.trim() : null) : existing.credentials,
         bio: body.bio !== undefined ? (body.bio ? body.bio.trim() : null) : existing.bio,
         profileImage: body.profileImage !== undefined ? (body.profileImage ? body.profileImage.trim() : null) : existing.profileImage,
-        sameAs: parsedSameAs,
+        sameAs: normalizedSameAs,
         isActive: body.isActive !== undefined ? Boolean(body.isActive) : existing.isActive,
       },
       include: {

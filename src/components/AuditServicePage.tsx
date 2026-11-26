@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import AuditDocChecklist from '@/components/AuditDocChecklist';
 import AuditQuoteForm from '@/components/AuditQuoteForm';
+import { buildServiceCategoryJsonLd, serializeJsonLd } from '@/lib/seo/service-schema';
 
 const SCOPE_CARDS = [
   {
@@ -213,6 +214,14 @@ const AUDIT_FAQS = [
 ];
 
 export default function AuditServicePage() {
+  const { breadcrumbJsonLd, serviceJsonLd } = buildServiceCategoryJsonLd({
+    slug: 'audit',
+    name: 'บริการรับตรวจสอบบัญชี โดยผู้สอบบัญชี CPA',
+    description:
+      'บริการรับตรวจสอบบัญชีและงบการเงินประจำปี โดยผู้สอบบัญชีรับอนุญาต (CPA) ตามมาตรฐานการสอบบัญชี (TSA) สำหรับบริษัทจำกัดและ SME แจ้งขอบเขตงานและค่าตรวจสอบเป็นตัวเลขก่อนเริ่ม',
+    serviceType: 'ตรวจสอบบัญชีและรับรองงบการเงินโดย CPA',
+  });
+
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -230,7 +239,15 @@ export default function AuditServicePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }}
       />
 
       {/* ===== U1: HERO & META TITLE (#top) ===== */}

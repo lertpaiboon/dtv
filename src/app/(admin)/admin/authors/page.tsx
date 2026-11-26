@@ -800,7 +800,7 @@ export default function AdminAuthorsPage() {
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="https://deethavorn.com/#why-us&#10;https://www.tfac.or.th/..."
+                  placeholder="https://www.deethavorn.com/about&#10;https://www.tfac.or.th/..."
                   value={formSameAs}
                   onChange={(e) => setFormSameAs(e.target.value)}
                   style={{

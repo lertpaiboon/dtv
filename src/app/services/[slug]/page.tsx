@@ -11,6 +11,7 @@ import CompanyRegistrationPage from '@/components/CompanyRegistrationPage';
 import VatRegistrationPage from '@/components/VatRegistrationPage';
 import CompanyAmendmentPage from '@/components/CompanyAmendmentPage';
 import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
+import { buildSubServiceJsonLd, serializeJsonLd } from '@/lib/seo/service-schema';
 
 export function generateStaticParams() {
   return SUB_SERVICES.map((item) => ({
@@ -49,37 +50,51 @@ export default async function SubServiceRoutePage({
     notFound();
   }
 
-  if (slug === 'monthly-accounting') {
-    return <MonthlyAccountingPage data={service} />;
-  }
-
-  if (slug === 'annual-financial-statements') {
-    return <AnnualFinancialStatementsPage data={service} />;
-  }
-
-  if (slug === 'tax-filing') {
-    return <TaxFilingPage data={service} />;
-  }
-
-  if (slug === 'tax-consulting') {
-    return <TaxConsultingPage data={service} />;
-  }
-
-  if (slug === 'wealth-transfer') {
-    return <WealthTransferPage data={service} />;
-  }
-
-  if (slug === 'company-registration') {
-    return <CompanyRegistrationPage data={service} />;
-  }
-
-  if (slug === 'vat-registration') {
-    return <VatRegistrationPage data={service} />;
-  }
-
   if (slug === 'company-amendment') {
     return <CompanyAmendmentPage data={service} />;
   }
 
-  return <SubServiceDetailPage data={service} />;
+  const { breadcrumbJsonLd, serviceJsonLd } = buildSubServiceJsonLd(service);
+
+  let pageContent: React.ReactNode;
+  switch (slug) {
+    case 'monthly-accounting':
+      pageContent = <MonthlyAccountingPage data={service} />;
+      break;
+    case 'annual-financial-statements':
+      pageContent = <AnnualFinancialStatementsPage data={service} />;
+      break;
+    case 'tax-filing':
+      pageContent = <TaxFilingPage data={service} />;
+      break;
+    case 'tax-consulting':
+      pageContent = <TaxConsultingPage data={service} />;
+      break;
+    case 'wealth-transfer':
+      pageContent = <WealthTransferPage data={service} />;
+      break;
+    case 'company-registration':
+      pageContent = <CompanyRegistrationPage data={service} />;
+      break;
+    case 'vat-registration':
+      pageContent = <VatRegistrationPage data={service} />;
+      break;
+    default:
+      pageContent = <SubServiceDetailPage data={service} />;
+      break;
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
+      />
+      {pageContent}
+    </>
+  );
 }

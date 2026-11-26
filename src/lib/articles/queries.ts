@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
-import { getSiteUrl } from '@/lib/seo/site-url';
+import { getSiteUrl, normalizeAuthorSameAs } from '@/lib/seo/site-url';
 import {
   Article,
   ArticleCardItem,
@@ -28,7 +28,7 @@ function mapAuthor(raw: any): Author {
     bio: raw.bio || undefined,
     credentials: raw.credentials || 'ทีมงานผู้เชี่ยวชาญ ดีถาวรการบัญชี',
     profileImage: raw.profileImage || '/images/DTV%20LOGO.png',
-    sameAs: Array.isArray(raw.sameAs) ? raw.sameAs : undefined,
+    sameAs: normalizeAuthorSameAs(raw.sameAs),
     updatedAt:
       raw.updatedAt instanceof Date
         ? raw.updatedAt.toISOString()
