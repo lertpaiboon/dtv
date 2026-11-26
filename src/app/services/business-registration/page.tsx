@@ -1,14 +1,15 @@
+import type { Metadata } from 'next';
 import ServiceCategoryPage, { CategoryPillarConfig } from '@/components/ServiceCategoryPage';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/services/business-registration',
   title: 'รับจดทะเบียนธุรกิจ จดบริษัท หจก. จด VAT แก้ไขข้อมูล | ดีถาวรการบัญชี',
   description:
     'บริการรับจดทะเบียนจัดตั้งบริษัทจำกัด ห้างหุ้นส่วนจำกัด จดทะเบียนภาษีมูลค่าเพิ่ม (VAT) แก้ไขเปลี่ยนแปลงข้อมูลนิติบุคคล และจดเครื่องหมายการค้า เริ่มต้น 1,500 บาท',
-  alternates: {
-    canonical: toAbsoluteUrl('/services/business-registration'),
-  },
-};
+  image: '/images/service_reg.png',
+  imageAlt: 'บริการรับจดทะเบียนบริษัท จด VAT และแก้ไขข้อมูลนิติบุคคล ดีถาวรการบัญชี',
+});
 
 const businessRegConfig: CategoryPillarConfig = {
   slug: 'business-registration',

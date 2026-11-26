@@ -1,23 +1,15 @@
+import type { Metadata } from 'next';
 import AuditServicePage from '@/components/AuditServicePage';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/services/audit',
   title: 'รับตรวจสอบบัญชี โดยผู้สอบบัญชี CPA | ดีถาวรการบัญชี',
   description:
     'บริการรับตรวจสอบบัญชีและงบการเงินประจำปี โดยผู้สอบบัญชีรับอนุญาต (CPA) ตามมาตรฐานการสอบบัญชี (TSA) สำหรับบริษัทจำกัดและ SME แจ้งขอบเขตงานและค่าตรวจสอบเป็นตัวเลขก่อนเริ่ม',
-  alternates: {
-    canonical: toAbsoluteUrl('/services/audit'),
-  },
-  openGraph: {
-    title: 'รับตรวจสอบบัญชี โดยผู้สอบบัญชี CPA | ดีถาวรการบัญชี',
-    description:
-      'บริการรับตรวจสอบบัญชีและงบการเงินประจำปี โดยผู้สอบบัญชีรับอนุญาต (CPA) ตามมาตรฐานการสอบบัญชี (TSA) สำหรับบริษัทจำกัดและ SME แจ้งขอบเขตงานและค่าตรวจสอบเป็นตัวเลขก่อนเริ่ม',
-    url: toAbsoluteUrl('/services/audit'),
-    siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
-    locale: 'th_TH',
-    type: 'website',
-  },
-};
+  image: '/images/service_audit.png',
+  imageAlt: 'บริการรับตรวจสอบบัญชี โดยผู้สอบบัญชี CPA ดีถาวรการบัญชี',
+});
 
 export default function AuditServiceRoutePage() {
   return <AuditServicePage />;

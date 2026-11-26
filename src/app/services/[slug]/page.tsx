@@ -10,7 +10,7 @@ import WealthTransferPage from '@/components/WealthTransferPage';
 import CompanyRegistrationPage from '@/components/CompanyRegistrationPage';
 import VatRegistrationPage from '@/components/VatRegistrationPage';
 import CompanyAmendmentPage from '@/components/CompanyAmendmentPage';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
 export function generateStaticParams() {
   return SUB_SERVICES.map((item) => ({
@@ -31,21 +31,11 @@ export async function generateMetadata({
     };
   }
 
-  return {
+  return buildPublicPageMetadata({
+    path: `/services/${service.slug}`,
     title: service.seoTitle,
     description: service.seoDescription,
-    alternates: {
-      canonical: toAbsoluteUrl(`/services/${service.slug}`),
-    },
-    openGraph: {
-      title: service.seoTitle,
-      description: service.seoDescription,
-      url: toAbsoluteUrl(`/services/${service.slug}`),
-      siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
-      locale: 'th_TH',
-      type: 'website',
-    },
-  };
+  });
 }
 
 export default async function SubServiceRoutePage({

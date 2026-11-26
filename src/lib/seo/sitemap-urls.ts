@@ -16,11 +16,15 @@ export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Site
     getAllActiveAuthors().catch(() => []),
   ]);
 
-  // Determine a realistic, stable lastModified date based on the latest article update
+  // Determine a realistic, stable lastModified date for dynamic article listing hubs (`/`, `/knowledge`)
   const latestArticleDate =
     articles.length > 0
       ? new Date(articles[0].contentUpdatedAt || articles[0].publishedAt)
       : new Date('2026-10-11T00:00:00.000Z');
+
+  // Fixed lastModified for static/service pages. Update manually ONLY when those pages materially change,
+  // so editing a knowledge article does not mutate lastmod across 30+ unrelated URLs.
+  const SITE_STATIC_LASTMOD = new Date('2026-11-26T00:00:00.000Z');
 
   // 2. Static Canonical Pages
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -32,55 +36,55 @@ export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Site
     },
     {
       url: `${baseUrl}/services`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.95,
     },
     {
       url: `${baseUrl}/services/accounting-tax`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/services/audit`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/services/business-registration`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/services/hr-payroll`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/about`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'monthly',
       priority: 0.85,
     },
     {
       url: `${baseUrl}/pricing`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/faq`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/contact`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'monthly',
       priority: 0.85,
     },
@@ -92,7 +96,7 @@ export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Site
     },
     {
       url: `${baseUrl}/privacy-policy`,
-      lastModified: latestArticleDate,
+      lastModified: SITE_STATIC_LASTMOD,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
@@ -101,7 +105,7 @@ export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Site
   // 3. Dynamic 16 Sub-Service Pages
   const subServiceRoutes: MetadataRoute.Sitemap = SUB_SERVICES.map((sub) => ({
     url: `${baseUrl}/services/${sub.slug}`,
-    lastModified: latestArticleDate,
+    lastModified: SITE_STATIC_LASTMOD,
     changeFrequency: 'monthly',
     priority: 0.85,
   }));
@@ -117,7 +121,7 @@ export async function buildCanonicalSitemapEntries(): Promise<MetadataRoute.Site
   // 5. Dynamic Active Author Profiles (E-E-A-T)
   const authorRoutes: MetadataRoute.Sitemap = authors.map((author) => ({
     url: `${baseUrl}/authors/${author.slug}`,
-    lastModified: latestArticleDate,
+    lastModified: author.updatedAt ? new Date(author.updatedAt) : SITE_STATIC_LASTMOD,
     changeFrequency: 'monthly',
     priority: 0.7,
   }));

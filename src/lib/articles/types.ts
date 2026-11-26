@@ -7,6 +7,7 @@ export interface Author {
   credentials: string; // e.g. "ผู้สอบบัญชีรับอนุญาต (CPA เลขทะเบียน xxxxx) และที่ปรึกษาภาษีอากร"
   profileImage?: string;
   sameAs?: string[];
+  updatedAt?: string;
 }
 
 export interface ArticleFaqItem {

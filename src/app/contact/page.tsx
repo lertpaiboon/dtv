@@ -1,16 +1,15 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import ContactForm from '@/components/ContactForm';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/contact',
   title: 'ติดต่อดีถาวรการบัญชี | ขอใบเสนอราคาทำบัญชี ใกล้ MRT เพชรบุรี ทางออก 1',
   description:
     'ติดต่อบริษัท ดีถาวรการบัญชี จำกัด สำนักงานบัญชีเลขที่ 234/116 ถนนอโศก–ดินแดง แขวงบางกะปิ เขตห้วยขวาง กรุงเทพฯ 10310 ใกล้ MRT เพชรบุรี ทางออก 1 โทร 099-149-5656, 091-941-5656',
-  alternates: {
-    canonical: toAbsoluteUrl('/contact'),
-  },
-};
+});
 
 export default function ContactPage() {
   return (

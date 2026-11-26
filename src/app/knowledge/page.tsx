@@ -1,28 +1,19 @@
 import React, { Suspense } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { getPublishedArticleCards } from '@/lib/articles/queries';
 import KnowledgeListClient from '@/components/articles/KnowledgeListClient';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
-
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/knowledge',
   title: 'คลังความรู้บัญชีและภาษี | บริษัท ดีถาวรการบัญชี จำกัด',
   description:
     'รวมบทความและเกร็ดความรู้ด้านภาษี บัญชี การจดทะเบียนธุรกิจ และการบริหารบุคคล โดยทีมงานผู้สอบบัญชีรับอนุญาต (CPA) บริษัท ดีถาวรการบัญชี จำกัด',
-  alternates: {
-    canonical: toAbsoluteUrl('/knowledge'),
-  },
-  openGraph: {
-    title: 'คลังความรู้บัญชีและภาษี | บริษัท ดีถาวรการบัญชี จำกัด',
-    description:
-      'รวมบทความและเกร็ดความรู้ด้านภาษี บัญชี การจดทะเบียนธุรกิจ และการบริหารบุคคล โดยทีมงานผู้เชี่ยวชาญ',
-    url: toAbsoluteUrl('/knowledge'),
-    siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
-    locale: 'th_TH',
-    type: 'website',
-  },
-};
+  ogDescription:
+    'รวมบทความและเกร็ดความรู้ด้านภาษี บัญชี การจดทะเบียนธุรกิจ และการบริหารบุคคล โดยทีมงานผู้เชี่ยวชาญ',
+});
 
 export const revalidate = 3600;
 

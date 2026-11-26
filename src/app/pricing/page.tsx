@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import Pricing from '@/components/Pricing';
@@ -6,18 +7,16 @@ import FAQ from '@/components/FAQ';
 import ContactForm from '@/components/ContactForm';
 import { defaultFaqs, type FaqItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
 export const revalidate = 3600;
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/pricing',
   title: 'ค่าบริการทำบัญชี ยื่นภาษี จดบริษัท และตรวจสอบบัญชี CPA | ดีถาวรการบัญชี',
   description:
     'อัตราค่าบริการทำบัญชีรายเดือนเริ่มต้น 1,500 บาท/เดือน งานจดทะเบียนธุรกิจเริ่มต้น 1,500 บาท และตรวจสอบบัญชีโดย CPA แจ้งราคาชัดเจนก่อนเริ่มงาน ไม่มีค่ากระดาษหรือค่าปรึกษาแอบแฝง',
-  alternates: {
-    canonical: toAbsoluteUrl('/pricing'),
-  },
-};
+});
 
 async function getFaqs(): Promise<FaqItem[]> {
   if (!process.env.DATABASE_URL) return defaultFaqs;

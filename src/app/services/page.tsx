@@ -1,19 +1,18 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import Services from '@/components/Services';
 import WorkProcess from '@/components/WorkProcess';
 import Pricing from '@/components/Pricing';
 import ContactForm from '@/components/ContactForm';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/services',
   title: 'บริการของดีถาวรการบัญชี | รับทำบัญชี ยื่นภาษี ตรวจสอบบัญชี CPA จดบริษัท และเงินเดือน',
   description:
     'รวมบริการของบริษัท ดีถาวรการบัญชี จำกัด ครบทั้ง 4 หมวดหลัก: ทำบัญชีและยื่นภาษี ตรวจสอบบัญชีโดย CPA จดทะเบียนธุรกิจ และงานบุคคลกับเงินเดือน เริ่มต้น 1,500 บาท/เดือน',
-  alternates: {
-    canonical: toAbsoluteUrl('/services'),
-  },
-};
+});
 
 export default function ServicesOverviewPage() {
   return (

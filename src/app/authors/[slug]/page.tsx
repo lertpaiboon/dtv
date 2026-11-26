@@ -77,6 +77,12 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
         },
       ],
     },
+    twitter: {
+      card: 'summary',
+      title: `${author.name} - ผู้เชี่ยวชาญด้านบัญชีและภาษีอากร`,
+      description,
+      images: [toAbsoluteUrl(author.profileImage || '/images/DTV%20LOGO.png')],
+    },
   };
 }
 

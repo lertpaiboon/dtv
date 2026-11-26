@@ -1,26 +1,19 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck, Lock, Cookie, FileText, UserCheck, Mail, Phone, MapPin, CheckCircle2, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import CookiePreferencesButton from '@/components/CookiePreferencesButton';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/privacy-policy',
   title: 'นโยบายความเป็นส่วนตัว (PDPA) | บริษัท ดีถาวรการบัญชี จำกัด',
   description:
     'นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA) และนโยบายคุกกี้ บริษัท ดีถาวรการบัญชี จำกัด แนวปฏิบัติในการจัดเก็บ ใช้ ประมวลผล และรักษาความลับของข้อมูลลูกค้าตามมาตรฐานวิชาชีพบัญชี',
-  alternates: {
-    canonical: toAbsoluteUrl('/privacy-policy'),
-  },
-  openGraph: {
-    title: 'นโยบายความเป็นส่วนตัวและคุ้มครองข้อมูลส่วนบุคคล (PDPA) | ดีถาวรการบัญชี',
-    description:
-      'นโยบายคุ้มครองข้อมูลส่วนบุคคลและมาตรฐานการรักษาความลับของลูกค้า บริษัท ดีถาวรการบัญชี จำกัด สอดคล้องตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562',
-    url: toAbsoluteUrl('/privacy-policy'),
-    siteName: 'บริษัท ดีถาวรการบัญชี จำกัด',
-    locale: 'th_TH',
-    type: 'website',
-  },
-};
+  ogTitle: 'นโยบายความเป็นส่วนตัวและคุ้มครองข้อมูลส่วนบุคคล (PDPA) | ดีถาวรการบัญชี',
+  ogDescription:
+    'นโยบายคุ้มครองข้อมูลส่วนบุคคลและมาตรฐานการรักษาความลับของลูกค้า บริษัท ดีถาวรการบัญชี จำกัด สอดคล้องตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562',
+});
 
 export default function PrivacyPolicyPage() {
   return (

@@ -29,6 +29,12 @@ function mapAuthor(raw: any): Author {
     credentials: raw.credentials || 'ทีมงานผู้เชี่ยวชาญ ดีถาวรการบัญชี',
     profileImage: raw.profileImage || '/images/DTV%20LOGO.png',
     sameAs: Array.isArray(raw.sameAs) ? raw.sameAs : undefined,
+    updatedAt:
+      raw.updatedAt instanceof Date
+        ? raw.updatedAt.toISOString()
+        : typeof raw.updatedAt === 'string'
+          ? raw.updatedAt
+          : undefined,
   };
 }
 

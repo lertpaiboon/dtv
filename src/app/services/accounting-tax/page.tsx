@@ -1,14 +1,15 @@
+import type { Metadata } from 'next';
 import ServiceCategoryPage, { CategoryPillarConfig } from '@/components/ServiceCategoryPage';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/services/accounting-tax',
   title: 'รับทำบัญชีและยื่นภาษีรายเดือน ปิดงบ วางแผนภาษี | ดีถาวรการบัญชี',
   description:
     'บริการรับทำบัญชีรายเดือน ยื่นภาษี ภ.พ.30 ภ.ง.ด.1/3/53 ภ.ง.ด.50/51 จัดทำงบการเงินประจำปี และวางแผนภาษีอย่างถูกต้องตามกฎหมาย เริ่มต้น 1,500 บาท/เดือน คืนใบเสร็จตัวจริงทุกเดือน',
-  alternates: {
-    canonical: toAbsoluteUrl('/services/accounting-tax'),
-  },
-};
+  image: '/images/process_desk.jpg',
+  imageAlt: 'บริการรับทำบัญชีและยื่นภาษีรายเดือน ดีถาวรการบัญชี',
+});
 
 const accountingTaxConfig: CategoryPillarConfig = {
   slug: 'accounting-tax',

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import WhyUs from '@/components/WhyUs';
@@ -7,18 +8,16 @@ import WorkProcess from '@/components/WorkProcess';
 import ContactForm from '@/components/ContactForm';
 import { defaultCustomerReviews, type CustomerReviewItem } from '@/lib/default-content';
 import { prisma } from '@/lib/prisma';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
 export const revalidate = 3600;
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/about',
   title: 'ทำไมต้องดีถาวรการบัญชี | สำนักงานบัญชี อโศก–ดินแดง ใกล้ MRT เพชรบุรี',
   description:
     'ทำไมธุรกิจย่านอโศก–ดินแดงเลือกดีถาวรการบัญชี แจ้งราคาเป็นตัวเลขก่อนเริ่มงาน คืนใบเสร็จภาษีตัวจริงจากกรมสรรพากรทุกเดือน และตรวจสอบงบประจำปีโดยผู้สอบบัญชีรับอนุญาต (CPA)',
-  alternates: {
-    canonical: toAbsoluteUrl('/about'),
-  },
-};
+});
 
 async function getActiveReviews(): Promise<CustomerReviewItem[]> {
   if (!process.env.DATABASE_URL) return defaultCustomerReviews;

@@ -1,14 +1,15 @@
+import type { Metadata } from 'next';
 import ServiceCategoryPage, { CategoryPillarConfig } from '@/components/ServiceCategoryPage';
-import { toAbsoluteUrl } from '@/lib/seo/site-url';
+import { buildPublicPageMetadata } from '@/lib/seo/page-metadata';
 
-export const metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: '/services/hr-payroll',
   title: 'บริการงานบุคคลและเงินเดือน (HR & Payroll) ประกันสังคม สวัสดิการ | ดีถาวรการบัญชี',
   description:
     'บริการรับทำเงินเดือน (Payroll Outsourcing) ยื่นประกันสังคมและ ภ.ง.ด.1 วางระบบงานบุคคล ขอ Visa & Work Permit สรรหาบุคลากร กองทุนสำรองเลี้ยงชีพ ประกันกลุ่ม และประกัน Keyman',
-  alternates: {
-    canonical: toAbsoluteUrl('/services/hr-payroll'),
-  },
-};
+  image: '/images/office_atmosphere.png',
+  imageAlt: 'บริการงานบุคคลและเงินเดือน HR & Payroll ดีถาวรการบัญชี',
+});
 
 const hrPayrollConfig: CategoryPillarConfig = {
   slug: 'hr-payroll',
